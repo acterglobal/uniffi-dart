@@ -1,3 +1,3 @@
 fn main() {
-    uniffi::generate_scaffolding("./src/api.udl").unwrap();
+    uniffi_dart::generate_scaffolding("./src/api.udl".into()).unwrap();
 }

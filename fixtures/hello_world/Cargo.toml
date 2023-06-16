@@ -14,7 +14,7 @@ crate-type = ["lib", "cdylib"]
 uniffi = "0.23.0"
 
 [build-dependencies]
-uniffi = { version = "0.23.0", features = ["build"] }
+uniffi-dart = { path = "../../",  features = ["build"] }
 
 [dev-dependencies]
 uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
