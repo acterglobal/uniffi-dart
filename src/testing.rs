@@ -1,8 +1,11 @@
+use crate::gen;
 use anyhow::{bail, Result};
 use camino::Utf8Path;
 use std::fs::{copy, create_dir_all, File};
 use std::io::Write;
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
 use uniffi_testing::UniFFITestHelper;
 
 pub fn run_test(fixture: &str) -> Result<()> {
@@ -32,15 +35,22 @@ dependencies:
     pubspec.flush()?;
     let test_outdir = out_dir.join("test");
     create_dir_all(&test_outdir)?;
-    let main_compile_source = test_helper.get_main_compile_source()?;
 
     test_helper.copy_cdylibs_to_out_dir(&out_dir)?;
+    for source in test_helper.get_compile_sources()? {
+        gen::generate_dart_bindings(
+            &source.udl_path,
+            source.config_path.as_deref(),
+            Some(&out_dir),
+            Some(&test_helper.cdylib_path()?),
+        )?;
+    }
     // let generated_sources =
     //     GeneratedSources::new(&test_helper.cdylib_path()?, &out_dir, &test_helper)?;
-    for file in glob::glob(&format!("dart-tests/*.dart"))?.filter_map(Result::ok) {
+    for file in glob::glob(&format!("**/*.dart"))?.filter_map(Result::ok) {
         copy(
             &file,
-            test_outdir.join(file.file_name().unwrap().to_str().unwrap()),
+            out_dir.join(file.as_os_str().to_str().expect("bad filename")),
         )?;
     }
 
@@ -49,6 +59,8 @@ dependencies:
     command.current_dir(&out_dir).arg("test");
     let status = command.spawn()?.wait()?;
     if !status.success() {
+        println!("FAILED");
+        thread::sleep(Duration::from_secs(60));
         bail!("running `dart` to run test script failed ({:?})", command);
     }
     Ok(())

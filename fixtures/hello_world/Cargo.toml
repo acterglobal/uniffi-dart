@@ -7,7 +7,7 @@ publish = false
 
 
 [lib]
-name = "uniffi_hello_world"
+name = "hello_world"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
