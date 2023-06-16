@@ -48,11 +48,9 @@ jobs:
       - name: Install Dart toolchain
         uses: dart-lang/setup-dart@v1
 
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
+      - name: Run cargo nextest
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        with:
-          command: nextest run --all
+        run: cargo nextest run --all
 
 
   lints:
