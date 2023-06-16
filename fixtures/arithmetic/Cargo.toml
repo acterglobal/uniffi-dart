@@ -1,0 +1,21 @@
+[package]
+name = "simple_arithmetic"
+version = "0.1.0"
+edition = "2021"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[lib]
+name = "simple_arithmetic"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+uniffi = "0.23.0"
+
+[build-dependencies]
+uniffi-dart = { path = "../../",  features = ["build"] }
+
+[dev-dependencies]
+uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
+anyhow = "1"
