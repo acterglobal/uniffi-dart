@@ -41,6 +41,10 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
+
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
       - name: Install Dart toolchain
         uses: dart-lang/setup-dart@v1
 
@@ -48,7 +52,7 @@ jobs:
         uses: actions-rs/cargo@v1
         continue-on-error: ${{ matrix.rust == 'nightly' }}
         with:
-          command: test --all
+          command: nextest run --all
 
 
   lints:

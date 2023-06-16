@@ -8,13 +8,11 @@ description = "Dart Frontend for UniFFI"
 
 [features]
 defaults = []
-binary = ["dep:anyhow"]
+binary = []
 build = [
-    "dep:anyhow",
     "dep:uniffi_build",
 ]
 bindgen-tests = [
-    "dep:anyhow",
     "dep:uniffi_testing",
     "dep:heck",
     "dep:camino-tempfile",
@@ -33,6 +31,7 @@ required-features = ["binary"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1"
 uniffi = "0.23.0"
 uniffi_bindgen = "0.23.0"
 camino ="1"
@@ -40,7 +39,6 @@ serde = "1"
 toml = "0.5"
 
 # feature specific stuff
-anyhow = { version = "1", optional = true}
 uniffi_build = { version = "0.23.0", optional = true }
 
 # optional for testint
