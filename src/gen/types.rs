@@ -39,6 +39,7 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         Type::String => quote!(String),
         Type::Object(name) => quote!($name),
         Type::Boolean => quote!(bool),
+        Type::Optional(inner) => quote!($(generate_type(inner))?),
         _ => todo!("Type::{:?}", ty)
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -68,12 +69,23 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
     }
 }
 
+pub fn convert_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    match ty {
+        Type::Object(_) => inner,
+        Type::String | Type::Optional(_) => quote!($(inner).asByteBuffer()),
+        _ => inner,
+    }
+}
+
 pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::UInt32 => inner,
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object(name) => quote!($name.lift(api, $inner)),
+        Type::Optional(o) => {
+            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
+        }
         _ => todo!("lift Type::{:?}", ty),
     }
 }
@@ -83,6 +95,7 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::UInt32 | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object(name) => quote!($name.lower(api, $inner)),
+        Type::Optional(o) => type_lower_fn(o, inner),
         _ => todo!("lower Type::{:?}", ty),
     }
 }

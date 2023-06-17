@@ -2,7 +2,8 @@ use genco::prelude::*;
 use uniffi_bindgen::interface::Function;
 
 use super::types::{
-    generate_ffi_dart_type, generate_ffi_type, generate_type, type_lift_fn, type_lower_fn,
+    convert_rust_buffer, generate_ffi_dart_type, generate_ffi_type, generate_type, type_lift_fn,
+    type_lower_fn,
 };
 use super::utils::{fn_name, var_name};
 
@@ -24,7 +25,7 @@ pub fn generate_function(api: &str, fun: &Function) -> dart::Tokens {
         (
             generate_type(ret),
             quote! {
-                return $(type_lift_fn(ret, inner));
+                return $(type_lift_fn(ret, convert_rust_buffer(ret, inner)));
             },
         )
     } else {

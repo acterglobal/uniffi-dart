@@ -190,7 +190,7 @@ impl BindingsGenerator {
                     throw callStatus.ref.errorBuf;
                 case CALL_PANIC:
                     if (callStatus.ref.errorBuf.len > 0) {
-                        final message = liftString(api, callStatus.ref.errorBuf);
+                        final message = liftString(api, callStatus.ref.errorBuf.asByteBuffer());
                         calloc.free(callStatus);
                         throw UniffiInternalError.panicked(message);
                     } else {
@@ -229,13 +229,12 @@ impl BindingsGenerator {
                 }
 
                 Uint8List asByteBuffer() {
-                    List<int> buf = [];
+                    Uint8List buf = Uint8List(len);
                     final precast = data.cast<Uint8>();
                     for (int i = 0; i < len; i++) {
-                        int char = precast.elementAt(i).value;
-                        buf.add(char);
+                        buf[i] = precast.elementAt(i).value;
                     }
-                    return Uint8List.fromList(buf);
+                    return buf;
                 }
 
                 @override
@@ -250,15 +249,8 @@ impl BindingsGenerator {
                 }
             }
 
-            String liftString(Api api, RustBuffer input) {
-                final utf8Decoder = utf8.decoder;
-                List<int> buf = [];
-                final precast = input.data.cast<Uint8>();
-                for (int i = 0; i < input.len; i++) {
-                    int char = precast.elementAt(i).value;
-                    buf.add(char);
-                }
-                return utf8Decoder.convert(buf);
+            String liftString(Api api, Uint8List input) {
+                return utf8.decoder.convert(input);
             }
 
             RustBuffer lowerString(Api api, String input) {
@@ -274,6 +266,20 @@ impl BindingsGenerator {
                 bytes.ref.data = frameData;
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
+
+            T? liftOptional<T>(Api api, Uint8List buf, T Function(Api, Uint8List) lifter) {
+                if (buf.isEmpty || buf.first == 0){
+                    return null;
+                }
+                return lifter(api, buf.sublist(5)); // FIXME: why is this five?
+            }
+
+            // RustBuffer lowerOptional<T>(Api api, Uint8List buf, Uint8List? inner) {
+            //     buf.insert(0, inner == null ? 0 : 1)           if (buf.take().next() == 0){
+            //         return null;
+            //     }
+            //     return inner(api, buf);
+            // }
 
             class ForeignBytes extends Struct {
                 @Int32()
