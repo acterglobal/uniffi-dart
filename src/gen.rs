@@ -9,7 +9,6 @@ use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
 mod functions;
-mod primitives;
 mod types;
 mod utils;
 
