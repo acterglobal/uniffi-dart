@@ -8,14 +8,15 @@ Dart frontend for UniFFI bindings
 
 - [x] simple arithmetic
 - [ ] primitives
+  - [x] bool
 - [x] strings
 - [x] rustbuffer
 - [ ] rustfuture
 - [x] rustcallstatus
 - [ ] enums
 - [ ] custom objects
-  - [ ] object functions
-  - [ ] returning custom objects
+  - [x] object functions
+  - [x] returning custom objects
 - [ ] async & futures
 
 ## MSRV: 1.65

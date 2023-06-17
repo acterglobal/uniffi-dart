@@ -7,11 +7,13 @@ pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
     };
     match *ret_type {
         FfiType::UInt32 => quote!(Uint32),
+        FfiType::Int8 => quote!(Uint8),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
         },
-        _ => todo!(),
+        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+        _ => todo!("FfiType::{:?}", ret_type),
     }
 }
 
@@ -21,11 +23,13 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
     };
     match *ret_type {
         FfiType::UInt32 => quote!(int),
+        FfiType::Int8 => quote!(int),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
         },
-        _ => todo!(),
+        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+        _ => todo!("FfiType::{:?}", ret_type),
     }
 }
 
@@ -33,7 +37,9 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
         Type::UInt32 => quote!(int),
         Type::String => quote!(String),
-        _ => todo!()
+        Type::Object(name) => quote!($name),
+        Type::Boolean => quote!(bool),
+        _ => todo!("Type::{:?}", ty)
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
         // AbiType::Bool => quote!(bool),
@@ -65,15 +71,18 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
 pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::UInt32 => inner,
+        Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
-        _ => todo!(),
+        Type::Object(name) => quote!($name.lift(api, $inner)),
+        _ => todo!("lift Type::{:?}", ty),
     }
 }
 
 pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::UInt32 => inner,
+        Type::UInt32 | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
-        _ => todo!(),
+        Type::Object(name) => quote!($name.lower(api, $inner)),
+        _ => todo!("lower Type::{:?}", ty),
     }
 }

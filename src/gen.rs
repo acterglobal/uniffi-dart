@@ -9,6 +9,7 @@ use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
 mod functions;
+mod objects;
 mod types;
 mod utils;
 
@@ -281,6 +282,8 @@ impl BindingsGenerator {
                 external Pointer<Uint8> data;
             }
 
+            $(self.generate_objects())
+
             class Api {
                 final Pointer<T> Function<T extends NativeType>(String symbolName)
                     _lookup;
@@ -327,6 +330,15 @@ impl BindingsGenerator {
         println!("{:?}", self.ci.function_definitions());
         for fun in self.ci.function_definitions() {
             t.append(functions::generate_function("this", fun))
+        }
+        t
+    }
+
+    fn generate_objects(&self) -> dart::Tokens {
+        let mut t = dart::Tokens::new();
+        println!("{:?}", self.ci.object_definitions());
+        for obj in self.ci.object_definitions() {
+            t.append(objects::generate_object(obj))
         }
         t
     }

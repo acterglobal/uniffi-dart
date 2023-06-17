@@ -1,4 +1,20 @@
+use std::sync::Arc;
 use uniffi;
+
+#[derive(uniffi::Object)]
+pub struct World;
+
+#[uniffi::export]
+impl World {
+    fn is_there(&self) -> bool {
+        true
+    }
+}
+
+#[uniffi::export]
+pub fn new_world() -> Arc<World> {
+    Arc::new(World {})
+}
 
 #[uniffi::export]
 pub fn hello_world() -> String {
@@ -13,3 +29,7 @@ pub fn hello(input: String) -> String {
 }
 
 include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
+
+mod uniffi_types {
+    pub use crate::World;
+}

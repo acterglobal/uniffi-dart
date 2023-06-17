@@ -10,4 +10,9 @@ void main() {
   test('hello mikka', () {
     expect(api.hello("mikka"), "hello mikka");
   });
+
+  test("object test", () {
+    final world = api.newWorld();
+    expect(world.isThere(), true);
+  });
 }
