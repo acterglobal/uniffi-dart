@@ -6,7 +6,11 @@ pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
         return quote!(Void)
     };
     match *ret_type {
-        FfiType::UInt32 => quote!(ffi.Uint32),
+        FfiType::UInt32 => quote!(Uint32),
+        FfiType::RustBuffer(ref inner) => match inner {
+            Some(i) => quote!($i),
+            _ => quote!(RustBuffer),
+        },
         _ => todo!(),
     }
 }
@@ -17,6 +21,10 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
     };
     match *ret_type {
         FfiType::UInt32 => quote!(int),
+        FfiType::RustBuffer(ref inner) => match inner {
+            Some(i) => quote!($i),
+            _ => quote!(RustBuffer),
+        },
         _ => todo!(),
     }
 }
@@ -24,6 +32,7 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
 pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
         Type::UInt32 => quote!(int),
+        Type::String => quote!(String),
         _ => todo!()
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -53,9 +62,18 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
     }
 }
 
-pub fn generate_type_lift_fn(ty: &Type) -> Option<dart::Tokens> {
+pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::UInt32 => None,
+        Type::UInt32 => inner,
+        Type::String => quote!(liftString(api, $inner)),
+        _ => todo!(),
+    }
+}
+
+pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    match ty {
+        Type::UInt32 => inner,
+        Type::String => quote!(lowerString(api, $inner)),
         _ => todo!(),
     }
 }

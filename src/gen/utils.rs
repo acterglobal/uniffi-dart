@@ -94,7 +94,7 @@ pub fn ffi_type_label(ffi_type: &FfiType) -> String {
         FfiType::Float32 => "float".into(),
         FfiType::Float64 => "double".into(),
         FfiType::RustArcPtr(_) => "void*_Nonnull".into(),
-        FfiType::RustBuffer(_) => "RustBuffer".into(),
+        FfiType::RustBuffer(_) => "Pointer<RustBuffer>".into(),
         FfiType::ForeignBytes => "ForeignBytes".into(),
         FfiType::ForeignCallback => "ForeignCallback _Nonnull".to_string(),
     }

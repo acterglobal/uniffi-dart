@@ -8,7 +8,10 @@ Dart frontend for UniFFI bindings
 
 - [x] simple arithmetic
 - [ ] primitives
-- [ ] strings
+- [x] strings
+- [x] rustbuffer
+- [ ] rustfuture
+- [x] rustcallstatus
 - [ ] enums
 - [ ] custom objects
   - [ ] object functions
