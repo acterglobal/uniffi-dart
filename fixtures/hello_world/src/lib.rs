@@ -43,8 +43,6 @@ pub fn hello_world() -> String {
 
 #[uniffi::export]
 pub fn hello(input: String) -> String {
-    let len = input.len();
-    println!("received call: {len}");
     format!("hello {input}")
 }
 
