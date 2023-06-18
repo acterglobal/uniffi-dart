@@ -375,9 +375,7 @@ impl BindingGenerator for DartBindingGenerator {
 
         let mut w = fmt::IoWriter::new(file);
 
-        let fmt = fmt::Config::from_lang::<Dart>()
-            .with_indentation(fmt::Indentation::Space(4))
-            .with_newline("\n");
+        let fmt = fmt::Config::from_lang::<Dart>().with_indentation(fmt::Indentation::Space(4));
         let config = dart::Config::default();
 
         tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
