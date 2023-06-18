@@ -1,6 +1,11 @@
 use std::sync::Arc;
 use uniffi;
 
+#[derive(uniffi::Record, Clone)]
+pub struct WorldConfig {
+    inhabitants: u8,
+}
+
 #[derive(uniffi::Object, Clone)]
 pub struct World(Option<String>);
 
@@ -49,5 +54,5 @@ pub fn hello(input: String) -> String {
 include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
 
 mod uniffi_types {
-    pub use crate::World;
+    pub use crate::{World, WorldConfig};
 }

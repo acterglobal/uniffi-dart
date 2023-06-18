@@ -8,8 +8,10 @@ use toml::Value;
 use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
+mod enums;
 mod functions;
 mod objects;
+mod records;
 mod types;
 mod utils;
 
@@ -308,7 +310,9 @@ impl BindingsGenerator {
 
                 external Pointer<Uint8> data;
             }
+            $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
 
+            $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
             $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj)))
 
             class Api {

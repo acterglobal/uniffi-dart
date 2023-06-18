@@ -35,7 +35,7 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
 
 pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
-        Type::UInt32 => quote!(int),
+        Type::UInt8 | Type::UInt32 => quote!(int),
         Type::String => quote!(String),
         Type::Object(name) => quote!($name),
         Type::Boolean => quote!(bool),
