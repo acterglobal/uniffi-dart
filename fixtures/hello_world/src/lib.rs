@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use uniffi;
 
-#[derive(uniffi::Object)]
+#[derive(uniffi::Object, Clone)]
 pub struct World(Option<String>);
 
 #[uniffi::export]
@@ -11,6 +11,18 @@ impl World {
     }
     fn name(&self) -> Option<String> {
         self.0.clone()
+    }
+
+    fn prefixed_name(&self, inp: Option<String>) -> Option<String> {
+        match (inp, &self.0) {
+            (Some(e), Some(f)) => Some(format!("{e} {f}")),
+            _ => None,
+        }
+    }
+    fn set_name(self: Arc<Self>, inp: Option<String>) -> Arc<Self> {
+        let mut me = Arc::try_unwrap(self).unwrap_or_else(|x| (*x).clone());
+        me.0 = inp;
+        Arc::new(me)
     }
 }
 

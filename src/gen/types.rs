@@ -69,10 +69,18 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
     }
 }
 
-pub fn convert_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::Object(_) => inner,
-        Type::String | Type::Optional(_) => quote!($(inner).asByteBuffer()),
+        Type::String | Type::Optional(_) => quote!($(inner).toIntList()),
+        _ => inner,
+    }
+}
+
+pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    match ty {
+        Type::Object(_) => inner,
+        Type::String | Type::Optional(_) => quote!(toRustBuffer(api, $inner)),
         _ => inner,
     }
 }
@@ -95,7 +103,9 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::UInt32 | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object(name) => quote!($name.lower(api, $inner)),
-        Type::Optional(o) => type_lower_fn(o, inner),
+        Type::Optional(o) => {
+            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(o, quote!(v)))))
+        }
         _ => todo!("lower Type::{:?}", ty),
     }
 }

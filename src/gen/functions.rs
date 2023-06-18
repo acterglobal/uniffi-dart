@@ -2,8 +2,8 @@ use genco::prelude::*;
 use uniffi_bindgen::interface::Function;
 
 use super::types::{
-    convert_rust_buffer, generate_ffi_dart_type, generate_ffi_type, generate_type, type_lift_fn,
-    type_lower_fn,
+    convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
+    generate_type, type_lift_fn, type_lower_fn,
 };
 use super::utils::{fn_name, var_name};
 
@@ -16,7 +16,7 @@ pub fn generate_function(api: &str, fun: &Function) -> dart::Tokens {
     let inner = quote! {
     rustCall(api, (res) =>
         _$(&fn_name)(
-            $(for arg in &fun.arguments() => $(type_lower_fn(arg.type_(), quote!($(var_name(arg.name()))))),)
+            $(for arg in &fun.arguments() => $(convert_to_rust_buffer(arg.type_(), type_lower_fn(arg.type_(), quote!($(var_name(arg.name())))))),)
         res)
     )
     };
@@ -25,7 +25,7 @@ pub fn generate_function(api: &str, fun: &Function) -> dart::Tokens {
         (
             generate_type(ret),
             quote! {
-                return $(type_lift_fn(ret, convert_rust_buffer(ret, inner)));
+                return $(type_lift_fn(ret, convert_from_rust_buffer(ret, inner)));
             },
         )
     } else {

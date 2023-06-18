@@ -190,7 +190,7 @@ impl BindingsGenerator {
                     throw callStatus.ref.errorBuf;
                 case CALL_PANIC:
                     if (callStatus.ref.errorBuf.len > 0) {
-                        final message = liftString(api, callStatus.ref.errorBuf.asByteBuffer());
+                        final message = liftString(api, callStatus.ref.errorBuf.toIntList());
                         calloc.free(callStatus);
                         throw UniffiInternalError.panicked(message);
                     } else {
@@ -228,8 +228,8 @@ impl BindingsGenerator {
                     rustCall(api, (res) => free(this, res));
                 }
 
-                Uint8List asByteBuffer() {
-                    Uint8List buf = Uint8List(len);
+                Uint8List toIntList() {
+                    final buf = Uint8List(len);
                     final precast = data.cast<Uint8>();
                     for (int i = 0; i < len; i++) {
                         buf[i] = precast.elementAt(i).value;
@@ -250,16 +250,22 @@ impl BindingsGenerator {
             }
 
             String liftString(Api api, Uint8List input) {
+                // we have a i32 length at the front
                 return utf8.decoder.convert(input);
             }
 
-            RustBuffer lowerString(Api api, String input) {
-                final Uint8List data = utf8.encoder.convert(input);
+            Uint8List lowerString(Api api, String input) {
+                // FIXME: this is too many memcopies!
+                return Utf8Encoder().convert(input);
+
+            }
+
+            RustBuffer toRustBuffer(Api api, Uint8List data) {
                 final length = data.length;
 
                 final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
-                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the image data.
-                pointerList.setAll(0, data);
+                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
+                pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
 
                 final bytes = calloc<ForeignBytes>();
                 bytes.ref.len = length;
@@ -271,15 +277,30 @@ impl BindingsGenerator {
                 if (buf.isEmpty || buf.first == 0){
                     return null;
                 }
-                return lifter(api, buf.sublist(5)); // FIXME: why is this five?
+                return lifter(api, buf.sublist(5));
             }
 
-            // RustBuffer lowerOptional<T>(Api api, Uint8List buf, Uint8List? inner) {
-            //     buf.insert(0, inner == null ? 0 : 1)           if (buf.take().next() == 0){
-            //         return null;
-            //     }
-            //     return inner(api, buf);
-            // }
+            Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
+                if (inp == null) {
+                    final res = Uint8List(1);
+                    res.first = 0;
+                    return res;
+                }
+                // converting the inner
+                final inner = lowerer(api, inp);
+                // preparing the outer
+                final offset = 5;
+                final res = Uint8List(inner.length + offset);
+                // first byte sets the option to as true
+                res.setAll(0, [1]);
+                // then set the inner size
+                final len = Uint32List(1);
+                len.first = inner.length;
+                res.setAll(1, len.buffer.asUint8List().reversed);
+                // then add the actual data
+                res.setAll(offset, inner);
+                return res;
+            }
 
             class ForeignBytes extends Struct {
                 @Int32()

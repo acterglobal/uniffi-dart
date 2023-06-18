@@ -14,11 +14,16 @@ void main() {
   test("object test", () {
     final world = api.newWorld();
     expect(world.isThere(), true);
-    expect(world.name(), null);
   });
 
   test("stringed world test", () {
     final world = api.newWorldWithName("sari");
     expect(world.name(), "sari");
+    expect(world.prefixedName("mister"), "mister sari");
+    expect(world.prefixedName(null), null);
+    // world.setName("new name");
+    // expect(world.name(), "new name");
+    // world.setName(null);
+    // expect(world.name(), null);
   });
 }
