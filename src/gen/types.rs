@@ -47,8 +47,8 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
 
 pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
-        Type::UInt8 
-        | Type::UInt32 
+        Type::UInt8
+        | Type::UInt32
         | Type::Int8
         | Type::Int16
         | Type::Int64
@@ -108,7 +108,7 @@ pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
 
 pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        | Type::Int8
+        Type::Int8
         | Type::UInt8
         | Type::Int16
         | Type::UInt16
@@ -139,7 +139,7 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Int64
         | Type::UInt64
         | Type::Float32
-        | Type::Float64 
+        | Type::Float64
         | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object(name) => quote!($name.lower(api, $inner)),
