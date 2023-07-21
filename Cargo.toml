@@ -50,7 +50,7 @@ camino-tempfile = { version = "1.0.2", optional = true }
 glob = { version = "0.3.1", optional = true}
 
 [dependencies.proc-macro2]
-version = "=1.0.55" # fix issue 'Your compiler does not support spans which is required by genco'
+version = "1.0.66"
 
 [workspace]
 
