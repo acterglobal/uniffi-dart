@@ -11,6 +11,7 @@ use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterfac
 mod enums;
 mod functions;
 mod objects;
+mod primitives;
 mod records;
 mod types;
 mod utils;
