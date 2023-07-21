@@ -6,8 +6,14 @@ pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
         return quote!(Void)
     };
     match *ret_type {
+        FfiType::UInt8 => quote!(Uint8),
+        FfiType::UInt16 => quote!(Uint16),
         FfiType::UInt32 => quote!(Uint32),
-        FfiType::Int8 => quote!(Uint8),
+        FfiType::UInt64 => quote!(Uint64),
+        FfiType::Int8 => quote!(Int8),
+        FfiType::Int16 => quote!(Int16),
+        FfiType::Int32 => quote!(Int32),
+        FfiType::Int64 => quote!(Int64),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
@@ -22,8 +28,14 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
         return quote!(void)
     };
     match *ret_type {
+        FfiType::UInt8 => quote!(int),
+        FfiType::UInt16 => quote!(int),
         FfiType::UInt32 => quote!(int),
+        FfiType::UInt64 => quote!(int),
         FfiType::Int8 => quote!(int),
+        FfiType::Int16 => quote!(int),
+        FfiType::Int32 => quote!(int),
+        FfiType::Int64 => quote!(int),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
@@ -35,7 +47,16 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
 
 pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
-        Type::UInt8 | Type::UInt32 => quote!(int),
+        Type::UInt8 
+        | Type::UInt32 
+        | Type::Int8
+        | Type::Int16
+        | Type::Int64
+        | Type::UInt16
+        | Type::Int32
+        | Type::UInt64
+        | Type::Float32
+        | Type::Float64 => quote!(int),
         Type::String => quote!(String),
         Type::Object(name) => quote!($name),
         Type::Boolean => quote!(bool),
@@ -87,7 +108,16 @@ pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
 
 pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::UInt32 => inner,
+        | Type::Int8
+        | Type::UInt8
+        | Type::Int16
+        | Type::UInt16
+        | Type::Int32
+        | Type::Int64
+        | Type::UInt32
+        | Type::UInt64
+        | Type::Float32
+        | Type::Float64 => inner,
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object(name) => quote!($name.lift(api, $inner)),
@@ -100,7 +130,17 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
 
 pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::UInt32 | Type::Boolean => inner,
+        Type::UInt32
+        | Type::Int8
+        | Type::UInt8
+        | Type::Int16
+        | Type::UInt16
+        | Type::Int32
+        | Type::Int64
+        | Type::UInt64
+        | Type::Float32
+        | Type::Float64 
+        | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object(name) => quote!($name.lower(api, $inner)),
         Type::Optional(o) => {
