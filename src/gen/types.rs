@@ -58,9 +58,9 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         | Type::Float32
         | Type::Float64 => quote!(int),
         Type::String => quote!(String),
-        Type::Object(name) => quote!($name),
+        Type::Object{name, ..} => quote!($name),
         Type::Boolean => quote!(bool),
-        Type::Optional(inner) => quote!($(generate_type(inner))?),
+        Type::Optional{ inner_type} => quote!($(generate_type(inner_type))?),
         _ => todo!("Type::{:?}", ty)
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -92,16 +92,16 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
 
 pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::Object(_) => inner,
-        Type::String | Type::Optional(_) => quote!($(inner).toIntList()),
+        Type::Object { .. } => inner,
+        Type::String | Type::Optional { .. } => quote!($(inner).toIntList()),
         _ => inner,
     }
 }
 
 pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
-        Type::Object(_) => inner,
-        Type::String | Type::Optional(_) => quote!(toRustBuffer(api, $inner)),
+        Type::Object { .. } => inner,
+        Type::String | Type::Optional { .. } => quote!(toRustBuffer(api, $inner)),
         _ => inner,
     }
 }
@@ -120,9 +120,11 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Float64 => inner,
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
-        Type::Object(name) => quote!($name.lift(api, $inner)),
-        Type::Optional(o) => {
-            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
+        Type::Object { name, .. } => quote!($name.lift(api, $inner)),
+        Type::Optional { inner_type } => {
+            // TODO!: Fix optional type generation!
+            todo!("Lift optional not implimented");
+            //quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
         }
         _ => todo!("lift Type::{:?}", ty),
     }
@@ -142,9 +144,11 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Float64
         | Type::Boolean => inner,
         Type::String => quote!(lowerString(api, $inner)),
-        Type::Object(name) => quote!($name.lower(api, $inner)),
-        Type::Optional(o) => {
-            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(o, quote!(v)))))
+        Type::Object { name, .. } => quote!($name.lower(api, $inner)),
+        Type::Optional { inner_type } => {
+            // TODO!: Fix optional type generation!
+            todo!("Lift optional not implimented");
+            //quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(o, quote!(v)))))
         }
         _ => todo!("lower Type::{:?}", ty),
     }

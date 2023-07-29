@@ -1,5 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::interface::{Method, Record};
+use uniffi_bindgen::interface::{AsType, Method, Record};
 
 use super::types::{
     convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
@@ -11,7 +11,7 @@ pub fn generate_record(obj: &Record) -> dart::Tokens {
     let cls_name = &class_name(obj.name());
     quote! {
         class $cls_name {
-            $(for f in obj.fields() => final $(generate_type(f.type_())) $(var_name(f.name()));)
+            $(for f in obj.fields() => final $(generate_type(&f.as_type())) $(var_name(f.name()));)
 
             $(cls_name)._($(for f in obj.fields() => this.$(var_name(f.name())), ));
 
