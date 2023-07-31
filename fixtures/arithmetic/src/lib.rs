@@ -10,10 +10,15 @@ pub fn multiply(left: u32, right: u32) -> u32 {
     left * right
 }
 
-// #[uniffi::export]
-// pub fn devide(left: u32, right: u32) -> Option<u32> {
-//     left.checked_div(right)
-// }
+#[uniffi::export]
+pub fn devide(left: u32, right: u32) -> u32 {
+    left / right
+}
+
+#[uniffi::export]
+pub fn devide_checked(left: u32, right: u32) -> Option<u32> {
+    left.checked_div(right)
+}
 
 #[uniffi::export]
 pub fn add_u8(left: u8, right: u8) -> u8 {
