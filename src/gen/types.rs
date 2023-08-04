@@ -61,6 +61,9 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         Type::Object{name, ..} => quote!($name),
         Type::Boolean => quote!(bool),
         Type::Optional{ inner_type} => quote!($(generate_type(inner_type))?),
+        Type::Sequence { inner_type } => quote!(List<$(generate_type(inner_type))>),
+        Type::Enum { name,..  } => quote!($name),
+        Type::Record { name,..  } => quote!($name),
         _ => todo!("Type::{:?}", ty)
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -123,8 +126,8 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Object { name, .. } => quote!($name.lift(api, $inner)),
         Type::Optional { inner_type } => {
             // TODO!: Fix optional type generation!
-            todo!("Lift optional not implimented");
-            //quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
+            //todo!("Lift optional not implimented");
+            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
         }
         _ => todo!("lift Type::{:?}", ty),
     }
