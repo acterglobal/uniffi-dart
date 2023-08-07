@@ -14,6 +14,8 @@ pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
         FfiType::Int16 => quote!(Int16),
         FfiType::Int32 => quote!(Int32),
         FfiType::Int64 => quote!(Int64),
+        FfiType::Float32 => quote!(Float),
+        FfiType::Float64 => quote!(Double),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
@@ -36,6 +38,7 @@ pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
         FfiType::Int16 => quote!(int),
         FfiType::Int32 => quote!(int),
         FfiType::Int64 => quote!(int),
+        FfiType::Float32 | FfiType::Float64 => quote!(double),
         FfiType::RustBuffer(ref inner) => match inner {
             Some(i) => quote!($i),
             _ => quote!(RustBuffer),
@@ -54,9 +57,8 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         | Type::Int64
         | Type::UInt16
         | Type::Int32
-        | Type::UInt64
-        | Type::Float32
-        | Type::Float64 => quote!(int),
+        | Type::UInt64 => quote!(int),
+        Type::Float32 | Type::Float64 => quote!(double),
         Type::String => quote!(String),
         Type::Object{name, ..} => quote!($name),
         Type::Boolean => quote!(bool),
@@ -133,7 +135,12 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
 // different offset depending on the type.
 fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
     match **inner_type {
+        Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt8(1))),
+        Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt16(1))),
         Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt32(1))),
+        Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt64(1))),
+        Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getFloat32(1))),
+        Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getFloat64(1))),
         Type::String => quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
         _ => todo!("lift Option inner type: Type::{:?}", inner_type)
     }

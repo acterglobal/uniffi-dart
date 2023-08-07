@@ -40,4 +40,10 @@ void main() {
   test('i64', () {
     expect(api.addI64(2, 2), 4);
   });
+  test('f32', () {
+    expect(api.addF32(2.0, 2.0), 4.0);
+  });
+  test('f64', () {
+    expect(api.addF64(2.0, 2.9), 4.9);
+  });
 }
