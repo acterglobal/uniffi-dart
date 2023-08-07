@@ -1,12 +1,13 @@
+use std::collections::HashMap;
+
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
-use toml::Value;
-use uniffi_bindgen::MergeWith;
-use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
+// use uniffi_bindgen::MergeWith;
+use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
 mod enums;
 mod functions;
@@ -22,24 +23,24 @@ pub struct Config {
     cdylib_name: Option<String>,
 }
 
-impl MergeWith for Config {
-    fn merge_with(&self, other: &Self) -> Self {
-        let package_name = if other.package_name.is_some() {
-            other.package_name.clone()
-        } else {
-            self.package_name.clone()
-        };
-        let cdylib_name = if other.cdylib_name.is_some() {
-            other.cdylib_name.clone()
-        } else {
-            self.cdylib_name.clone()
-        };
-        Self {
-            package_name,
-            cdylib_name,
-        }
-    }
-}
+// impl MergeWith for Config {
+//     fn merge_with(&self, other: &Self) -> Self {
+//         let package_name = if other.package_name.is_some() {
+//             other.package_name.clone()
+//         } else {
+//             self.package_name.clone()
+//         };
+//         let cdylib_name = if other.cdylib_name.is_some() {
+//             other.cdylib_name.clone()
+//         } else {
+//             self.cdylib_name.clone()
+//         };
+//         Self {
+//             package_name,
+//             cdylib_name,
+//         }
+//     }
+// }
 
 impl From<&ComponentInterface> for Config {
     fn from(ci: &ComponentInterface) -> Self {
@@ -68,28 +69,42 @@ impl Config {
     }
 }
 
-impl BindingGeneratorConfig for Config {
-    fn get_entry_from_bindings_table(_bindings: &Value) -> Option<Value> {
-        if let Some(table) = _bindings.as_table() {
-            table.get("dart").map(|v| v.clone())
-        } else {
-            None
-        }
+impl BindingsConfig for Config {
+    // fn get_entry_from_bindings_table(_bindings: &Value) -> Option<Value> {
+    //     if let Some(table) = _bindings.as_table() {
+    //         table.get("dart").map(|v| v.clone())
+    //     } else {
+    //         None
+    //     }
+    // }
+
+    // fn update_from_ci(ci: &ComponentInterface) -> Vec<(String, Value)> {
+    //     vec![
+    //         (
+    //             "package_name".to_string(),
+    //             Value::String(ci.namespace().to_string()),
+    //         ),
+    //         (
+    //             "cdylib_name".to_string(),
+    //             Value::String(ci.namespace().to_string()),
+    //         ),
+    //     ]
+    // }
+    const TOML_KEY: &'static str = "dart";
+
+    fn update_from_ci(&mut self, ci: &ComponentInterface) {
+        self.cdylib_name
+            .get_or_insert_with(|| format!("uniffi_{}", ci.namespace()));
     }
 
-    fn get_config_defaults(ci: &ComponentInterface) -> Vec<(String, Value)> {
-        vec![
-            (
-                "package_name".to_string(),
-                Value::String(ci.namespace().to_string()),
-            ),
-            (
-                "cdylib_name".to_string(),
-                Value::String(ci.namespace().to_string()),
-            ),
-        ]
+    fn update_from_cdylib_name(&mut self, cdylib_name: &str) {
+        self.cdylib_name
+            .get_or_insert_with(|| cdylib_name.to_string());
     }
+
+    fn update_from_dependency_configs(&mut self, _config_map: HashMap<&str, &Self>) {}
 }
+
 pub struct BindingsGenerator {
     ci: ComponentInterface,
     config: Config,
@@ -273,11 +288,11 @@ impl BindingsGenerator {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
-            T? liftOptional<T>(Api api, Uint8List buf, T Function(Api, Uint8List) lifter) {
+            T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
                 if (buf.isEmpty || buf.first == 0){
                     return null;
                 }
-                return lifter(api, buf.sublist(5));
+                return lifter(api, buf);
             }
 
             Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
@@ -403,9 +418,10 @@ fn get_config(
         Some(path) => {
             let contents = std::fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read config file from {path}"))?;
-            let loaded_config: Config = toml::de::from_str(&contents)
+            let mut loaded_config: Config = toml::de::from_str(&contents)
                 .with_context(|| format!("Failed to generate config from file {path}"))?;
-            Ok(loaded_config.merge_with(&default_config))
+            loaded_config.update_from_ci(&ci);
+            Ok(loaded_config)
         }
         None => Ok(default_config),
     }

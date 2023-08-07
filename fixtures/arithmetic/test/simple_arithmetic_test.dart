@@ -9,6 +9,15 @@ void main() {
   test('2 * 8 = 16', () {
     expect(api.multiply(2, 8), 16);
   });
+  test('2 / 8 = 0', () {
+    expect(api.devideChecked(2, 8), 0);
+  });
+  test('8 / 0 = null', () {
+    expect(api.devideChecked(8, 0), null);
+  });
+  test('8 / 2 = 4', () {
+    expect(api.devide(8, 2), 4);
+  });
   test('u8', () {
     expect(api.addU8(2, 2), 4);
   });
@@ -30,5 +39,11 @@ void main() {
   });
   test('i64', () {
     expect(api.addI64(2, 2), 4);
+  });
+  test('f32', () {
+    expect(api.addF32(2.0, 2.0), 4.0);
+  });
+  test('f64', () {
+    expect(api.addF64(2.0, 2.9), 4.9);
   });
 }

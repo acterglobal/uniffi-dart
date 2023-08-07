@@ -1,5 +1,5 @@
 [package]
-name = "hello_world"
+name = "large_enum"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,9 +7,8 @@ publish = false
 
 
 [lib]
-name = "hello_world"
+name = "large_enum"
 crate-type = ["lib", "cdylib"]
-
 
 [dependencies]
 uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "8565b7f941e7967778efd39c5ab27551dfa23ec6", features = [

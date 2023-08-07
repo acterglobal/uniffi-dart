@@ -1,5 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::interface::{Method, Object};
+use uniffi_bindgen::interface::{AsType, Method, Object};
 
 use super::types::{
     convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
@@ -38,13 +38,13 @@ pub fn generate_method(fun: &Method) -> dart::Tokens {
     let api = "_api";
     let ffi = fun.ffi_func();
     let fn_name = fn_name(fun.name());
-    let args = quote!($(for arg in &fun.arguments() => $(generate_type(arg.type_())) $(var_name(arg.name())),));
+    let args = quote!($(for arg in &fun.arguments() => $(generate_type(&arg.as_type())) $(var_name(arg.name())),));
     let ff_name = ffi.name();
     let inner = quote! {
     rustCall(api, (res) =>
         _$(&fn_name)(
             _ptr,
-            $(for arg in &fun.arguments() => $(convert_to_rust_buffer(arg.type_(), type_lower_fn(arg.type_(), quote!($(var_name(arg.name())))))),)
+            $(for arg in &fun.arguments() => $(convert_to_rust_buffer(&arg.as_type(), type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name())))))),)
         res)
     )
     };
