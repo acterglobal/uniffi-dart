@@ -124,12 +124,18 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Optional { inner_type } => {
-            // TODO!: Fix optional type generation!
-            //todo!("Lift optional not implimented");
-            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(o, quote!(v)))))
-        }
+        Type::Optional { inner_type } => type_lift_optional_inner_type(inner_type, inner),
         _ => todo!("lift Type::{:?}", ty),
+    }
+}
+
+// The usefull part of the data contained inside optional may have a
+// different offset depending on the type.
+fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
+    match **inner_type {
+        Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt32(1))),
+        Type::String => quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
+        _ => todo!("lift Option inner type: Type::{:?}", inner_type)
     }
 }
 
@@ -149,9 +155,8 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
         Type::Optional { inner_type } => {
-            // TODO!: Fix optional type generation!
-            todo!("Lift optional not implimented");
-            //quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(o, quote!(v)))))
+            // TODO!: May still need to fix this. lowerOptional assumes offset 5 which may not be true for all types excpet strings
+            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v)))))
         }
         _ => todo!("lower Type::{:?}", ty),
     }

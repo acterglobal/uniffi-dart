@@ -11,8 +11,8 @@ pub fn multiply(left: u32, right: u32) -> u32 {
 }
 
 #[uniffi::export]
-pub fn devide(left: u32, right: u32) -> u32 {
-    left / right
+pub fn devide(left: u32, right: u32) -> Option<u32> {
+   Some(left / right)
 }
 
 #[uniffi::export]

@@ -288,11 +288,11 @@ impl BindingsGenerator {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
-            T? liftOptional<T>(Api api, Uint8List buf, T Function(Api, Uint8List) lifter) {
+            T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
                 if (buf.isEmpty || buf.first == 0){
                     return null;
                 }
-                return lifter(api, buf.sublist(5));
+                return lifter(api, buf);
             }
 
             Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {

@@ -9,11 +9,14 @@ void main() {
   test('2 * 8 = 16', () {
     expect(api.multiply(2, 8), 16);
   });
-  test('8 * 2 = 4', () {
-    expect(api.devide(8, 2), 4);
+  test('2 / 8 = 0', () {
+    expect(api.devideChecked(2, 8), 0);
   });
-  test('2 / 8 = null', () {
-    expect(api.devideChecked(2, 8), null);
+  test('8 / 0 = null', () {
+    expect(api.devideChecked(8, 0), null);
+  });
+  test('8 / 2 = 4', () {
+    expect(api.devide(8, 2), 4);
   });
   test('u8', () {
     expect(api.addU8(2, 2), 4);
