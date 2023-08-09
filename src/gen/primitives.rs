@@ -1,6 +1,7 @@
 use paste::paste;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{Radix, Type};
+use genco::prelude::*;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -40,6 +41,41 @@ fn render_literal(literal: &Literal) -> String {
         Literal::Float(string, type_) => typed_number(type_, string.clone()),
 
         _ => unreachable!("Literal"),
+    }
+}
+
+pub fn generate_primitives_lifters() -> dart::Tokens {
+    quote!{
+        //TODO!: Add booleans!
+        int? liftInt8OrUint8(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getInt8(offset);
+        }
+
+        int? liftInt16OrUint16(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getInt16(offset);
+        }
+
+        int? liftInt32OrUint32(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getInt32(offset);
+        }
+
+        int? liftInt64OrUint64(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getInt64(offset);
+        }  
+
+        double? liftFloat32(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getFloat32(offset);
+        }
+        
+        double? liftFloat64(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : buf.buffer.asByteData().getFloat64(offset);
+        }
+    }
+}
+
+pub fn generate_primitives_lowerers() -> dart::Tokens {
+    quote! {
+        // TODO: Impliment lowerers for primitives
     }
 }
 

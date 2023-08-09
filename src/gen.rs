@@ -269,11 +269,15 @@ impl BindingsGenerator {
                 return utf8.decoder.convert(input);
             }
 
+            $(primitives::generate_primitives_lifters())
+           
             Uint8List lowerString(Api api, String input) {
                 // FIXME: this is too many memcopies!
                 return Utf8Encoder().convert(input);
 
             }
+
+            $(primitives::generate_primitives_lowerers())
 
             RustBuffer toRustBuffer(Api api, Uint8List data) {
                 final length = data.length;
