@@ -264,7 +264,9 @@ impl BindingsGenerator {
                 }
             }
 
-            String liftString(Api api, Uint8List input) {
+            $(primitives::generate_wrapper_lifters())
+
+            String liftString(Api api, Uint8List input) {        
                 // we have a i32 length at the front
                 return utf8.decoder.convert(input);
             }
@@ -274,7 +276,6 @@ impl BindingsGenerator {
             Uint8List lowerString(Api api, String input) {
                 // FIXME: this is too many memcopies!
                 return Utf8Encoder().convert(input);
-
             }
 
             $(primitives::generate_primitives_lowerers())

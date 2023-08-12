@@ -1,5 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::interface::{AsType, Enum};
+use uniffi_bindgen::interface::{AsType, Type, Enum, Variant, Field};
 
 use super::types::{
     convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
@@ -42,15 +42,41 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
 
                         $(class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
 
-                        factory $(class_name(variant.name()))$cls_name.lift(Api api, RustBuffer buffer) {
-                            // TODO: Impliment factory builders for each variant
-                            
-                            throw UniffiInternalError(6, "Not implimented");
-                        }
+                        $(generate_variant_factory(cls_name, variant))
                     }
             )
         }
-
-        //TODO!: Generate the lifting and lowering code for each variant
+        //TODO!: Generate the lowering code for each variant
     }
 }
+
+fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Tokens {
+    //
+    fn generate_variant_field_lifter(field: &Field, uint8_list_var: dart::Tokens, results_list: dart::Tokens, index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
+        match field.as_type() {
+             Type::Int8 | Type::UInt8 => quote!($results_list.insert($index, liftInt8OrUint8($uint8_list_var, $offset_var)); $offset_var += 1; ),
+             Type::Int16 | Type::UInt16 => quote!($results_list.insert($index, liftInt16OrUint16($uint8_list_var, $offset_var)); $offset_var += 2; ),
+             Type::Int32 | Type::UInt32 => quote!($results_list.insert($index, liftInt32OrUint32($uint8_list_var, $offset_var)); $offset_var += 4; ),
+             Type::Int64 | Type::UInt64 => quote!($results_list.insert($index, liftInt64OrUint64($uint8_list_var, $offset_var)); $offset_var += 8; ),
+             Type::Float32 => quote!($results_list.insert($index, liftFloat32($uint8_list_var, $offset_var); $offset_var += 4); ),
+             Type::Float64 => quote!($results_list.insert($index, liftFloat64($uint8_list_var, $offset_var); $offset_var += 8); ),
+             Type::String => quote!(final v = liftVaraibleLength($uint8_list_var, (buf) => liftString(api, buf), $offset_var);  $results_list.insert($index, v.data); $offset_var += v.offset;),
+             _ => todo!("offset/size of Type::{:?}", field.as_type())
+         }
+    }
+
+    quote! {
+        factory $(class_name(variant.name()))$cls_name.lift(Api api, RustBuffer buffer) {
+            Uint8List input = buffer.toIntList();
+            
+            int offset = 4; // Start at 4, because the first 32bits are the enum index
+            List<dynamic> results = [];
+
+            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lifter(field, quote!(input), quote!(results), index, &quote!(offset), )))
+
+            return $(class_name(variant.name()))$cls_name($( for (index, _) in variant.fields().iter().enumerate() => results[$(index)], ));
+        }
+    }
+}
+
+// TODO!: Generate the lowring code

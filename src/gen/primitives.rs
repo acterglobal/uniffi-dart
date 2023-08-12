@@ -73,6 +73,25 @@ pub fn generate_primitives_lifters() -> dart::Tokens {
     }
 }
 
+pub fn generate_wrapper_lifters() -> dart::Tokens {
+    quote! {
+        class DataOffset<T> {
+            final T? data;
+            final int offset;
+            DataOffset(this.data, this.offset);
+        }
+        
+        // Todo!: Make this guy handle varaible strings
+        DataOffset<T> liftVaraibleLength<T>(
+            Uint8List buf, T? Function(Uint8List) lifter,
+            [int offset = 1]) {
+            final length = buf.buffer.asByteData().getInt32(offset); // the length in Uint8
+            final liftedData = lifter(buf.sublist(offset));
+            return DataOffset(liftedData, length);
+        }
+    }
+}
+
 pub fn generate_primitives_lowerers() -> dart::Tokens {
     quote! {
         // TODO: Impliment lowerers for primitives
