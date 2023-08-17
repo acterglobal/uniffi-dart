@@ -157,8 +157,8 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Int64
         | Type::UInt64
         | Type::Float32
-        | Type::Float64
-        | Type::Boolean => inner,
+        | Type::Float64 => inner,
+        | Type::Boolean => quote!((($inner) ? 1 : 0)),
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
         Type::Optional { inner_type } => {

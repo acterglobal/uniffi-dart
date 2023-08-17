@@ -58,8 +58,9 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
              Type::Int16 | Type::UInt16 => quote!($results_list.insert($index, liftInt16OrUint16($uint8_list_var, $offset_var)); $offset_var += 2; ),
              Type::Int32 | Type::UInt32 => quote!($results_list.insert($index, liftInt32OrUint32($uint8_list_var, $offset_var)); $offset_var += 4; ),
              Type::Int64 | Type::UInt64 => quote!($results_list.insert($index, liftInt64OrUint64($uint8_list_var, $offset_var)); $offset_var += 8; ),
-             Type::Float32 => quote!($results_list.insert($index, liftFloat32($uint8_list_var, $offset_var); $offset_var += 4); ),
-             Type::Float64 => quote!($results_list.insert($index, liftFloat64($uint8_list_var, $offset_var); $offset_var += 8); ),
+             Type::Float32 => quote!($results_list.insert($index, liftFloat32($uint8_list_var, $offset_var)); $offset_var += 4; ),
+             Type::Float64 => quote!($results_list.insert($index, liftFloat64($uint8_list_var, $offset_var)); $offset_var += 1;  ) ,
+             Type::Boolean => quote!($results_list.insert($index, liftBoolean($uint8_list_var, $offset_var)); $offset_var += 1;  ),
              Type::String => quote!(final v = liftVaraibleLength($uint8_list_var, (buf) => liftString(api, buf), $offset_var);  $results_list.insert($index, v.data); $offset_var += v.offset;),
              _ => todo!("offset/size of Type::{:?}", field.as_type())
          }

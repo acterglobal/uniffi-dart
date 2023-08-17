@@ -46,7 +46,6 @@ fn render_literal(literal: &Literal) -> String {
 
 pub fn generate_primitives_lifters() -> dart::Tokens {
     quote!{
-        //TODO!: Add booleans!
         int? liftInt8OrUint8(Uint8List buf, [int offset = 1]) {
             return buf.isEmpty ? null : buf.buffer.asByteData().getInt8(offset);
         }
@@ -70,6 +69,10 @@ pub fn generate_primitives_lifters() -> dart::Tokens {
         double? liftFloat64(Uint8List buf, [int offset = 1]) {
             return buf.isEmpty ? null : buf.buffer.asByteData().getFloat64(offset);
         }
+
+        bool? liftBoolean(Uint8List buf, [int offset = 1]) {
+            return buf.isEmpty ? null : (buf.sublist(offset)[0] == 1 ? true : false);
+        }
     }
 }
 
@@ -86,7 +89,7 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             Uint8List buf, T? Function(Uint8List) lifter,
             [int offset = 1]) {
             final length = buf.buffer.asByteData().getInt32(offset); // the length in Uint8
-            final liftedData = lifter(buf.sublist(offset));
+            final liftedData = lifter(buf.sublist(offset + 4));
             return DataOffset(liftedData, length);
         }
     }
