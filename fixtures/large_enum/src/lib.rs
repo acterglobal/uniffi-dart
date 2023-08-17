@@ -1,128 +1,76 @@
+use uniffi;
 use uniffi::{Enum, Record};
 
-#[derive(Clone, Debug, Enum)]
-pub enum Instruction {
-    CallMethod1 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod2 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod3 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod4 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod5 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod6 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod10 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod11 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod12 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod13 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod14 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod15 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod16 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod17 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod18 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod19 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod20 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod21 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod22 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod23 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod24 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod25 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod26 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod27 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
+#[uniffi::export]
+pub fn new_u64_value(value: u64) -> Value {
+    Value::U64 { value }
 }
+
+#[uniffi::export]
+pub fn new_i64_value(value: i64) -> Value {
+    Value::I64 { value }
+}
+
+#[uniffi::export]
+pub fn new_u32_value(value: u32) -> Value {
+    Value::U32 { value }
+}
+
+#[uniffi::export]
+pub fn new_i32_value(value: i32) -> Value {
+    Value::I32 { value }
+}
+
+#[uniffi::export]
+pub fn new_string_value(value: String) -> Value {
+    Value::String { value }
+}
+
+#[uniffi::export]
+pub fn new_bool_value(value: bool) -> Value {
+    Value::Bool { value }
+}
+
+// #[uniffi::export]
+// pub fn new_i64_value(value: i64) -> Value {
+//     Value::I64 { value }
+// }
+
+// #[uniffi::export]
+// pub fn new_u64_value(value: u64) -> Value {
+//     Value::U64 { value }
+// }
+
+// #[uniffi::export]
+// pub fn new_i64_value(value: i64) -> Value {
+//     Value::I64 { value }
+// }
+// #[uniffi::export]
+// pub fn new_u64_value(value: u64) -> Value {
+//     Value::U64 { value }
+// }
+
+// #[uniffi::export]
+// pub fn new_i64_value(value: i64) -> Value {
+//     Value::I64 { value }
+// }
+
+// #[uniffi::export]
+// pub fn take_value(value: Value)  {
+//     match value {
+//         Value::String { value } => todo!(),
+//         Value::Bool { value } => todo!(),
+//         Value::U8 { value } => todo!(),
+//         Value::U16 { value } => todo!(),
+//         Value::U32 { value } => todo!(),
+//         Value::U64 { value } => todo!(),
+//         Value::I8 { value } => todo!(),
+//         Value::I16 { value } => todo!(),
+//         Value::I32 { value } => todo!(),
+//         Value::I64 { value } => todo!(),
+//        // Value::Enum { discriminator, fields } => todo!(),
+//     }
+// }
 
 #[derive(Debug, Clone, Enum)]
 pub enum Value {
@@ -132,7 +80,6 @@ pub enum Value {
     Bool {
         value: bool,
     },
-
     U8 {
         value: u8,
     },
@@ -158,25 +105,25 @@ pub enum Value {
     I64 {
         value: i64,
     },
-    Enum {
-        discriminator: u8,
-        fields: Vec<Value>,
-    },
-    NonHomogenousCollection {
-        elements: Vec<Value>,
-    },
-    HomogenousCollection {
-        elements: Vec<Value>,
-    },
-    Map {
-        entries: Vec<MapEntry>,
-    },
-    PublicKey {
-        value: Vec<u8>,
-    },
-    Signature {
-        value: Vec<u8>,
-    },
+    // Enum {
+    //     discriminator: u8,
+    //     fields: Vec<Value>,
+    // },
+    // NonHomogenousCollection {
+    //     elements: Vec<Value>,
+    // },
+    // HomogenousCollection {
+    //     elements: Vec<Value>,
+    // },
+    // Map {
+    //     entries: Vec<MapEntry>,
+    // },
+    // PublicKey {
+    //     value: Vec<u8>,
+    // },
+    // Signature {
+    //     value: Vec<u8>,
+    // },
 }
 
 #[derive(Clone, Debug, Record)]
