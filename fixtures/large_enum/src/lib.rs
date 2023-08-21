@@ -31,47 +31,24 @@ pub fn new_bool_value(value: bool) -> Value {
     Value::Bool { value }
 }
 
-// #[uniffi::export]
-// pub fn new_i64_value(value: i64) -> Value {
-//     Value::I64 { value }
-// }
+#[uniffi::export]
+pub fn take_value(value: Value) -> String {
+    match value {
+        Value::String { value } => format!("{}",value),
+        Value::Bool { value } => format!("{}",value),
+        Value::U8 { value } => format!("{}",value),
+        Value::U16 { value } => format!("{}",value),
+        Value::U32 { value } => format!("{}",value),
+        Value::U64 { value } => format!("{}",value),
+        Value::I8 { value } => format!("{}",value),
+        Value::I16 { value } => format!("{}",value),
+        Value::I32 { value } => format!("{}",value),
+        Value::I64 { value }  => format!("{}",value),
+       // Value::Enum { discriminator, fields } => format!("{}",value),
+    }
+}
 
-// #[uniffi::export]
-// pub fn new_u64_value(value: u64) -> Value {
-//     Value::U64 { value }
-// }
-
-// #[uniffi::export]
-// pub fn new_i64_value(value: i64) -> Value {
-//     Value::I64 { value }
-// }
-// #[uniffi::export]
-// pub fn new_u64_value(value: u64) -> Value {
-//     Value::U64 { value }
-// }
-
-// #[uniffi::export]
-// pub fn new_i64_value(value: i64) -> Value {
-//     Value::I64 { value }
-// }
-
-// #[uniffi::export]
-// pub fn take_value(value: Value)  {
-//     match value {
-//         Value::String { value } => todo!(),
-//         Value::Bool { value } => todo!(),
-//         Value::U8 { value } => todo!(),
-//         Value::U16 { value } => todo!(),
-//         Value::U32 { value } => todo!(),
-//         Value::U64 { value } => todo!(),
-//         Value::I8 { value } => todo!(),
-//         Value::I16 { value } => todo!(),
-//         Value::I32 { value } => todo!(),
-//         Value::I64 { value } => todo!(),
-//        // Value::Enum { discriminator, fields } => todo!(),
-//     }
-// }
-
+// TODO: Add floats and Collections (Maps, Vector, ...)
 #[derive(Debug, Clone, Enum)]
 pub enum Value {
     String {
