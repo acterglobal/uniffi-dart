@@ -46,14 +46,14 @@ void main() {
     expect(boolValue.value, inner_bool);
   });
 
-  // test('Passing Down/Lowering Enums', () {
-  //   // Can we pass the value down to rust correctly?
-  //   expect(api.takeValue(u32Value), inner_value2.toString());
-  //   expect(api.takeValue(i64Value), inner_value.toString());
-  //   expect(api.takeValue(u64Value), inner_value.toString());
-  //   expect(api.takeValue(i32Value), inner_value2.toString());
+  test('Passing Down/Lowering Enums', () {
+    // Can we pass the value down to rust correctly?
+    expect(api.takeValue(u32Value), inner_value2.toString());
+    expect(api.takeValue(i64Value), inner_value.toString());
+    expect(api.takeValue(u64Value), inner_value.toString());
+    expect(api.takeValue(i32Value), inner_value2.toString());
 
-  //   expect(api.takeValue(stringValue), inner_value.toString());
-  //   expect(api.takeValue(boolValue), inner_bool.toString());
-  // });
+    expect(api.takeValue(stringValue), inner_value.toString());
+    expect(api.takeValue(boolValue), inner_bool.toString());
+  });
 }
