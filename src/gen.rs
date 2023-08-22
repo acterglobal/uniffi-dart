@@ -264,8 +264,6 @@ impl BindingsGenerator {
                 }
             }
 
-            $(primitives::generate_wrapper_lifters())
-
             String liftString(Api api, Uint8List input) {        
                 // we have a i32 length at the front
                 return utf8.decoder.convert(input);
@@ -299,6 +297,8 @@ impl BindingsGenerator {
                 }
                 return lifter(api, buf);
             }
+
+            $(primitives::generate_wrapper_lifters())
 
             Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
                 if (inp == null) {
