@@ -1,6 +1,37 @@
 use uniffi;
 use uniffi::{Enum, Record};
 
+
+#[uniffi::export]
+pub fn new_flat_one() -> FlatEnum {
+    FlatEnum::One
+}
+
+#[uniffi::export]
+pub fn new_flat_two() -> FlatEnum {
+    FlatEnum::Two
+}
+
+#[uniffi::export]
+pub fn new_flat_three() -> FlatEnum {
+    FlatEnum::Three
+}
+
+#[uniffi::export]
+pub fn new_flat_four() -> FlatEnum {
+    FlatEnum::Four
+}
+
+#[uniffi::export]
+pub fn take_flat_enum(flat: FlatEnum) -> String {
+    match flat {
+        FlatEnum::One => "One".to_string(),
+        FlatEnum::Two => "Two".to_string(),
+        FlatEnum::Three => "Three".to_string(),
+        FlatEnum::Four => "Four".to_string(),
+    }
+}
+
 #[uniffi::export]
 pub fn new_u64_value(value: u64) -> Value {
     Value::U64 { value }
@@ -46,6 +77,14 @@ pub fn take_value(value: Value) -> String {
         Value::I64 { value }  => format!("{}",value),
        // Value::Enum { discriminator, fields } => format!("{}",value),
     }
+}
+
+#[derive(Debug, Clone, Enum)]
+pub enum FlatEnum {
+    One, 
+    Two, 
+    Three, 
+    Four
 }
 
 // TODO: Add floats and Collections (Maps, Vector, ...)
