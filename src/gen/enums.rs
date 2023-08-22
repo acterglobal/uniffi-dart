@@ -96,7 +96,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
     fn generate_variant_field_lowerer(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
         // TODO: Create a list for all the different types, strings, bools, other enums, etc...
         quote! {
-            throw UnimplimetedError;
+            throw UnimplementedError("Create a list for all the different types, strings, bools, other enums, etc");
             final $(field.name()) = createUint8ListFromInt(this.$(field.name()));  
             $offset_var += $(field.name()).length;
         }
