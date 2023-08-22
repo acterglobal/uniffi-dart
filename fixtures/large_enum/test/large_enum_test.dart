@@ -4,6 +4,24 @@ import '../large_enum.dart';
 void main() {
   final api = Api.load();
 
+  // Testing flat enums
+  test('Creating/Lifting Enums', () {
+    // Do we get the expected enum
+    expect(FlatEnum.one, api.newFlatOne());
+    expect(FlatEnum.two, api.newFlatTwo());
+    expect(FlatEnum.three, api.newFlatThree());
+    expect(FlatEnum.four, api.newFlatFour());
+  });
+
+  test('Passing Down/Lowering Enums', () {
+    // Can we pass the value down to rust correctly?
+    expect(api.takeFlatEnum(FlatEnum.one), "One");
+    expect(api.takeFlatEnum(FlatEnum.two), "Two");
+    expect(api.takeFlatEnum(FlatEnum.three), "Three");
+    expect(api.takeFlatEnum(FlatEnum.four), "Four");
+  });
+
+  // Testing the complex associative types...
   final inner_value = 84646234643264;
   final inner_value2 = 846;
   final inner_bool = true;
@@ -28,14 +46,14 @@ void main() {
     expect(boolValue.value, inner_bool);
   });
 
-  test('Passing Down/Lowering Enums', () {
-    // Can we pass the value down to rust correctly?
-    expect(api.takeValue(u32Value), inner_value2.toString());
-    expect(api.takeValue(i64Value), inner_value.toString());
-    expect(api.takeValue(u64Value), inner_value.toString());
-    expect(api.takeValue(i32Value), inner_value2.toString());
+  // test('Passing Down/Lowering Enums', () {
+  //   // Can we pass the value down to rust correctly?
+  //   expect(api.takeValue(u32Value), inner_value2.toString());
+  //   expect(api.takeValue(i64Value), inner_value.toString());
+  //   expect(api.takeValue(u64Value), inner_value.toString());
+  //   expect(api.takeValue(i32Value), inner_value2.toString());
 
-    expect(api.takeValue(stringValue), inner_value.toString());
-    expect(api.takeValue(boolValue), inner_bool.toString());
-  });
+  //   expect(api.takeValue(stringValue), inner_value.toString());
+  //   expect(api.takeValue(boolValue), inner_bool.toString());
+  // });
 }

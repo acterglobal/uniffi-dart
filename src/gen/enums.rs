@@ -13,7 +13,21 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
     if obj.is_flat() {
         quote! {
             enum $cls_name {
-                $(for variant in obj.variants() => $(enum_variant_name(variant.name())),)
+                $(for variant in obj.variants() => $(enum_variant_name(variant.name())),);
+
+                factory $cls_name.lift(Api api, RustBuffer buffer) {
+                    final index = buffer.toIntList().buffer.asByteData().getInt32(0);
+                    $(for (index, variant) in obj.variants().iter().enumerate() =>
+                        if (index == $(index+1)) {
+                            return $cls_name.$(enum_variant_name(variant.name()));
+                        }
+                    )
+                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
+                }
+    
+                static Uint8List lower(Api api, $cls_name input) {
+                    return createUint8ListFromInt(input.index);
+                }
             }
         }
     } else {
@@ -21,7 +35,7 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
             abstract class $cls_name {
                 $cls_name();
 
-                factory Value.lift(Api api, RustBuffer buffer) {
+                factory $cls_name.lift(Api api, RustBuffer buffer) {
                     final index = buffer.toIntList().buffer.asByteData().getInt32(0);
                     // Pass lifting onto the appropriate variant. based on index...variants are not 0 index
                     $(for (index, variant) in obj.variants().iter().enumerate() =>
@@ -33,13 +47,13 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
                     throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
                     // return $(class_name(obj.variants()[6].name()))Value(6);
                     // //return $cls_name(7);
-                  }
+                }
                 
                 static Uint8List lower(Api api, Value value) {
                     // Each variant has a lower method, simply pass on it's return
                     $(for (_index, variant) in obj.variants().iter().enumerate() =>
                         if (value is $(variant.name())$cls_name) {
-                            return value.lower();
+                            return value.lower(api);
                         }
                     )
                     throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant to lower");
@@ -95,15 +109,23 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
 fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant) -> dart::Tokens {
     fn generate_variant_field_lowerer(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
         // TODO: Create a list for all the different types, strings, bools, other enums, etc...
+        let lowerer = match field.as_type() {
+            Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | 
+            Type::Int32 | Type::UInt32 | Type::Int64 | Type::UInt64  => quote!(createUint8ListFromInt(this.$(field.name()))),
+            Type::Boolean => quote!(createUint8ListFromInt(this.$(field.name()) ? 1 : 0)),
+            Type::String => quote!(lowerString(api,this.$(field.name()))),
+            _ => todo!("Add variant field lifter for type: {:?}", field.as_type())
+        };
+
         quote! {
             throw UnimplementedError("Create a list for all the different types, strings, bools, other enums, etc");
-            final $(field.name()) = createUint8ListFromInt(this.$(field.name()));  
+            final $(field.name()) = $(lowerer);  
             $offset_var += $(field.name()).length;
         }
     }
 
     quote! {
-        Uint8List lower() {
+        Uint8List lower(Api api) {
             print($(format!("'{}'", variant.name())));
             // Turn all the fields to their int lists reprsentations
             final index = createUint8ListFromInt($index);
