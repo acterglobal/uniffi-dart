@@ -106,7 +106,7 @@ pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens 
 pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } => quote!(toRustBuffer(api, $inner)),
+        Type::String | Type::Optional { .. } | Type::Enum { .. } => quote!(toRustBuffer(api, $inner)),
         _ => inner,
     }
 }
@@ -161,10 +161,8 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Boolean => quote!((($inner) ? 1 : 0)),
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-        Type::Optional { inner_type } => {
-            // TODO!: May still need to fix this. lowerOptional assumes offset 5 which may not be true for all types excpet strings
-            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v)))))
-        }
+        Type::Enum { name, .. } => {quote!($name.lower(api, $inner))},
+        Type::Optional { inner_type } => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
         _ => todo!("lower Type::{:?}", ty),
     }
 }

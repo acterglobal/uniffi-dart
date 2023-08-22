@@ -30,19 +30,31 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
                         }
                     )
                     // If no return happens
-                    throw UniffiInternalError(6, "Unable to determine enum variant");
+                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
                     // return $(class_name(obj.variants()[6].name()))Value(6);
                     // //return $cls_name(7);
                   }
+                
+                static Uint8List lower(Api api, Value value) {
+                    // Each variant has a lower method, simply pass on it's return
+                    $(for (_index, variant) in obj.variants().iter().enumerate() =>
+                        if (value is $(variant.name())$cls_name) {
+                            return value.lower();
+                        }
+                    )
+                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant to lower");
+                }
             }
 
-            $(for variant in obj.variants()
+            $(for (index, variant) in obj.variants().iter().enumerate()
                 => class $(class_name(variant.name()))$cls_name extends $cls_name {
                         $(for field in variant.fields() => final $(generate_type(&field.as_type())) $(var_name(field.name()));  )
 
                         $(class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
 
                         $(generate_variant_factory(cls_name, variant))
+
+                        $(generate_variant_lowerer(cls_name, index, variant))
                     }
             )
         }
@@ -80,4 +92,39 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
     }
 }
 
-// TODO!: Generate the lowring code
+fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant) -> dart::Tokens {
+    fn generate_variant_field_lowerer(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
+        // TODO: Create a list for all the different types, strings, bools, other enums, etc...
+        quote! {
+            throw UnimplimetedError;
+            final $(field.name()) = createUint8ListFromInt(this.$(field.name()));  
+            $offset_var += $(field.name()).length;
+        }
+    }
+
+    quote! {
+        Uint8List lower() {
+            print($(format!("'{}'", variant.name())));
+            // Turn all the fields to their int lists reprsentations
+            final index = createUint8ListFromInt($index);
+            int offset = 0;
+            offset += index.length;
+            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lowerer(field, index, &quote!(offset))))
+            // Create a list with big enough for all the fields and reset the offset
+            final res = Uint8List(offset);
+            offset = 0;
+            // First set the index
+            res.setAll(offset, index);
+            offset += index.length;
+            // Now set the rest of the fields
+            $(for field in variant.fields() => 
+                res.setAll(offset, $(field.name()));
+                offset += $(field.name()).length;
+            )
+
+            res.setAll(index.length, value);
+            print(res);
+            return res;
+        }
+    }
+}
