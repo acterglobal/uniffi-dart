@@ -97,7 +97,45 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
 
 pub fn generate_primitives_lowerers() -> dart::Tokens {
     quote! {
-        // TODO: Impliment lowerers for primitives
+        // TODO: Impliment lowerers for primitives        
+        Uint8List createUint8ListFromInt(int value) {
+            int length = value.bitLength ~/ 8 + 1;
+        
+            // Ensure the length is either 4 or 8
+            if (length != 4 && length != 8) {
+            length = (value < 0x100000000) ? 4 : 8;
+            }
+        
+            Uint8List uint8List = Uint8List(length);
+        
+            for (int i = length - 1; i >= 0; i--) {
+            uint8List[i] = value & 0xFF;
+            value >>= 8;
+            }
+        
+            return uint8List;
+        }
+
+        Uint8List createFixedSizedUint8ListFromFloat(double value) {
+            int length = 4; // Default to 32-bit (single-precision) float
+          
+            if (value.isFinite) {
+              if (value != value.truncateToDouble()) {
+                length = 8; // 64-bit (double-precision) float
+              }
+            }
+          
+            Uint8List uint8List = Uint8List(length);
+          
+            ByteData byteData = ByteData.sublistView(uint8List);
+            if (length == 4) {
+              byteData.setFloat32(0, value, Endian.little);
+            } else {
+              byteData.setFloat64(0, value, Endian.little);
+            }
+          
+            return uint8List;
+          }
     }
 }
 
