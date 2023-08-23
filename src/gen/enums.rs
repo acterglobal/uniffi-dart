@@ -26,7 +26,7 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
                 }
     
                 static Uint8List lower(Api api, $cls_name input) {
-                    return createUint8ListFromInt(input.index);
+                    return createUint8ListFromInt(input.index + 1); // So enums aren't zero indexed?
                 }
             }
         }
@@ -118,7 +118,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
         };
 
         quote! {
-            throw UnimplementedError("Create a list for all the different types, strings, bools, other enums, etc");
+            //throw UnimplementedError("Create a list for all the different types, strings, bools, other enums, etc");
             final $(field.name()) = $(lowerer);  
             $offset_var += $(field.name()).length;
         }
@@ -128,7 +128,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
         Uint8List lower(Api api) {
             print($(format!("'{}'", variant.name())));
             // Turn all the fields to their int lists reprsentations
-            final index = createUint8ListFromInt($index);
+            final index = createUint8ListFromInt($(index + 1));
             int offset = 0;
             offset += index.length;
             $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lowerer(field, index, &quote!(offset))))
