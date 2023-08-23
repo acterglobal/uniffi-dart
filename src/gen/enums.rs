@@ -114,6 +114,8 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
         let lowerer = match field.as_type() {
             Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | 
             Type::Int32 | Type::UInt32 | Type::Int64 | Type::UInt64  => quote!(createUint8ListFromInt(this.$(field.name()))),
+            Type::Float32 => quote!(lowerFloat32(this.$(field.name()))),
+            Type::Float64  => quote!(lowerFloat64(this.$(field.name()))),
             Type::Boolean => quote!(Uint8List.fromList([this.$(field.name()) ? 1 : 0])),
             Type::String => quote!(lowerVaraibleLength(api,this.$(field.name()), lowerString) ),
             _ => todo!("Add variant field lifter for type: {:?}", field.as_type())

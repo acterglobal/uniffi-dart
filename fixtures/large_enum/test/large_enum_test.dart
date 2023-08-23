@@ -24,12 +24,16 @@ void main() {
   // Testing the complex associative types...
   final inner_value = 84646234643264;
   final inner_value2 = 846;
+  final inner_value_double = 643264.84646234;
+  final inner_value_float = 84.68;
   final inner_bool = true;
-  // TODO: Add floats and Collections (Maps, Vector, ...)
+  // TODO: Add u8, i8, u16, i16, and Collections (Maps, Vector, ...)
   U32Value u32Value = (api.newU32Value(inner_value2) as U32Value);
   U64Value u64Value = (api.newU64Value(inner_value) as U64Value);
   I64Value i64Value = (api.newI64Value(inner_value) as I64Value);
   I32Value i32Value = (api.newI32Value(inner_value2) as I32Value);
+  F32Value f32Value = (api.newF32Value(inner_value_float) as F32Value);
+  F64Value f64Value = (api.newF64Value(inner_value_double) as F64Value);
   // TODO: Cover Floats and Doubles
   StringValue stringValue =
       (api.newStringValue(inner_value.toString()) as StringValue);
@@ -41,7 +45,10 @@ void main() {
     expect(i64Value.value, inner_value);
     expect(u64Value.value, inner_value);
     expect(i32Value.value, inner_value2);
-    // TODO: Cover Floats and Doubles
+    // Comparing floats is a little tricky, but it can be done within a certain precision
+    expect(true, (f32Value.value - inner_value_float).abs() < 1e-3);
+    expect(true, (f64Value.value - inner_value_double).abs() < 1e-10);
+
     expect(stringValue.value, inner_value.toString());
     expect(boolValue.value, inner_bool);
   });
@@ -52,7 +59,9 @@ void main() {
     expect(api.takeValue(i64Value), inner_value.toString());
     expect(api.takeValue(u64Value), inner_value.toString());
     expect(api.takeValue(i32Value), inner_value2.toString());
-    // TODO: Cover Floats and Doubles
+    expect(api.takeValue(f32Value), inner_value_float.toString());
+    expect(api.takeValue(f64Value), inner_value_double.toString());
+
     expect(api.takeValue(stringValue), inner_value.toString());
     expect(api.takeValue(boolValue), inner_bool.toString());
   });

@@ -63,7 +63,15 @@ pub fn generate_primitives_lifters() -> dart::Tokens {
         }  
 
         double? liftFloat32(Uint8List buf, [int offset = 1]) {
-            return buf.isEmpty ? null : buf.buffer.asByteData().getFloat32(offset);
+            if (!buf.isEmpty) {
+                double res = buf.buffer.asByteData().getFloat32(offset);
+                res = double.parse(res.toStringAsFixed(6)); // Could adjust this later...
+                return res;
+            } else {
+                return null;
+            }
+           
+           // return buf.isEmpty ? null : buf.buffer.asByteData().getFloat32(offset);
         }
         
         double? liftFloat64(Uint8List buf, [int offset = 1]) {
@@ -116,26 +124,19 @@ pub fn generate_primitives_lowerers() -> dart::Tokens {
             return uint8List;
         }
 
-        Uint8List createFixedSizedUint8ListFromFloat(double value) {
-            int length = 4; // Default to 32-bit (single-precision) float
-          
-            if (value.isFinite) {
-              if (value != value.truncateToDouble()) {
-                length = 8; // 64-bit (double-precision) float
-              }
-            }
-          
-            Uint8List uint8List = Uint8List(length);
-          
-            ByteData byteData = ByteData.sublistView(uint8List);
-            if (length == 4) {
-              byteData.setFloat32(0, value, Endian.little);
-            } else {
-              byteData.setFloat64(0, value, Endian.little);
-            }
-          
-            return uint8List;
-          }
+        Uint8List lowerFloat32(double value) {
+            final buf = Uint8List(4);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setFloat32(0, value, Endian.little);
+            return Uint8List.fromList(buf.reversed.toList());
+        }
+
+        Uint8List lowerFloat64(double value) {
+            final buf = Uint8List(8);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setFloat64(0, value, Endian.little);
+            return Uint8List.fromList(buf.reversed.toList());
+        }
     }
 }
 
