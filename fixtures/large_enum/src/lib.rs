@@ -53,6 +53,16 @@ pub fn new_i32_value(value: i32) -> Value {
 }
 
 #[uniffi::export]
+pub fn new_f32_value(value: f32) -> Value {
+    Value::F32 { value }
+}
+
+#[uniffi::export]
+pub fn new_f64_value(value: f64) -> Value {
+    Value::F64 { value }
+}
+
+#[uniffi::export]
 pub fn new_string_value(value: String) -> Value {
     Value::String { value }
 }
@@ -75,6 +85,8 @@ pub fn take_value(value: Value) -> String {
         Value::I16 { value } => format!("{}",value),
         Value::I32 { value } => format!("{}",value),
         Value::I64 { value }  => format!("{}",value),
+        Value::F32 { value }  => format!("{}",value),
+        Value::F64 { value }  => format!("{}",value),
        // Value::Enum { discriminator, fields } => format!("{}",value),
     }
 }
@@ -87,7 +99,7 @@ pub enum FlatEnum {
     Four
 }
 
-// TODO: Add floats and Collections (Maps, Vector, ...)
+// TODO: Add Collections (Maps, Vector, ...)
 #[derive(Debug, Clone, Enum)]
 pub enum Value {
     String {
@@ -121,6 +133,12 @@ pub enum Value {
     I64 {
         value: i64,
     },
+    F32 {
+        value: f32,
+    },
+    F64 {
+        value: f64
+    }
     // Enum {
     //     discriminator: u8,
     //     fields: Vec<Value>,
