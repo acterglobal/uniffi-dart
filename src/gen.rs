@@ -322,6 +322,8 @@ impl BindingsGenerator {
                 return res;
             }
 
+            $(primitives::generate_wrapper_lowerers())
+
             class ForeignBytes extends Struct {
                 @Int32()
                 external int len;

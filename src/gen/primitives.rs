@@ -139,6 +139,19 @@ pub fn generate_primitives_lowerers() -> dart::Tokens {
     }
 }
 
+pub fn generate_wrapper_lowerers() -> dart::Tokens {
+    quote! {
+        Uint8List lowerVaraibleLength<T>(Api api, T input, Uint8List Function(Api, T) lowerer) {
+            final lowered = lowerer(api, input);
+            final length = createUint8ListFromInt(lowered.length);
+            Uint8List res = Uint8List(lowered.length + length.length);
+            res.setAll(0, length);
+            res.setAll(length.length, lowered);
+            return res;
+        }
+    }
+}
+
 macro_rules! impl_code_type_for_primitive {
     ($T:ty, $class_name:literal) => {
         paste! {

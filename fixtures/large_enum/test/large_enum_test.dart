@@ -53,7 +53,7 @@ void main() {
     expect(api.takeValue(u64Value), inner_value.toString());
     expect(api.takeValue(i32Value), inner_value2.toString());
     // TODO: Cover Floats and Doubles
-    //expect(api.takeValue(stringValue), inner_value.toString());
+    expect(api.takeValue(stringValue), inner_value.toString());
     expect(api.takeValue(boolValue), inner_bool.toString());
   });
 }
