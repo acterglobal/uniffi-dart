@@ -95,7 +95,9 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
     quote! {
         factory $(class_name(variant.name()))$cls_name.lift(Api api, RustBuffer buffer) {
             Uint8List input = buffer.toIntList();
-            
+            // Keeping these two lines for debuging
+            print($(format!("'{}'",variant.name())));
+            print(input);
             int offset = 4; // Start at 4, because the first 32bits are the enum index
             List<dynamic> results = [];
 
@@ -112,7 +114,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
         let lowerer = match field.as_type() {
             Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | 
             Type::Int32 | Type::UInt32 | Type::Int64 | Type::UInt64  => quote!(createUint8ListFromInt(this.$(field.name()))),
-            Type::Boolean => quote!(createUint8ListFromInt(this.$(field.name()) ? 1 : 0)),
+            Type::Boolean => quote!(Uint8List.fromList([this.$(field.name()) ? 1 : 0])),
             Type::String => quote!(lowerString(api,this.$(field.name()))),
             _ => todo!("Add variant field lifter for type: {:?}", field.as_type())
         };
