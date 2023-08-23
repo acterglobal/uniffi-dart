@@ -124,6 +124,34 @@ pub fn generate_primitives_lowerers() -> dart::Tokens {
             return uint8List;
         }
 
+        Uint8List lowerUint8(int value) {
+            final buf = Uint8List(1);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setUint8(0, value);
+            return Uint8List.fromList(buf.toList());
+        }
+
+        Uint8List lowerInt8(int value) {
+            final buf = Uint8List(1);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt8(0, value);
+            return Uint8List.fromList(buf.toList());
+        }
+
+        Uint8List lowerUint16(int value) {
+            final buf = Uint8List(2);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setUint16(0, value);
+            return Uint8List.fromList(buf.toList());
+        }
+
+        Uint8List lowerInt16(int value) {
+            final buf = Uint8List(2);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt16(0, value);
+            return Uint8List.fromList(buf.toList());
+        }
+
         Uint8List lowerFloat32(double value) {
             final buf = Uint8List(4);
             final byteData = ByteData.sublistView(buf);

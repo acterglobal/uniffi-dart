@@ -33,6 +33,26 @@ pub fn take_flat_enum(flat: FlatEnum) -> String {
 }
 
 #[uniffi::export]
+pub fn new_u8_value(value: u8) -> Value {
+    Value::U8 { value }
+}
+
+#[uniffi::export]
+pub fn new_i8_value(value: i8) -> Value {
+    Value::I8 { value }
+}
+
+#[uniffi::export]
+pub fn new_u16_value(value: u16) -> Value {
+    Value::U16 { value }
+}
+
+#[uniffi::export]
+pub fn new_i16_value(value: i16) -> Value {
+    Value::I16 { value }
+}
+
+#[uniffi::export]
 pub fn new_u64_value(value: u64) -> Value {
     Value::U64 { value }
 }

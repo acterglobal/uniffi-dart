@@ -22,25 +22,37 @@ void main() {
   });
 
   // Testing the complex associative types...
+  final inner_value_small =
+      127; // Can go beyond the max for 8bits, -127 to 127 for Int and 255 for UInt
   final inner_value = 84646234643264;
   final inner_value2 = 846;
   final inner_value_double = 643264.84646234;
   final inner_value_float = 84.68;
   final inner_bool = true;
-  // TODO: Add u8, i8, u16, i16, and Collections (Maps, Vector, ...)
+  // TODO: Collections (Maps, Vector, ...)
+  U8Value u8Value = (api.newU8Value(inner_value_small) as U8Value);
+  U16Value u16Value = (api.newU16Value(inner_value2) as U16Value);
+  I8Value i8Value = (api.newI8Value(inner_value_small) as I8Value);
+  I16Value i16Value = (api.newI16Value(inner_value2) as I16Value);
+
   U32Value u32Value = (api.newU32Value(inner_value2) as U32Value);
   U64Value u64Value = (api.newU64Value(inner_value) as U64Value);
   I64Value i64Value = (api.newI64Value(inner_value) as I64Value);
   I32Value i32Value = (api.newI32Value(inner_value2) as I32Value);
   F32Value f32Value = (api.newF32Value(inner_value_float) as F32Value);
   F64Value f64Value = (api.newF64Value(inner_value_double) as F64Value);
-  // TODO: Cover Floats and Doubles
+
   StringValue stringValue =
       (api.newStringValue(inner_value.toString()) as StringValue);
   BoolValue boolValue = (api.newBoolValue(inner_bool) as BoolValue);
 
   test('Creating/Lifting Complex Enums', () {
     // Do we get the expected inner value? Correctly.
+    expect(u8Value.value, inner_value_small);
+    expect(u16Value.value, inner_value2);
+    expect(i8Value.value, inner_value_small);
+    expect(i16Value.value, inner_value2);
+
     expect(u32Value.value, inner_value2);
     expect(i64Value.value, inner_value);
     expect(u64Value.value, inner_value);
@@ -55,6 +67,10 @@ void main() {
 
   test('Passing Down/Lowering Complex Enums', () {
     // Can we pass the value down to rust correctly?
+    expect(api.takeValue(u8Value), inner_value_small.toString());
+    expect(api.takeValue(u16Value), inner_value2.toString());
+    expect(api.takeValue(i8Value), inner_value_small.toString());
+    expect(api.takeValue(i16Value), inner_value2.toString());
     expect(api.takeValue(u32Value), inner_value2.toString());
     expect(api.takeValue(i64Value), inner_value.toString());
     expect(api.takeValue(u64Value), inner_value.toString());

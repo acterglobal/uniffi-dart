@@ -95,9 +95,6 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
     quote! {
         factory $(class_name(variant.name()))$cls_name.lift(Api api, RustBuffer buffer) {
             Uint8List input = buffer.toIntList();
-            // Keeping these two lines for debuging
-            print($(format!("'{}'",variant.name())));
-            print(input);
             int offset = 4; // Start at 4, because the first 32bits are the enum index
             List<dynamic> results = [];
 
@@ -110,9 +107,12 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
 
 fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant) -> dart::Tokens {
     fn generate_variant_field_lowerer(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
-        // TODO: Create a list for all the different types, strings, bools, other enums, etc...
+        // TODO:  other enums, maps, and vectors etc...
         let lowerer = match field.as_type() {
-            Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | 
+            Type::Int8 => quote!(lowerInt8(this.$(field.name()))),
+            Type::UInt8 => quote!(lowerUint8(this.$(field.name()))),
+            Type::Int16 => quote!(lowerInt16(this.$(field.name()))),
+            Type::UInt16 => quote!(lowerUint16(this.$(field.name()))),
             Type::Int32 | Type::UInt32 | Type::Int64 | Type::UInt64  => quote!(createUint8ListFromInt(this.$(field.name()))),
             Type::Float32 => quote!(lowerFloat32(this.$(field.name()))),
             Type::Float64  => quote!(lowerFloat64(this.$(field.name()))),
@@ -130,7 +130,6 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
 
     quote! {
         Uint8List lower(Api api) {
-            print($(format!("'{}'", variant.name())));
             // Turn all the fields to their int lists reprsentations
             final index = createUint8ListFromInt($(index + 1));
             int offset = 0;
@@ -149,7 +148,6 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
             )
 
             res.setAll(index.length, value);
-            print(res);
             return res;
         }
     }
