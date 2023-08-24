@@ -1,129 +1,125 @@
+use uniffi;
 use uniffi::{Enum, Record};
 
-#[derive(Clone, Debug, Enum)]
-pub enum Instruction {
-    CallMethod1 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod2 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod3 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod4 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod5 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod6 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod10 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod11 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod12 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod13 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod14 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod15 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod16 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod17 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod18 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod19 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod20 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod21 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod22 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod23 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod24 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod25 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod26 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
-    CallMethod27 {
-        object: Value,
-        method_name: Value,
-        args: Value,
-    },
+
+#[uniffi::export]
+pub fn new_flat_one() -> FlatEnum {
+    FlatEnum::One
 }
 
+#[uniffi::export]
+pub fn new_flat_two() -> FlatEnum {
+    FlatEnum::Two
+}
+
+#[uniffi::export]
+pub fn new_flat_three() -> FlatEnum {
+    FlatEnum::Three
+}
+
+#[uniffi::export]
+pub fn new_flat_four() -> FlatEnum {
+    FlatEnum::Four
+}
+
+#[uniffi::export]
+pub fn take_flat_enum(flat: FlatEnum) -> String {
+    match flat {
+        FlatEnum::One => "One".to_string(),
+        FlatEnum::Two => "Two".to_string(),
+        FlatEnum::Three => "Three".to_string(),
+        FlatEnum::Four => "Four".to_string(),
+    }
+}
+
+#[uniffi::export]
+pub fn new_u8_value(value: u8) -> Value {
+    Value::U8 { value }
+}
+
+#[uniffi::export]
+pub fn new_i8_value(value: i8) -> Value {
+    Value::I8 { value }
+}
+
+#[uniffi::export]
+pub fn new_u16_value(value: u16) -> Value {
+    Value::U16 { value }
+}
+
+#[uniffi::export]
+pub fn new_i16_value(value: i16) -> Value {
+    Value::I16 { value }
+}
+
+#[uniffi::export]
+pub fn new_u64_value(value: u64) -> Value {
+    Value::U64 { value }
+}
+
+#[uniffi::export]
+pub fn new_i64_value(value: i64) -> Value {
+    Value::I64 { value }
+}
+
+#[uniffi::export]
+pub fn new_u32_value(value: u32) -> Value {
+    Value::U32 { value }
+}
+
+#[uniffi::export]
+pub fn new_i32_value(value: i32) -> Value {
+    Value::I32 { value }
+}
+
+#[uniffi::export]
+pub fn new_f32_value(value: f32) -> Value {
+    Value::F32 { value }
+}
+
+#[uniffi::export]
+pub fn new_f64_value(value: f64) -> Value {
+    Value::F64 { value }
+}
+
+#[uniffi::export]
+pub fn new_string_value(value: String) -> Value {
+    Value::String { value }
+}
+
+#[uniffi::export]
+pub fn new_bool_value(value: bool) -> Value {
+    Value::Bool { value }
+}
+
+#[uniffi::export]
+pub fn take_value(value: Value) -> String {
+    match value {
+        Value::String { value } => format!("{}",value),
+        Value::Bool { value } => format!("{}",value),
+        Value::U8 { value } => format!("{}",value),
+        Value::U16 { value } => format!("{}",value),
+        Value::U32 { value } => format!("{}",value),
+        Value::U64 { value } => format!("{}",value),
+        Value::I8 { value } => format!("{}",value),
+        Value::I16 { value } => format!("{}",value),
+        Value::I32 { value } => format!("{}",value),
+        Value::I64 { value }  => format!("{}",value),
+        Value::F32 { value }  => format!("{}",value),
+        Value::F64 { value }  => format!("{}",value),
+       // Value::Enum { discriminator, fields } => format!("{}",value),
+    }
+}
+
+#[derive(Debug, Clone, Enum)]
+pub enum FlatEnum {
+    One, 
+    Two, 
+    Three, 
+    Four
+}
+
+// TODO: Add Collections (Maps, Vector, ...)
 #[derive(Debug, Clone, Enum)]
 pub enum Value {
     String {
@@ -132,7 +128,6 @@ pub enum Value {
     Bool {
         value: bool,
     },
-
     U8 {
         value: u8,
     },
@@ -158,25 +153,31 @@ pub enum Value {
     I64 {
         value: i64,
     },
-    Enum {
-        discriminator: u8,
-        fields: Vec<Value>,
+    F32 {
+        value: f32,
     },
-    NonHomogenousCollection {
-        elements: Vec<Value>,
-    },
-    HomogenousCollection {
-        elements: Vec<Value>,
-    },
-    Map {
-        entries: Vec<MapEntry>,
-    },
-    PublicKey {
-        value: Vec<u8>,
-    },
-    Signature {
-        value: Vec<u8>,
-    },
+    F64 {
+        value: f64
+    }
+    // Enum {
+    //     discriminator: u8,
+    //     fields: Vec<Value>,
+    // },
+    // NonHomogenousCollection {
+    //     elements: Vec<Value>,
+    // },
+    // HomogenousCollection {
+    //     elements: Vec<Value>,
+    // },
+    // Map {
+    //     entries: Vec<MapEntry>,
+    // },
+    // PublicKey {
+    //     value: Vec<u8>,
+    // },
+    // Signature {
+    //     value: Vec<u8>,
+    // },
 }
 
 #[derive(Clone, Debug, Record)]

@@ -106,7 +106,7 @@ pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens 
 pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } => quote!(toRustBuffer(api, $inner)),
+        Type::String | Type::Optional { .. } | Type::Enum { .. } => quote!(toRustBuffer(api, $inner)),
         _ => inner,
     }
 }
@@ -126,21 +126,21 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lift(api, $inner)),
+        Type::Enum { name, .. } => quote!($name.lift(api, $inner)),
         Type::Optional { inner_type } => type_lift_optional_inner_type(inner_type, inner),
         _ => todo!("lift Type::{:?}", ty),
     }
 }
 
-// The usefull part of the data contained inside optional may have a
-// different offset depending on the type.
+
 fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
     match **inner_type {
-        Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt8(1))),
-        Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt16(1))),
-        Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt32(1))),
-        Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getInt64(1))),
-        Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getFloat32(1))),
-        Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => v.isEmpty ? null : v.buffer.asByteData().getFloat64(1))),
+        Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v))),
+        Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v))),
+        Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v))),
+        Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v))),
+        Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
+        Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
         Type::String => quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
         _ => todo!("lift Option inner type: Type::{:?}", inner_type)
     }
@@ -157,14 +157,12 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Int64
         | Type::UInt64
         | Type::Float32
-        | Type::Float64
-        | Type::Boolean => inner,
+        | Type::Float64 => inner,
+        | Type::Boolean => quote!((($inner) ? 1 : 0)),
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-        Type::Optional { inner_type } => {
-            // TODO!: May still need to fix this. lowerOptional assumes offset 5 which may not be true for all types excpet strings
-            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v)))))
-        }
+        Type::Enum { name, .. } => {quote!($name.lower(api, $inner))},
+        Type::Optional { inner_type } => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
         _ => todo!("lower Type::{:?}", ty),
     }
 }

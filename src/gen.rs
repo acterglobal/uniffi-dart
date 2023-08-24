@@ -264,16 +264,19 @@ impl BindingsGenerator {
                 }
             }
 
-            String liftString(Api api, Uint8List input) {
+            String liftString(Api api, Uint8List input) {        
                 // we have a i32 length at the front
                 return utf8.decoder.convert(input);
             }
 
+            $(primitives::generate_primitives_lifters())
+           
             Uint8List lowerString(Api api, String input) {
                 // FIXME: this is too many memcopies!
                 return Utf8Encoder().convert(input);
-
             }
+
+            $(primitives::generate_primitives_lowerers())
 
             RustBuffer toRustBuffer(Api api, Uint8List data) {
                 final length = data.length;
@@ -294,6 +297,8 @@ impl BindingsGenerator {
                 }
                 return lifter(api, buf);
             }
+
+            $(primitives::generate_wrapper_lifters())
 
             Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
                 if (inp == null) {
@@ -316,6 +321,8 @@ impl BindingsGenerator {
                 res.setAll(offset, inner);
                 return res;
             }
+
+            $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
                 @Int32()
