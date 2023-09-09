@@ -106,7 +106,7 @@ pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens 
 pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } | Type::Enum { .. } => quote!(toRustBuffer(api, $inner)),
+        Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. }=> quote!(toRustBuffer(api, $inner)),
         _ => inner,
     }
 }
@@ -163,6 +163,7 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
         Type::Enum { name, .. } => {quote!($name.lower(api, $inner))},
         Type::Optional { inner_type } => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
+        Type::Sequence { inner_type } => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
         _ => todo!("lower Type::{:?}", ty),
     }
 }

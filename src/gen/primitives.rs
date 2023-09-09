@@ -100,6 +100,24 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             final liftedData = lifter(buf.sublist(offset + 4));
             return DataOffset(liftedData, length);
         }
+
+        List<T> liftSequence<T>(Api api, Uint8List buf, Function(Uint8List, [int offset]) lifter, [int element_byte_size = 1,int offset = 0]) {
+            List<T> res = [];
+            buf = buf.sublist(offset);
+            final length = buf.buffer.asByteData().getInt32(0);
+            buf = buf.sublist(4);
+            
+            final element_byte_size = (buf.length ~/ length);
+            offset = 0;
+            
+            for (var i = 0; i < length; i++) {
+                offset = element_byte_size * i; // Update the offset for the next loop
+                final item = lifter(buf, offset);
+                res.add(item);
+            }
+
+            return res;
+        }
     }
 }
 
@@ -124,7 +142,7 @@ pub fn generate_primitives_lowerers() -> dart::Tokens {
             return uint8List;
         }
 
-        Uint8List lowerUint8(int value) {
+        Uint8List lowerUint8(Api api, int value) {
             final buf = Uint8List(1);
             final byteData = ByteData.sublistView(buf);
             byteData.setUint8(0, value);
@@ -177,6 +195,26 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
             res.setAll(0, length);
             res.setAll(length.length, lowered);
             return res;
+        }
+
+        Uint8List lowerSequence<T, V>(Api api, List<T> input, Uint8List Function(Api, V) lowerer, int element_byte_size) {
+          int capacity = input.length * element_byte_size;
+          Uint8List items = Uint8List(capacity + 4); // Four bytes for the length
+          int offset = 0;
+        
+          // Set the length of the vec
+          items.setAll(offset, createUint8ListFromInt(capacity));
+          offset += 4;
+        
+          for (var i = 0; i < input.length; i++) {
+            items.setRange(
+                offset, offset + element_byte_size, lowerer(api, input[i] as V));
+            offset += element_byte_size;
+          }
+        
+          print("Items from sequence");
+          print(items);
+          return items;
         }
     }
 }
