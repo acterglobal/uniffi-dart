@@ -1,0 +1,24 @@
+[package]
+name = "fixture_callbacks"
+version = "0.1.0"
+edition = "2021"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[lib]
+name = "fixture_callbacks"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "8565b7f941e7967778efd39c5ab27551dfa23ec6" }
+
+[build-dependencies]
+uniffi-dart = { path = "../../", features = ["build"] }
+
+[dev-dependencies]
+uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
+uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "8565b7f941e7967778efd39c5ab27551dfa23ec6", features = [
+  "bindgen-tests",
+] }
+anyhow = "1"
