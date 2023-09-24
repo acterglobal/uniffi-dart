@@ -11,14 +11,14 @@ name = "custom_types"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "8565b7f941e7967778efd39c5ab27551dfa23ec6" }
+uniffi = { version = "0.24.3" }
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }
 
 [dev-dependencies]
 uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
-uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "8565b7f941e7967778efd39c5ab27551dfa23ec6", features = [
+uniffi = { version = "0.24.3", features = [
   "bindgen-tests",
 ] }
 anyhow = "1"
