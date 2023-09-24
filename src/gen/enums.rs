@@ -88,11 +88,11 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
              Type::Float64 => quote!($results_list.insert($index, liftFloat64($uint8_list_var, $offset_var)); $offset_var += 1;  ) ,
              Type::Boolean => quote!($results_list.insert($index, liftBoolean($uint8_list_var, $offset_var)); $offset_var += 1;  ),
              Type::String => quote!(final v = liftVaraibleLength($uint8_list_var, (buf) => liftString(api, buf), $offset_var);  $results_list.insert($index, v.data); $offset_var += v.offset;),
-             Type::Enum { module_path, name } => quote! {
+             Type::Enum ( name ) => quote! {
                 print($uint8_list_var);
                 $results_list.insert($index, liftBoolean($uint8_list_var, $offset_var)); $offset_var += 1;
              },
-             Type::Sequence { inner_type } => {
+             Type::Sequence ( inner_type ) => {
                 let element_size =  match inner_type.as_type() {
                     Type::UInt8 |  Type::Int8 | Type::Boolean => 1,
                     Type::UInt16 | Type::Int16 => 2,
@@ -139,7 +139,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
             Type::Float64  => quote!(lowerFloat64(this.$(field.name()))),
             Type::Boolean => quote!(Uint8List.fromList([this.$(field.name()) ? 1 : 0])),
             Type::String => quote!(lowerVaraibleLength(api,this.$(field.name()), lowerString) ),
-            Type::Sequence { inner_type } => quote!(lowerSequence(api, this.$(field.name()), lowerUint8, 1)),
+            Type::Sequence ( inner_type ) => quote!(lowerSequence(api, this.$(field.name()), lowerUint8, 1)),
             _ => todo!("Add variant field lifter for type: {:?}", field.as_type())
         };
 

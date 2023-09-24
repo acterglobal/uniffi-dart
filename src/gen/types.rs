@@ -62,10 +62,10 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         Type::String => quote!(String),
         Type::Object{name, ..} => quote!($name),
         Type::Boolean => quote!(bool),
-        Type::Optional{ inner_type} => quote!($(generate_type(inner_type))?),
-        Type::Sequence { inner_type } => quote!(List<$(generate_type(inner_type))>),
-        Type::Enum { name,..  } => quote!($name),
-        Type::Record { name,..  } => quote!($name),
+        Type::Optional( inner_type) => quote!($(generate_type(inner_type))?),
+        Type::Sequence ( inner_type ) => quote!(List<$(generate_type(inner_type))>),
+        Type::Enum ( name,..  ) => quote!($name),
+        // Type::Record { name,..  } => quote!($name),
         _ => todo!("Type::{:?}", ty)
         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
         // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -126,8 +126,8 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Enum { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Optional { inner_type } => type_lift_optional_inner_type(inner_type, inner),
+        Type::Enum (name, .. ) => quote!($name.lift(api, $inner)),
+        Type::Optional ( inner_type ) => type_lift_optional_inner_type(inner_type, inner),
         _ => todo!("lift Type::{:?}", ty),
     }
 }
@@ -161,9 +161,9 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::Boolean => quote!((($inner) ? 1 : 0)),
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-        Type::Enum { name, .. } => {quote!($name.lower(api, $inner))},
-        Type::Optional { inner_type } => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
-        Type::Sequence { inner_type } => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
+        Type::Enum ( name, .. ) => {quote!($name.lower(api, $inner))},
+        Type::Optional ( inner_type ) => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
+        Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
         _ => todo!("lower Type::{:?}", ty),
     }
 }
