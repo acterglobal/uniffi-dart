@@ -1,1 +1,19 @@
 namespace callbacks { };
+
+/// These objects are implemented in Rust, and call out to `ForeignGetters`
+/// to get the value.
+interface RustGetters {
+  constructor();
+  [Throws=SimpleError]
+  boolean get_bool(ForeignGetters callback, boolean v, boolean argument_two);
+  [Throws=SimpleError]
+  string get_string(ForeignGetters callback, string v, boolean arg2);
+  [Throws=ComplexError]
+  string? get_option(ForeignGetters callback, string? v, boolean arg2);
+  [Throws=SimpleError]
+  sequence<i32> get_list(ForeignGetters callback, sequence<i32> v, boolean arg2);
+  [Throws=SimpleError]
+  string? get_string_optional_callback(ForeignGetters? callback, string v, boolean arg2);
+  [Throws=SimpleError]
+  void get_nothing(ForeignGetters callback, string v);
+};
