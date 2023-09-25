@@ -1,6 +1,7 @@
 use anyhow::{bail, Error as AnyhowError};
 use uniffi;
 
+#[derive(uniffi::Error)]
 pub struct CustomError;
 
 #[uniffi::export]
@@ -22,3 +23,5 @@ mod uniffi_types {
     pub use crate::CustomError;
     pub use anyhow::Error as AnyhowError;
 }
+
+uniffi::include_scaffolding!("api");
