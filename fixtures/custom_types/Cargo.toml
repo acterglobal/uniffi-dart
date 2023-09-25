@@ -12,6 +12,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 uniffi = { version = "0.24.3" }
+url = "2.2"
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }

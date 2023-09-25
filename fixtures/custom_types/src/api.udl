@@ -1,1 +1,16 @@
+[Custom]
+typedef string Url;
+
+[Custom]
+typedef i64 Handle;
+
+[Custom]
+typedef i64 TimeIntervalMs;
+
+[Custom]
+typedef f64 TimeIntervalSecDbl;
+
+[Custom]
+typedef f32 TimeIntervalSecFlt;
+
 namespace custom_types { };
