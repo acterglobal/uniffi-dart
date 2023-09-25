@@ -65,4 +65,4 @@ pub fn add_f64(left: f64, right: f64) -> Option<f64> {
    Some(left + right)
 }
 
-include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
+uniffi::include_scaffolding!("api");

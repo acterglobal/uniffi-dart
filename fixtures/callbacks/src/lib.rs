@@ -131,4 +131,4 @@ impl RustStringifier {
 }
 
 
-include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
+uniffi::include_scaffolding!("api");
