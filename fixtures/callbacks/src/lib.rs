@@ -11,7 +11,7 @@ pub trait ForeignGetters {
 }
 
 // Dart can throw any non-null object as an exception
-#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum SimpleError {
     #[error("BadArgument")]
     BadArgument,
@@ -20,7 +20,7 @@ pub enum SimpleError {
 }
 
 
-#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ComplexError {
     #[error("ReallyBadArgument")]
     ReallyBadArgument { code: i32 },
@@ -45,7 +45,7 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for ComplexError {
 #[derive(Debug, Clone, uniffi::Object)]
 pub struct RustGetters;
 
-// TODO: solve the type error when using the export proc_macro
+// TODO: solve the type error when using the export proc_macro to simplify and delete the contents of api.udl
 //#[uniffi::export]
 impl RustGetters {
    #[uniffi::constructor]
@@ -99,7 +99,7 @@ impl RustGetters {
     }
 }
 
-#[uniffi::export]
+
 impl Default for RustGetters {
     fn default() -> Self {
         Self::new()
