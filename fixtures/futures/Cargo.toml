@@ -11,7 +11,8 @@ name = "futures"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-uniffi = { version = "0.24.3" }
+uniffi = { version = "0.24.3", features = ["tokio"]}
+tokio = { version = "1.24.1", features = ["time"] }
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }
