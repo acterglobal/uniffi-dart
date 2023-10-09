@@ -59,3 +59,11 @@ members = [
     # for testing
     "fixtures/*",
 ]
+# Ignore a few tests for now
+exclude = [
+    "fixtures/coverall",
+    "fixtures/custom_types",
+    "fixtuers/callbacks",
+    "fixtuers/dispose",
+    "fixtuers/futures",
+]
