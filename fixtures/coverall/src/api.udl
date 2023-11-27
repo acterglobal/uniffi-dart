@@ -1,0 +1,86 @@
+namespace coverall { };
+
+[Error]
+enum CoverallError {
+    "TooManyHoles"
+};
+
+[Error]
+interface ComplexError {
+    OsError(i16 code, i16 extended_code);
+    PermissionDenied(string reason);
+    UnknownError();
+};
+
+interface Coveralls {
+    constructor(string name);
+
+    [Throws=CoverallError, Name="fallible_new"]
+    constructor(string name, boolean should_fail);
+
+    [Name="panicking_new"]
+    constructor(string message);
+
+    string get_name();
+
+    [Throws=CoverallError]
+    boolean maybe_throw(boolean should_throw);
+
+    [Throws=CoverallError]
+    boolean maybe_throw_into(boolean should_throw);
+
+    [Throws=ComplexError]
+    boolean maybe_throw_complex(i8 input);
+
+    void panic(string message);
+
+    [Throws=CoverallError]
+    void fallible_panic(string message);
+
+    [Self=ByArc]
+    u64 strong_count();
+
+    void take_other(Coveralls? other);
+
+    Coveralls? get_other();
+
+    [Self=ByArc, Throws=CoverallError]
+    void take_other_fallible();
+
+    [Self=ByArc]
+    void take_other_panic(string message);
+
+    Coveralls clone_me();
+
+    string get_status(string status);
+
+    record<DOMString, u64> get_dict(string key, u64 value);
+
+    record<string, u64> get_dict2(string key, u64 value);
+
+    record<u32, u64> get_dict3(u32 key, u64 value);
+
+    void add_patch(Patch patch);
+
+    void add_repair(Repair repair);
+
+    sequence<Repair> get_repairs();
+
+    bytes reverse(bytes value);
+};
+
+// coveralls keep track of their repairs (an interface in a dict)
+dictionary Repair {
+    timestamp when;
+    Patch patch;
+};
+
+// All coveralls end up with a patch.
+enum Color {"Red", "Blue", "Green"};
+
+interface Patch {
+    constructor(Color color);
+
+    Color get_color();
+};
+

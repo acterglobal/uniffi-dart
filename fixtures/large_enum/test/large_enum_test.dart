@@ -29,6 +29,9 @@ void main() {
   final inner_value_double = 643264.84646234;
   final inner_value_float = 84.68;
   final inner_bool = true;
+
+  final inner_list = [3, 4, 4, 5, 4, 24434398, 4];
+
   // TODO: Collections (Maps, Vector, ...)
   U8Value u8Value = (api.newU8Value(inner_value_small) as U8Value);
   U16Value u16Value = (api.newU16Value(inner_value2) as U16Value);
@@ -45,6 +48,12 @@ void main() {
   StringValue stringValue =
       (api.newStringValue(inner_value.toString()) as StringValue);
   BoolValue boolValue = (api.newBoolValue(inner_bool) as BoolValue);
+
+  // PublicKeyValue publicKeyValue =
+  //     (api.newPublicKeyValue(inner_list) as PublicKeyValue);
+
+  // PublicKeyValue publicKeyValue =
+  //     (api.newPublicKeyValueWithoutArgument() as PublicKeyValue);
 
   test('Creating/Lifting Complex Enums', () {
     // Do we get the expected inner value? Correctly.
@@ -63,6 +72,8 @@ void main() {
 
     expect(stringValue.value, inner_value.toString());
     expect(boolValue.value, inner_bool);
+    // Collections
+    // expect(publicKeyValue.value, inner_list);
   });
 
   test('Passing Down/Lowering Complex Enums', () {
@@ -80,5 +91,7 @@ void main() {
 
     expect(api.takeValue(stringValue), inner_value.toString());
     expect(api.takeValue(boolValue), inner_bool.toString());
+
+    // expect(api.takeValue(publicKeyValue), inner_list.toString());
   });
 }

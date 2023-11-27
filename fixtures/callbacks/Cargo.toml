@@ -1,5 +1,5 @@
 [package]
-name = "simple_arithmetic"
+name = "callbacks"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,18 +7,19 @@ publish = false
 
 
 [lib]
-name = "simple_arithmetic"
+name = "callbacks"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-uniffi = { version = "0.24.3" }
+uniffi = { version = "0.24" }
+thiserror = "1.0"
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }
 
 [dev-dependencies]
 uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
-uniffi = { version = "0.24.3", features = [
+uniffi = { version = "0.24", features = [
   "bindgen-tests",
 ] }
 anyhow = "1"

@@ -1,5 +1,5 @@
 [package]
-name = "simple_arithmetic"
+name = "custom_types"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,11 +7,12 @@ publish = false
 
 
 [lib]
-name = "simple_arithmetic"
+name = "custom_types"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
 uniffi = { version = "0.24.3" }
+url = "2.2"
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }
