@@ -91,16 +91,16 @@ pub fn new_string_value(value: String) -> Value {
 pub fn new_bool_value(value: bool) -> Value {
     Value::Bool { value }
 }
+// Holding off till refactor
+// #[uniffi::export]
+// pub fn new_public_key_value_without_argument() -> Value {
+//     Value::PublicKey { value: vec![3, 4, 4, 5, 4, 2546434, 4] }
+// }
 
-#[uniffi::export]
-pub fn new_public_key_value_without_argument() -> Value {
-    Value::PublicKey { value: vec![3, 4, 4, 5, 4, 2546434, 4] }
-}
-
-#[uniffi::export]
-pub fn new_public_key_value(value: Vec<i32>) -> Value {
-    Value::PublicKey { value }
-}
+// #[uniffi::export]
+// pub fn new_public_key_value(value: Vec<i32>) -> Value {
+//     Value::PublicKey { value }
+// }
 
 #[uniffi::export]
 pub fn take_value(value: Value) -> String {
@@ -121,7 +121,7 @@ pub fn take_value(value: Value) -> String {
         // Value::NonHomogenousCollection { elements } => format!("{:?}", elements),
         // Value::HomogenousCollection { elements } => format!("{:?}", elements),
         // Value::Map { entries } => format!("{:?}", entries),
-        Value::PublicKey { value } => format!("{:?}", value),
+        //Value::PublicKey { value } => format!("{:?}", value),
     }
 }
 
@@ -183,9 +183,11 @@ pub enum Value {
     // Map {
     //     entries: Vec<MapEntry>,
     // },
-    PublicKey {
-        value: Vec<i32>,
-    },
+
+    // Holding off till refactor
+    // PublicKey {
+    //     value: Vec<i32>,
+    // },
 }
 
 #[derive(Clone, Debug, Record)]
