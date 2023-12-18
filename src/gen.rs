@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 // use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
+use self::render::Renderer;
+use self::types::TypeHelpersRenderer;
+
+mod render;
 mod enums;
 mod functions;
 mod objects;
@@ -21,6 +25,8 @@ mod utils;
 pub struct Config {
     package_name: Option<String>,
     cdylib_name: Option<String>,
+    #[serde(default)]
+    external_packages: HashMap<String, String>,
 }
 
 // impl MergeWith for Config {
@@ -47,6 +53,7 @@ impl From<&ComponentInterface> for Config {
         Config {
             package_name: Some(ci.namespace().to_owned()),
             cdylib_name: Some(ci.namespace().to_owned()),
+            external_packages: HashMap::new(),
         }
     }
 }
@@ -102,7 +109,20 @@ impl BindingsConfig for Config {
             .get_or_insert_with(|| cdylib_name.to_string());
     }
 
-    fn update_from_dependency_configs(&mut self, _config_map: HashMap<&str, &Self>) {}
+    fn update_from_dependency_configs(&mut self, config_map: HashMap<&str, &Self>) {
+        for (crate_name, config) in config_map {
+            if !self.external_packages.contains_key(crate_name) {
+                self.external_packages
+                    .insert(crate_name.to_string(), config.package_name());
+            }
+        }
+    }
+}
+
+pub struct DartWrapper<'a> {
+    config: &'a Config,
+    ci: &'a ComponentInterface,
+    type_helper_code: dart::Tokens,
 }
 
 pub struct BindingsGenerator {
@@ -110,226 +130,20 @@ pub struct BindingsGenerator {
     config: Config,
 }
 
-impl BindingsGenerator {
-    pub fn new(ci: ComponentInterface, config: Config) -> Self {
-        BindingsGenerator { ci, config }
+impl<'a> DartWrapper<'a> {
+    pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
+        let type_renderer = TypeHelpersRenderer::new(config, ci);
+        DartWrapper { ci, config, type_helper_code: type_renderer.render(&type_renderer) }
     }
+
     fn generate(&self) -> dart::Tokens {
         let package_name = self.config.package_name();
         let libname = self.config.cdylib_name();
         quote! {
-
             library $package_name;
 
-            import "dart:async";
-            import "dart:convert";
-            import "dart:ffi";
-            import "dart:io" show Platform, File, Directory;
-            import "dart:isolate";
-            import "dart:typed_data";
-            import "package:ffi/ffi.dart";
-
-            class UniffiInternalError implements Exception {
-                static const int bufferOverflow = 0;
-                static const int incompleteData = 1;
-                static const int unexpectedOptionalTag = 2;
-                static const int unexpectedEnumCase = 3;
-                static const int unexpectedNullPointer = 4;
-                static const int unexpectedRustCallStatusCode = 5;
-                static const int unexpectedRustCallError = 6;
-                static const int unexpectedStaleHandle = 7;
-                static const int rustPanic = 8;
-
-                final int errorCode;
-                final String? panicMessage;
-
-                const UniffiInternalError(this.errorCode, this.panicMessage);
-
-                static UniffiInternalError panicked(String message) {
-                return UniffiInternalError(rustPanic, message);
-                }
-
-                @override
-                String toString() {
-                switch (errorCode) {
-                    case bufferOverflow:
-                    return "UniFfi::BufferOverflow";
-                    case incompleteData:
-                    return "UniFfi::IncompleteData";
-                    case unexpectedOptionalTag:
-                    return "UniFfi::UnexpectedOptionalTag";
-                    case unexpectedEnumCase:
-                    return "UniFfi::UnexpectedEnumCase";
-                    case unexpectedNullPointer:
-                    return "UniFfi::UnexpectedNullPointer";
-                    case unexpectedRustCallStatusCode:
-                    return "UniFfi::UnexpectedRustCallStatusCode";
-                    case unexpectedRustCallError:
-                    return "UniFfi::UnexpectedRustCallError";
-                    case unexpectedStaleHandle:
-                    return "UniFfi::UnexpectedStaleHandle";
-                    case rustPanic:
-                    return "UniFfi::rustPanic: $$panicMessage";
-                    default:
-                    return "UniFfi::UnknownError: $$errorCode";
-                }
-                }
-            }
-
-            const int CALL_SUCCESS = 0;
-            const int CALL_ERROR = 1;
-            const int CALL_PANIC = 2;
-
-            class RustCallStatus extends Struct {
-                @Int8()
-                external int code;
-                external RustBuffer errorBuf;
-
-                static Pointer<RustCallStatus> allocate({int count = 1}) =>
-                calloc<RustCallStatus>(count * sizeOf<RustCallStatus>()).cast();
-            }
-
-            T noop<T>(T t) {
-                return t;
-            }
-
-            T rustCall<T>(Api api, T Function(Pointer<RustCallStatus>) callback) {
-                var callStatus = RustCallStatus.allocate();
-                final returnValue = callback(callStatus);
-
-                switch (callStatus.ref.code) {
-                case CALL_SUCCESS:
-                    calloc.free(callStatus);
-                    return returnValue;
-                case CALL_ERROR:
-                    throw callStatus.ref.errorBuf;
-                case CALL_PANIC:
-                    if (callStatus.ref.errorBuf.len > 0) {
-                        final message = liftString(api, callStatus.ref.errorBuf.toIntList());
-                        calloc.free(callStatus);
-                        throw UniffiInternalError.panicked(message);
-                    } else {
-                        calloc.free(callStatus);
-                        throw UniffiInternalError.panicked("Rust panic");
-                    }
-                default:
-                    throw UniffiInternalError(callStatus.ref.code, null);
-                }
-            }
-
-            class RustBuffer extends Struct {
-                @Int32()
-                external int capacity;
-
-                @Int32()
-                external int len;
-
-                external Pointer<Uint8> data;
-
-                static RustBuffer fromBytes(Api api, ForeignBytes bytes) {
-                    final _fromBytesPtr = api._lookup<
-                    NativeFunction<
-                        RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_from_bytes().name())));
-                    final fromBytes =
-                    _fromBytesPtr.asFunction<RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => fromBytes(bytes, res));
-                }
-
-                void deallocate(Api api) {
-                    final _freePtr = api._lookup<
-                    NativeFunction<
-                        Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
-                    final free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
-                    rustCall(api, (res) => free(this, res));
-                }
-
-                Uint8List toIntList() {
-                    final buf = Uint8List(len);
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        buf[i] = precast.elementAt(i).value;
-                    }
-                    return buf;
-                }
-
-                @override
-                String toString() {
-                    String res = "RustBuffer { capacity: $capacity, len: $len, data: $data }";
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        int char = precast.elementAt(i).value;
-                        res += String.fromCharCode(char);
-                    }
-                    return res;
-                }
-            }
-
-            String liftString(Api api, Uint8List input) {        
-                // we have a i32 length at the front
-                return utf8.decoder.convert(input);
-            }
-
-            $(primitives::generate_primitives_lifters())
-           
-            Uint8List lowerString(Api api, String input) {
-                // FIXME: this is too many memcopies!
-                return Utf8Encoder().convert(input);
-            }
-
-            $(primitives::generate_primitives_lowerers())
-
-            RustBuffer toRustBuffer(Api api, Uint8List data) {
-                final length = data.length;
-
-                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
-                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
-                pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
-
-                final bytes = calloc<ForeignBytes>();
-                bytes.ref.len = length;
-                bytes.ref.data = frameData;
-                return RustBuffer.fromBytes(api, bytes.ref);
-            }
-
-            T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
-                if (buf.isEmpty || buf.first == 0){
-                    return null;
-                }
-                return lifter(api, buf);
-            }
-
-            $(primitives::generate_wrapper_lifters())
-
-            Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
-                if (inp == null) {
-                    final res = Uint8List(1);
-                    res.first = 0;
-                    return res;
-                }
-                // converting the inner
-                final inner = lowerer(api, inp);
-                // preparing the outer
-                final offset = 5;
-                final res = Uint8List(inner.length + offset);
-                // first byte sets the option to as true
-                res.setAll(0, [1]);
-                // then set the inner size
-                final len = Uint32List(1);
-                len.first = inner.length;
-                res.setAll(1, len.buffer.asUint8List().reversed);
-                // then add the actual data
-                res.setAll(offset, inner);
-                return res;
-            }
-
-            $(primitives::generate_wrapper_lowerers())
-
-            class ForeignBytes extends Struct {
-                @Int32()
-                external int len;
-
-                external Pointer<Uint8> data;
-            }
+            $(&self.type_helper_code) // Imports and type conversion code
+            
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
 
             $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
@@ -390,7 +204,7 @@ impl BindingGenerator for DartBindingGenerator {
         out_dir: &Utf8Path,
     ) -> Result<()> {
         let filename = out_dir.join(format!("{}.dart", config.cdylib_name()));
-        let tokens = BindingsGenerator::new(ci, config).generate();
+        let tokens = DartWrapper::new(&ci, &config).generate();
         let file = std::fs::File::create(filename)?;
 
         let mut w = fmt::IoWriter::new(file);
