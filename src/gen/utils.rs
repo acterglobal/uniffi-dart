@@ -1,5 +1,6 @@
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
+// TODO: Move all these functions to `DartCodeOracle`
 pub fn sanitize_identifier(id: &str) -> String {
     if RESERVED_IDENTIFIERS.contains(&id) {
         format!("{}_", id)
