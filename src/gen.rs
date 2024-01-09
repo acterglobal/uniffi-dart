@@ -125,11 +125,6 @@ pub struct DartWrapper<'a> {
     type_helper_code: dart::Tokens,
 }
 
-pub struct BindingsGenerator {
-    ci: ComponentInterface,
-    config: Config,
-}
-
 impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
