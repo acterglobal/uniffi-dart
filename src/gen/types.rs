@@ -4,7 +4,7 @@ use genco::prelude::*;
 use uniffi_bindgen::{interface::{FfiType, Type}, ComponentInterface};
 
 use super::{Config, render::{Renderable, Renderer}};
-use crate::gen::primitives;
+use crate::gen::render::primitives;
 
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -13,6 +13,8 @@ pub enum ImportRequirement {
     ImportAs { name: String, as_name: String },
 }
 
+// TODO: Handle importing external packages defined in the configuration.
+// TODO: Finish refactor by moving all code that's not related to type helpers when Renderable has been implemented for the rest of the types 
 pub struct TypeHelpersRenderer<'a> {
     config: &'a Config,
     ci: &'a ComponentInterface,
@@ -72,7 +74,7 @@ impl Renderable for TypeHelpersRenderer<'_> {
 }
 
 impl Renderer for TypeHelpersRenderer<'_> {
-    fn render(&self, r: &impl Renderable) -> dart::Tokens {
+    fn render(&self, _r: &impl Renderable) -> dart::Tokens {
         quote! {
             import "dart:async";
             import "dart:convert";
@@ -189,6 +191,15 @@ impl Renderer for TypeHelpersRenderer<'_> {
                     return rustCall(api, (res) => fromBytes(bytes, res));
                 }
 
+                // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
+                static RustBuffer allocate(Api api, int size) {
+                    final _allocatePtr = api._lookup<
+                        NativeFunction<
+                            RustBuffer Function(Int32, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
+                    final allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
+                    return rustCall(api, (res) => allocate(size, res));
+                }
+
                 void deallocate(Api api) {
                     final _freePtr = api._lookup<
                     NativeFunction<
@@ -217,6 +228,54 @@ impl Renderer for TypeHelpersRenderer<'_> {
                     return res;
                 }
             }
+
+
+            // TODO: Make all the types use me!
+            // abstract class FfiConverter<T, FfiType> {
+            //     T lift(FfiType value);
+            
+            //     FfiType lower(T value);
+            
+            //     T read(ByteBuffer buf);
+            
+            //     int allocationSize(T value);
+            
+            //     void write(T value, ByteBuffer buf);
+            
+            //     RustBuffer lowerIntoRustBuffer(T value) {
+            //     final rbuf = RustBuffer.allocate(allocationSize(value));
+            //     try {
+            //         final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
+            //         write(value, bbuf);
+            //         rbuf.len = bbuf.position();
+            //         return rbuf;
+            //     } catch (e) {
+            //         RustBuffer.deallocate(rbuf);
+            //         throw e;
+            //     }
+            //     }
+            
+            //     T liftFromRustBuffer(RustBuffer rbuf) {
+            //     final byteBuf = rbuf.asByteBuffer();
+            //     try {
+            //         final item = read(byteBuf);
+            //         if (byteBuf.hasRemaining) {
+            //         throw Exception("Junk remaining in buffer after lifting, something is very wrong!!");
+            //         }
+            //         return item;
+            //     } finally {
+            //         RustBuffer.deallocate(rbuf);
+            //     }
+            //     }
+            // }
+            
+            // abstract class FfiConverterRustBuffer<T> implements FfiConverter<T, RustBuffer> {
+            //     @override
+            //     T lift(RustBuffer value) => liftFromRustBuffer(value);
+            
+            //     @override
+            //     RustBuffer lower(T value) => lowerIntoRustBuffer(value);
+            // }
 
             String liftString(Api api, Uint8List input) {        
                 // we have a i32 length at the front
