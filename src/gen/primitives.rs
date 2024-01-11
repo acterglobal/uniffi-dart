@@ -62,7 +62,25 @@ macro_rules! impl_code_type_for_primitive {
                     $canonical_name.into()
                 }
 
-                // TODO: Impliment the rest of the CodeType trait functions. Namely, ffi_converter_name, lower, lift, write and read
+                fn ffi_converter_name(&self) -> String {
+                    format!("{}FfiConverter", self.canonical_name())
+                }
+            
+                fn lower(&self) -> String {
+                    format!("{}.lower", self.ffi_converter_name())
+                }
+            
+                fn write(&self) -> String {
+                    format!("{}.write", self.ffi_converter_name())
+                }
+            
+                fn lift(&self) -> String {
+                    format!("{}.lift", self.ffi_converter_name())
+                }
+            
+                fn read(&self) -> String {
+                    format!("{}.read", self.ffi_converter_name())
+                }
             }
         }
     };
@@ -71,13 +89,13 @@ macro_rules! impl_code_type_for_primitive {
 impl_code_type_for_primitive!(BooleanCodeType, "bool", "Bool");
 impl_code_type_for_primitive!(StringCodeType, "String", "String");
 impl_code_type_for_primitive!(BytesCodeType, "Uint8List", "Uint8List");
-impl_code_type_for_primitive!(Int8CodeType, "int", "Int");
-impl_code_type_for_primitive!(Int16CodeType, "int", "Int");
-impl_code_type_for_primitive!(Int32CodeType, "int", "Int");
-impl_code_type_for_primitive!(Int64CodeType, "int", "Int");
-impl_code_type_for_primitive!(UInt8CodeType, "int", "Int");
-impl_code_type_for_primitive!(UInt16CodeType, "int", "Int");
-impl_code_type_for_primitive!(UInt32CodeType, "int", "Int");
-impl_code_type_for_primitive!(UInt64CodeType, "int", "Int");
-impl_code_type_for_primitive!(Float32CodeType, "double", "Double");
-impl_code_type_for_primitive!(Float64CodeType, "double", "Double");
+impl_code_type_for_primitive!(Int8CodeType, "int", "Int8");
+impl_code_type_for_primitive!(Int16CodeType, "int", "Int16");
+impl_code_type_for_primitive!(Int32CodeType, "int", "Int32");
+impl_code_type_for_primitive!(Int64CodeType, "int", "Int64");
+impl_code_type_for_primitive!(UInt8CodeType, "int", "UInt8");
+impl_code_type_for_primitive!(UInt16CodeType, "int", "UInt16");
+impl_code_type_for_primitive!(UInt32CodeType, "int", "UInt32");
+impl_code_type_for_primitive!(UInt64CodeType, "int", "UInt64");
+impl_code_type_for_primitive!(Float32CodeType, "double", "Double32");
+impl_code_type_for_primitive!(Float64CodeType, "double", "Double64");
