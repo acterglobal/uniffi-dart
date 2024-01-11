@@ -109,3 +109,106 @@ pub static RESERVED_IDENTIFIERS: [&str; 63] = [
     "with",
     "yield",
 ];
+use heck::{ToLowerCamelCase, ToUpperCamelCase};
+
+pub struct DartCodeOracle;
+
+impl DartCodeOracle {
+    pub fn sanitize_identifier(&self, id: &str) -> String {
+        if self.is_reserved_identifier(id) {
+            format!("{}_", id)
+        } else {
+            id.to_string()
+        }
+    }
+
+    pub fn is_reserved_identifier(&self, id: &str) -> bool {
+        RESERVED_IDENTIFIERS.contains(&id)
+    }
+
+    pub fn class_name(&self, nm: &str) -> String {
+        self.sanitize_identifier(&nm.to_upper_camel_case())
+    }
+
+    pub fn fn_name(&self, nm: &str) -> String {
+        self.sanitize_identifier(&nm.to_lower_camel_case())
+    }
+
+    pub fn var_name(&self, nm: &str) -> String {
+        self.sanitize_identifier(&nm.to_lower_camel_case())
+    }
+
+    pub fn enum_variant_name(&self, nm: &str) -> String {
+        self.sanitize_identifier(&nm.to_lower_camel_case())
+    }
+
+    pub fn error_name(&self, nm: &str) -> String {
+        self.class_name(nm)
+    }
+}
+
+pub static RESERVED_IDENTIFIERS: [&str; 63] = [
+    "abstract",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "covariant",
+    "default",
+    "deferred",
+    "do",
+    "dynamic",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "extension",
+    "external",
+    "factory",
+    "false",
+    "final",
+    "finally",
+    "for",
+    "Function",
+    "get",
+    "hide",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "interface",
+    "is",
+    "late",
+    "library",
+    "mixin",
+    "new",
+    "null",
+    "on",
+    "operator",
+    "part",
+    "required",
+    "rethrow",
+    "return",
+    "set",
+    "show",
+    "static",
+    "super",
+    "switch",
+    "sync",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typedef",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+];

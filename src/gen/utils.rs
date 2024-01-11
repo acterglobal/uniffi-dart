@@ -1,6 +1,6 @@
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
-// TODO: Move all these functions to `DartCodeOracle`
+
 pub fn sanitize_identifier(id: &str) -> String {
     if RESERVED_IDENTIFIERS.contains(&id) {
         format!("{}_", id)
@@ -14,7 +14,7 @@ pub fn class_name(nm: &str) -> String {
     sanitize_identifier(&nm.to_upper_camel_case())
 }
 
-/// Get the idiomatic Dart rendering of a function name.
+/// Get the idiomatic Dart rendering of a function name (for methods, etc).
 pub fn fn_name(nm: &str) -> String {
     sanitize_identifier(&nm.to_lower_camel_case())
 }
@@ -22,7 +22,7 @@ pub fn fn_name(nm: &str) -> String {
 /// Get the idiomatic Dart rendering of a variable name.
 pub fn var_name(nm: &str) -> String {
     sanitize_identifier(&nm.to_lower_camel_case())
-}
+} 
 
 /// Get the idiomatic Dart rendering of an individual enum variant.
 pub fn enum_variant_name(nm: &str) -> String {
@@ -30,7 +30,7 @@ pub fn enum_variant_name(nm: &str) -> String {
 }
 
 /// Get the idiomatic Dart rendering of an exception name.
-pub fn error_name(nm: &str) -> String {
+pub fn error_name(nm: &str) -> String { 
     class_name(nm)
 }
 
@@ -99,4 +99,4 @@ pub static RESERVED_IDENTIFIERS: [&str; 63] = [
     "while",
     "with",
     "yield",
-];
+]; 
