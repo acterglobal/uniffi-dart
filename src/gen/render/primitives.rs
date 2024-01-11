@@ -177,30 +177,3 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
         }
     }
 }
-
-//use crate::gen::dart_code_oracle::DartCodeOracle;
-use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::Literal;
-use std::fmt::Debug;
-
-// Assuming the DartCodeOracle is already implemented and available
-let oracle = DartCodeOracle;
-
-impl CodeType for BooleanCodeType {
-    fn type_label(&self) -> String {
-        oracle.var_name("bool")
-    }
-
-    fn ffi_converter_name(&self) -> String {
-        format!("FfiConverter{}", oracle.class_name("bool"))
-    }
-
-    // The rest of the CodeType trait methods can use the default implementations
-    // provided in the trait definition if they are appropriate for Dart.
-    // Otherwise, provide Dart-specific implementations here.
-}
-
-// Repeat the above implementation for each primitive type, adjusting the type_label
-// and ffi_converter_name as appropriate for the type.
-// ...
-
