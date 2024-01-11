@@ -20,6 +20,7 @@ mod primitives;
 mod records;
 mod types;
 mod utils;
+mod oracle;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {

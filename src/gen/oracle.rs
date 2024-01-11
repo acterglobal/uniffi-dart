@@ -1,9 +1,8 @@
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
-use uniffi_bindgen::backend::{CodeType, FfiType};
+use uniffi_bindgen::backend::{CodeType};
 use uniffi_bindgen::interface::{Type, Literal};
-use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{Type, Literal};
+
 
 pub struct DartCodeOracle;
 
