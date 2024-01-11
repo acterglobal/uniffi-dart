@@ -2,7 +2,7 @@ use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
 use uniffi_bindgen::backend::{CodeType, FfiType};
 use uniffi_bindgen::interface::{Type, Literal};
-use uniffi_bindgen::backend::{CodeType, FfiType};
+use uniffi_bindgen::backend::CodeType;
 use uniffi_bindgen::interface::{Type, Literal};
 
 pub struct DartCodeOracle;
@@ -23,6 +23,7 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
+    #[allow(dead_code)]
     pub fn class_name(&self, nm: &str) -> String {
         self.sanitize_identifier(&nm.to_upper_camel_case())
     }
@@ -33,16 +34,19 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of a variable name.
+    #[allow(dead_code)]
     pub fn var_name(&self, nm: &str) -> String {
         self.sanitize_identifier(&nm.to_lower_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an individual enum variant.
+    #[allow(dead_code)]
     pub fn enum_variant_name(&self, nm: &str) -> String {
         self.sanitize_identifier(&nm.to_lower_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an exception name.
+    #[allow(dead_code)]
     pub fn error_name(&self, nm: &str) -> String {
         self.class_name(nm)
     }
@@ -52,6 +56,7 @@ impl DartCodeOracle {
 
 // https://dart.dev/guides/language/language-tour#keywords
 pub static RESERVED_IDENTIFIERS: [&str; 63] = [
+    // This list may need to be updated as the Dart language evolves.
     "abstract",
     "as",
     "assert",
