@@ -1,2 +1,4 @@
 /target
+/uniffi-rs
 /Cargo.lock
+.aider*
