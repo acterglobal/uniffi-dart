@@ -229,53 +229,51 @@ impl Renderer for TypeHelpersRenderer<'_> {
                 }
             }
 
-
             // TODO: Make all the types use me!
-            // abstract class FfiConverter<T, FfiType> {
-            //     T lift(FfiType value);
-            
-            //     FfiType lower(T value);
-            
-            //     T read(ByteBuffer buf);
-            
-            //     int allocationSize(T value);
-            
-            //     void write(T value, ByteBuffer buf);
-            
-            //     RustBuffer lowerIntoRustBuffer(T value) {
-            //     final rbuf = RustBuffer.allocate(allocationSize(value));
-            //     try {
-            //         final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
-            //         write(value, bbuf);
-            //         rbuf.len = bbuf.position();
-            //         return rbuf;
-            //     } catch (e) {
-            //         RustBuffer.deallocate(rbuf);
-            //         throw e;
-            //     }
-            //     }
-            
-            //     T liftFromRustBuffer(RustBuffer rbuf) {
-            //     final byteBuf = rbuf.asByteBuffer();
-            //     try {
-            //         final item = read(byteBuf);
-            //         if (byteBuf.hasRemaining) {
-            //         throw Exception("Junk remaining in buffer after lifting, something is very wrong!!");
-            //         }
-            //         return item;
-            //     } finally {
-            //         RustBuffer.deallocate(rbuf);
-            //     }
-            //     }
-            // }
-            
-            // abstract class FfiConverterRustBuffer<T> implements FfiConverter<T, RustBuffer> {
-            //     @override
-            //     T lift(RustBuffer value) => liftFromRustBuffer(value);
-            
-            //     @override
-            //     RustBuffer lower(T value) => lowerIntoRustBuffer(value);
-            // }
+            abstract class FfiConverter<T, FfiType> {
+                T lift(Api api, FfiType value);
+                FfiType lower(Api api,T value);
+                T read(ByteBuffer buf);
+                int allocationSize(T value);
+                void write(T value, ByteBuffer buf);
+              
+                RustBuffer lowerIntoRustBuffer(Api api, T value) {
+                  throw UnimplementedError("lower into rust implement lift from rust buffer");
+                  // final rbuf = RustBuffer.allocate(api, allocationSize(value));
+                  // try {
+                  //   final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
+                  //   write(value, bbuf);
+                  //   rbuf.len = bbuf.position();
+                  //   return rbuf;
+                  // } catch (e) {
+                  //   RustBuffer.deallocate(api, rbuf);
+                  //   throw e;
+                  // }
+                }
+              
+                T liftFromRustBuffer(Api api, RustBuffer rbuf) {
+                  throw UnimplementedError("Lift from rust implement lift from rust buffer");
+                  // final byteBuf = rbuf.asByteBuffer();
+                  // try {
+                  //   final item = read(byteBuf);
+                  //   if (byteBuf.hasRemaining) {
+                  //     throw Exception(
+                  //         "Junk remaining in buffer after lifting, something is very wrong!!");
+                  //   }
+                  //   return item;
+                  // } finally {
+                  //   RustBuffer.deallocate(rbuf);
+                  // }
+                }
+              }
+              
+              abstract class FfiConverterRustBuffer<T>
+                  implements FfiConverter<T, RustBuffer> {
+                @override
+                T lift(Api api, RustBuffer value) => liftFromRustBuffer(api, value);
+                @override
+                RustBuffer lower(Api api, T value) => lowerIntoRustBuffer(api, value);
+              }
 
             String liftString(Api api, Uint8List input) {        
                 // we have a i32 length at the front

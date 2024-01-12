@@ -3,6 +3,7 @@ use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{Radix, Type};
 use crate::gen::render::{Renderable};
 use crate::gen::oracle::DartCodeOracle;
+use genco::prelude::*;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -92,7 +93,9 @@ macro_rules! impl_code_type_for_primitive {
 
                 fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
                     // This method can be expanded to generate type helper methods if needed.
-                    quote!()
+                    quote! {
+                        //TODO: Make each render_type impliment `FfiConverter`
+                    }
                 }
             }
         }
