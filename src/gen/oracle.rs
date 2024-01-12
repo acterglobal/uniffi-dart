@@ -5,24 +5,26 @@ use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use uniffi_bindgen::backend::{CodeType};
 use uniffi_bindgen::interface::{Type, Literal, AsType, FfiType};
 
+use crate::gen::primitives;
+
 
 pub struct DartCodeOracle;
 
 impl DartCodeOracle {
-    fn find(&self, type_: &Type) -> Box<dyn CodeType> {
+    fn find(type_: &Type) -> Box<dyn CodeType> {
         type_.clone().as_type().as_codetype()
     }
 
-    fn find_as_error(&self, type_: &Type) -> Box<dyn CodeType> {
+    fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
         match type_ {
-            Type::Enum(id) => Box::new(error::ErrorCodeType::new(id.clone())),
+            //Type::Enum(id) => Box::new(error::ErrorCodeType::new(id.clone())),
             _ => panic!("unsupported type for error: {type_:?}"),
         }
     }
 
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
-    pub fn sanitize_identifier(&self, id: &str) -> String {
-        if self.is_reserved_identifier(id) {
+    pub fn sanitize_identifier(id: &str) -> String {
+        if Self::is_reserved_identifier(id) {
             format!("{}_", id)
         } else {
             id.to_string()
@@ -30,37 +32,37 @@ impl DartCodeOracle {
     }
     
     /// Check if the given identifier is a reserved keyword in Dart.
-     pub fn is_reserved_identifier(&self, id: &str) -> bool {
+     pub fn is_reserved_identifier(id: &str) -> bool {
         RESERVED_IDENTIFIERS.contains(&id)
     }
 
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
     
-    pub fn class_name(&self, nm: &str) -> String {
-        self.sanitize_identifier(&nm.to_upper_camel_case())
+    pub fn class_name(nm: &str) -> String {
+        Self::sanitize_identifier(&nm.to_upper_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of a function name.
-    pub fn fn_name(&self, nm: &str) -> String {
-        self.sanitize_identifier(&nm.to_lower_camel_case())
+    pub fn fn_name(nm: &str) -> String {
+        Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of a variable name.
     
-    pub fn var_name(&self, nm: &str) -> String {
-        self.sanitize_identifier(&nm.to_lower_camel_case())
+    pub fn var_name(nm: &str) -> String {
+        Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an individual enum variant.
-    pub fn enum_variant_name(&self, nm: &str) -> String {
-        self.sanitize_identifier(&nm.to_lower_camel_case())
+    pub fn enum_variant_name(nm: &str) -> String {
+        Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an exception name
     // TODO: Refactor to be more idomatic to the way dart handles errors
-    pub fn error_name(&self, nm: &str) -> String {
+    pub fn error_name(nm: &str) -> String {
         // errors are a class in Dart.
-        let name = self.class_name(nm);
+        let name = Self::class_name(nm);
         match name.strip_suffix("Error") {
             None => name,
             Some(stripped) => format!("{stripped}Exception"),
@@ -137,27 +139,27 @@ impl DartCodeOracle {
     //         Type::Enum ( name,..  ) => quote!($name),
     //         // Type::Record { name,..  } => quote!($name),
     //         _ => todo!("Type::{:?}", ty)
-    //         // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
+    //         // AbiType::Num(ty) => Self::generate_wrapped_num_type(*ty),
     //         // AbiType::Isize | AbiType::Usize => quote!(int),
     //         // AbiType::Bool => quote!(bool),
     //         // AbiType::RefStr | AbiType::String => quote!(String),
     //         // AbiType::RefSlice(ty) | AbiType::Vec(ty) => {
-    //         //     quote!(List<#(self.generate_wrapped_num_type(*ty))>)
+    //         //     quote!(List<#(Self::generate_wrapped_num_type(*ty))>)
     //         // }
-    //         // AbiType::Option(ty) => quote!(#(self.generate_type(ty))?),
-    //         // AbiType::Result(ty) => self.generate_type(ty),
+    //         // AbiType::Option(ty) => quote!(#(Self::generate_type(ty))?),
+    //         // AbiType::Result(ty) => Self::generate_type(ty),
     //         // AbiType::Tuple(tuple) => match tuple.len() {
     //         //     0 => quote!(void),
-    //         //     1 => self.generate_type(&tuple[0]),
+    //         //     1 => Self::generate_type(&tuple[0]),
     //         //     _ => quote!(List<dynamic>),
     //         // },
     //         // AbiType::RefObject(ty) | AbiType::Object(ty) => quote!(#ty),
-    //         // AbiType::RefIter(ty) | AbiType::Iter(ty) => quote!(Iter<#(self.generate_type(ty))>),
+    //         // AbiType::RefIter(ty) | AbiType::Iter(ty) => quote!(Iter<#(Self::generate_type(ty))>),
     //         // AbiType::RefFuture(ty) | AbiType::Future(ty) => {
-    //         //     quote!(Future<#(self.generate_type(ty))>)
+    //         //     quote!(Future<#(Self::generate_type(ty))>)
     //         // }
     //         // AbiType::RefStream(ty) | AbiType::Stream(ty) => {
-    //         //     quote!(Stream<#(self.generate_type(ty))>)
+    //         //     quote!(Stream<#(Self::generate_type(ty))>)
     //         // }
     //         // AbiType::Buffer(ty) => quote!(#(ffi_buffer_name_for(*ty))),
     //         // AbiType::List(ty) => quote!(#(format!("FfiList{}", ty))),
@@ -198,7 +200,7 @@ impl DartCodeOracle {
             Type::String => quote!(liftString(api, $inner)),
             Type::Object { name, .. } => quote!($name.lift(api, $inner)),
             Type::Enum (name, .. ) => quote!($name.lift(api, $inner)),
-            Type::Optional ( inner_type ) => type_lift_optional_inner_type(inner_type, inner),
+            Type::Optional ( inner_type ) => Self::type_lift_optional_inner_type(inner_type, inner),
             _ => todo!("lift Type::{:?}", ty),
         }
     }
@@ -212,7 +214,7 @@ impl DartCodeOracle {
             Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v))),
             Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
             Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
-            Type::String => quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
+            Type::String => quote!(liftOptional(api, $inner, (api, v) => $(Self::type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
             _ => todo!("lift Option inner type: Type::{:?}", inner_type)
         }
     }
@@ -233,7 +235,7 @@ impl DartCodeOracle {
             Type::String => quote!(lowerString(api, $inner)),
             Type::Object { name, .. } => quote!($name.lower(api, $inner)),
             Type::Enum ( name, .. ) => {quote!($name.lower(api, $inner))},
-            Type::Optional ( inner_type ) => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
+            Type::Optional ( inner_type ) => quote!(lowerOptional(api, $inner, (api, v) => $(Self::type_lower_fn(inner_type, quote!(v))))),
             Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
             _ => todo!("lower Type::{:?}", ty),
         }
@@ -315,19 +317,20 @@ pub trait AsCodeType {
 
 impl<T: AsType> AsCodeType for T {
     fn as_codetype(&self) -> Box<dyn CodeType> {
-        // match self.as_type() {
-            // Type::UInt8 => Box::new(primitives::UInt8CodeType),
-            // Type::Int8 => Box::new(primitives::Int8CodeType),
-            // Type::UInt16 => Box::new(primitives::UInt16CodeType),
-            // Type::Int16 => Box::new(primitives::Int16CodeType),
-            // Type::UInt32 => Box::new(primitives::UInt32CodeType),
-            // Type::Int32 => Box::new(primitives::Int32CodeType),
-            // Type::UInt64 => Box::new(primitives::UInt64CodeType),
-            // Type::Int64 => Box::new(primitives::Int64CodeType),
-            // Type::Float32 => Box::new(primitives::Float32CodeType),
-            // Type::Float64 => Box::new(primitives::Float64CodeType),
-            // Type::Boolean => Box::new(primitives::BooleanCodeType),
-            // Type::String => Box::new(primitives::StringCodeType),
+        match self.as_type() {
+            Type::UInt8 => Box::new(primitives::UInt8CodeType),
+            Type::Int8 => Box::new(primitives::Int8CodeType),
+            Type::UInt16 => Box::new(primitives::UInt16CodeType),
+            Type::Int16 => Box::new(primitives::Int16CodeType),
+            Type::UInt32 => Box::new(primitives::UInt32CodeType),
+            Type::Int32 => Box::new(primitives::Int32CodeType),
+            Type::UInt64 => Box::new(primitives::UInt64CodeType),
+            Type::Int64 => Box::new(primitives::Int64CodeType),
+            Type::Float32 => Box::new(primitives::Float32CodeType),
+            Type::Float64 => Box::new(primitives::Float64CodeType),
+            Type::Boolean => Box::new(primitives::BooleanCodeType),
+            Type::String => Box::new(primitives::StringCodeType),
+            _ => todo!("As Type for Type::{:?}", self.as_type())
             // Type::Bytes => Box::new(primitives::BytesCodeType),
 
             // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
@@ -344,9 +347,7 @@ impl<T: AsType> AsCodeType for T {
             // Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(*inner)),
             // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
             // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
-            // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),\
-            
-       // }
-        unimplemented!("Gotta chill for now")
+            // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
+       }
     }
 }
