@@ -1,6 +1,8 @@
 use paste::paste;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{Radix, Type};
+use crate::gen::render::{Renderable};
+use crate::gen::oracle::DartCodeOracle;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -80,6 +82,17 @@ macro_rules! impl_code_type_for_primitive {
             
                 fn read(&self) -> String {
                     format!("{}.read", self.ffi_converter_name())
+                }
+            }
+
+            impl Renderable for $T {
+                fn render_type(&self, _ty: &Type) -> dart::Tokens {
+                    quote!($class_name)
+                }
+
+                fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
+                    // This method can be expanded to generate type helper methods if needed.
+                    quote!()
                 }
             }
         }
