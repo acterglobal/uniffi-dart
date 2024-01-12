@@ -2,7 +2,89 @@ use genco::prelude::*;
 use super::{Renderer, Renderable};
 
 // TODO: Create struct that impliment Renderer/Renderable for primitives
-// 
+// Implementations for primitive type helpers
+
+pub fn generate_primitives_lifters() -> dart::Tokens {
+    quote!{
+        int liftInt8OrUint8(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getInt8(offset);
+        }
+
+        int liftInt16OrUint16(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getInt16(offset);
+        }
+
+        int liftInt32OrUint32(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getInt32(offset);
+        }
+
+        int liftInt64OrUint64(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getInt64(offset);
+        }  
+
+        double liftFloat32(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getFloat32(offset);
+        }
+
+        double liftFloat64(Uint8List buf, [int offset = 1]) {
+            return buf.buffer.asByteData().getFloat64(offset);
+        }
+
+        bool liftBoolean(Uint8List buf, [int offset = 1]) {
+            return buf.sublist(offset)[0] == 1;
+        }
+    }
+}
+
+pub fn generate_primitives_lowerers() -> dart::Tokens {
+    quote! {
+        Uint8List lowerInt8(int value) {
+            final buf = Uint8List(1);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt8(0, value);
+            return buf;
+        }
+
+        Uint8List lowerInt16(int value) {
+            final buf = Uint8List(2);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt16(0, value, Endian.little);
+            return buf;
+        }
+
+        Uint8List lowerInt32(int value) {
+            final buf = Uint8List(4);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt32(0, value, Endian.little);
+            return buf;
+        }
+
+        Uint8List lowerInt64(int value) {
+            final buf = Uint8List(8);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setInt64(0, value, Endian.little);
+            return buf;
+        }
+
+        Uint8List lowerFloat32(double value) {
+            final buf = Uint8List(4);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setFloat32(0, value, Endian.little);
+            return buf;
+        }
+
+        Uint8List lowerFloat64(double value) {
+            final buf = Uint8List(8);
+            final byteData = ByteData.sublistView(buf);
+            byteData.setFloat64(0, value, Endian.little);
+            return buf;
+        }
+
+        Uint8List lowerBoolean(bool value) {
+            return Uint8List.fromList([value ? 1 : 0]);
+        }
+    }
+}
 pub fn generate_primitives_lifters() -> dart::Tokens {
     quote!{
         int? liftInt8OrUint8(Uint8List buf, [int offset = 1]) {
