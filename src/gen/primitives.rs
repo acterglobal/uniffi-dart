@@ -1,7 +1,7 @@
 use paste::paste;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{Radix, Type};
-use crate::gen::render::{Renderable};
+use crate::gen::render::{Renderable, TypeHelperRenderer};
 use crate::gen::oracle::DartCodeOracle;
 use genco::prelude::*;
 
@@ -96,7 +96,10 @@ macro_rules! impl_renderable_for_primitive {
                 quote!($class_name)
             }
 
-            fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
+            fn render_type_helpers(&self, _ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+                if !(type_helper.include_once_check($canonical_name)) {
+                    return quote!("") // Return an empty string to avoid code duplication
+                }
                 // This method can be expanded to generate type helper methods if needed.
                 let endian = (if $canonical_name.contains("Float") { "Endian.little" } else { "Endian.big" });
                 let final_uintlist = (if $canonical_name.contains("Float") { 
@@ -105,8 +108,10 @@ macro_rules! impl_renderable_for_primitive {
                     String::from($canonical_name) + "List.fromList(buf.toList())" 
                 });
 
+                let cl_name = String::from($canonical_name) + "FfiConverter";
+
                 quote! {
-                    class IntFfiConverter extends FfiConverter<int, RustBuffer> {
+                    class $cl_name extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
                         int lift(Api api, RustBuffer buf) {
                             final uint_list = buf.toIntList();
@@ -149,10 +154,13 @@ macro_rules! impl_renderable_for_primitive {
                 quote!($class_name)
             }
 
-            fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
+            fn render_type_helpers(&self, _ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+                if !(type_helper.include_once_check($canonical_name)) {
+                    return quote!("") // Return an empty string to avoid code duplication
+                }
                 // This method can be expanded to generate type helper methods if needed.
                 quote! {
-                    class IntFfiConverter extends FfiConverter<int, RustBuffer> {
+                    class BooleanFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
                         bool lift(Api api, RustBuffer buf) {
                             final uint_list = buf.toIntList();
@@ -193,10 +201,13 @@ macro_rules! impl_renderable_for_primitive {
                 quote!($class_name)
             }
 
-            fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
+            fn render_type_helpers(&self, _ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 // This method can be expanded to generate type helper methods if needed.
                 quote! {
-                    class IntFfiConverter extends FfiConverter<int, RustBuffer> {
+                    if !(type_helper.include_once_check($canonical_name)) {
+                        return quote!("") // Return an empty string to avoid code duplication
+                    }
+                    class StringFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
                         int lift(Api api, RustBuffer buf) {
                             final uint_list = buf.toIntList();
@@ -237,39 +248,42 @@ macro_rules! impl_renderable_for_primitive {
                 quote!($class_name)
             }
 
-            fn render_type_helpers(&self, _ty: &Type) -> dart::Tokens {
-                // This method can be expanded to generate type helper methods if needed.
+            fn render_type_helpers(&self, _ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+                if !(type_helper.include_once_check($canonical_name)) {
+                    return quote!("") // Return an empty string to avoid code duplication
+                }
+                // TODO: Impliment bytes ffi methods
                 quote! {
-                    class IntFfiConverter extends FfiConverter<int, RustBuffer> {
+                    class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
                         int lift(Api api, RustBuffer buf) {
-                            final uint_list = buf.toIntList();
-                            return uint_list.buffer.asByteData().get$canonical_name(1);
+                            // final uint_list = buf.toIntList();
+                            // return uint_list.buffer.asByteData().get$canonical_name(1);
                         }
                       
                         @override
                         RustBuffer lower(Api api, int value) {
-                            final uint_list = Uint8List.fromList([value ? 1 : 0]);
-                            final byteData = ByteData.sublistView(buf);
-                            byteData.setInt16(0, value, Endian.little);
-                            return buf;
+                            // final uint_list = Uint8List.fromList([value ? 1 : 0]);
+                            // final byteData = ByteData.sublistView(buf);
+                            // byteData.setInt16(0, value, Endian.little);
+                            // return buf;
                         }
                       
                         @override
                         int read(ByteBuffer buf) {
-                            // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            // performance reasons
-                          throw UnimplementedError("Should probably impliment read now");
+                        //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
+                        //     // performance reasons
+                        //   throw UnimplementedError("Should probably impliment read now");
                         }
                       
                         @override
                         int allocationSize(int value) {
-                          return $allocation_size; // 1 = 8bits
+                        //   return $allocation_size; // 1 = 8bits
                         }
                       
                         @override
                         void write(int value, ByteBuffer buf) {
-                            throw UnimplementedError("Should probably impliment read now");
+                            // throw UnimplementedError("Should probably impliment read now");
                         }
                     }                 
                 }
