@@ -3,7 +3,11 @@ use std::{cell::RefCell, collections::{HashSet, BTreeSet}};
 use genco::prelude::*;
 use uniffi_bindgen::{interface::{FfiType, Type}, ComponentInterface};
 
-use super::{Config, render::{Renderable, Renderer}};
+use super::{Config, render::{ Renderer, TypeHelperRenderer}};
+use super::records;
+use super::enums;
+use super::objects;
+use super::functions;
 use crate::gen::render::primitives;
 
 
@@ -32,49 +36,58 @@ impl<'a> TypeHelpersRenderer<'a> {
         }
     }
 
-    fn external_type_package_name(&self, crate_name: &str) -> String {
+    pub fn external_type_package_name(&self, crate_name: &str) -> String {
         match self.config.external_packages.get(crate_name) {
             Some(name) => name.clone(),
             None => crate_name.to_string(),
         }
     }
+}
 
+impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
+    // Checks if the type imports for each type have already been added
     fn include_once_check(&self, name: &str) -> bool {
         self.include_once_names
             .borrow_mut()
             .insert(name.to_string())
     }
 
-    fn add_import(&self, name: &str) -> &str {
+    fn add_import(&self, name: &str) -> bool {
         self.imports.borrow_mut().insert(ImportRequirement::Import {
             name: name.to_owned(),
-        });
-        ""
+        })
     }
 
-    fn add_import_as(&self, name: &str, as_name: &str) -> &str {
+    fn add_import_as(&self, name: &str, as_name: &str) -> bool {
         self.imports
             .borrow_mut()
             .insert(ImportRequirement::ImportAs {
                 name: name.to_owned(),
                 as_name: as_name.to_owned(),
-            });
-        ""
-    }
-}
-
-impl Renderable for TypeHelpersRenderer<'_> {
-    fn render_type(&self, ty: &uniffi_bindgen::interface::Type) -> dart::Tokens {
-        todo!()
-    }
-
-    fn render_type_helpers(&self, ty: &uniffi_bindgen::interface::Type) -> dart::Tokens {
-        todo!()
+            })
     }
 }
 
 impl Renderer for TypeHelpersRenderer<'_> {
-    fn render(&self, _r: &impl Renderable) -> dart::Tokens {
+
+    // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
+    // this is so the generator knows what helper code to include.
+
+    fn render(&self) -> dart::Tokens {
+
+        // Render all the types and their helpers
+        let types_and_functions = quote! {
+            $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
+
+            $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
+            $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj)))
+
+            $( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun)))
+        };
+
+        // Render all the imports
+        let imports: dart::Tokens = quote!();
+        
         quote! {
             import "dart:async";
             import "dart:convert";
@@ -83,7 +96,7 @@ impl Renderer for TypeHelpersRenderer<'_> {
             import "dart:isolate";
             import "dart:typed_data";
             import "package:ffi/ffi.dart";
-
+            $(imports)
 
             class UniffiInternalError implements Exception {
                 static const int bufferOverflow = 0;
@@ -275,19 +288,17 @@ impl Renderer for TypeHelpersRenderer<'_> {
                 RustBuffer lower(Api api, T value) => lowerIntoRustBuffer(api, value);
               }
 
-            String liftString(Api api, Uint8List input) {        
-                // we have a i32 length at the front
-                return utf8.decoder.convert(input);
-            }
+            // String liftString(Api api, Uint8List input) {        
+            //     // we have a i32 length at the front
+            //     return utf8.decoder.convert(input);
+            // }
 
-            $(primitives::generate_primitives_lifters())
            
-            Uint8List lowerString(Api api, String input) {
-                // FIXME: this is too many memcopies!
-                return Utf8Encoder().convert(input);
-            }
+            // Uint8List lowerString(Api api, String input) {
+            //     // FIXME: this is too many memcopies!
+            //     return Utf8Encoder().convert(input);
+            // }
 
-            $(primitives::generate_primitives_lowerers())
 
             RustBuffer toRustBuffer(Api api, Uint8List data) {
                 final length = data.length;
@@ -302,38 +313,38 @@ impl Renderer for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
-            T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
-                if (buf.isEmpty || buf.first == 0){
-                    return null;
-                }
-                return lifter(api, buf);
-            }
+            // T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
+            //     if (buf.isEmpty || buf.first == 0){
+            //         return null;
+            //     }
+            //     return lifter(api, buf);
+            // }
 
-            $(primitives::generate_wrapper_lifters())
+            // $(primitives::generate_wrapper_lifters())
 
-            Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
-                if (inp == null) {
-                    final res = Uint8List(1);
-                    res.first = 0;
-                    return res;
-                }
-                // converting the inner
-                final inner = lowerer(api, inp);
-                // preparing the outer
-                final offset = 5;
-                final res = Uint8List(inner.length + offset);
-                // first byte sets the option to as true
-                res.setAll(0, [1]);
-                // then set the inner size
-                final len = Uint32List(1);
-                len.first = inner.length;
-                res.setAll(1, len.buffer.asUint8List().reversed);
-                // then add the actual data
-                res.setAll(offset, inner);
-                return res;
-            }
+            // Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
+            //     if (inp == null) {
+            //         final res = Uint8List(1);
+            //         res.first = 0;
+            //         return res;
+            //     }
+            //     // converting the inner
+            //     final inner = lowerer(api, inp);
+            //     // preparing the outer
+            //     final offset = 5;
+            //     final res = Uint8List(inner.length + offset);
+            //     // first byte sets the option to as true
+            //     res.setAll(0, [1]);
+            //     // then set the inner size
+            //     final len = Uint32List(1);
+            //     len.first = inner.length;
+            //     res.setAll(1, len.buffer.asUint8List().reversed);
+            //     // then add the actual data
+            //     res.setAll(offset, inner);
+            //     return res;
+            // }
 
-            $(primitives::generate_wrapper_lowerers())
+            // $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
                 @Int32()
@@ -341,6 +352,9 @@ impl Renderer for TypeHelpersRenderer<'_> {
 
                 external Pointer<Uint8> data;
             }
+
+            $(types_and_functions)
+
         }
     }
 }

@@ -129,7 +129,7 @@ pub struct DartWrapper<'a> {
 impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
-        DartWrapper { ci, config, type_helper_code: type_renderer.render(&type_renderer) }
+        DartWrapper { ci, config, type_helper_code: type_renderer.render() }
     }
 
     fn generate(&self) -> dart::Tokens {
@@ -138,12 +138,7 @@ impl<'a> DartWrapper<'a> {
         quote! {
             library $package_name;
 
-            $(&self.type_helper_code) // Imports and type conversion code
-            
-            $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
-
-            $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
-            $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj)))
+            $(&self.type_helper_code) // Imports, Types and Type Helper
 
             class Api {
                 final Pointer<T> Function<T extends NativeType>(String symbolName)
@@ -182,7 +177,7 @@ impl<'a> DartWrapper<'a> {
                     }
                 }
 
-                $( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun)))
+               
             }
         }
     }
