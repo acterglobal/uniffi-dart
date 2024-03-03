@@ -1,22 +1,27 @@
 use uniffi;
 
 #[uniffi::export]
-pub fn add(left: u32, right: u32) -> Option<u32> {
-    Some(left + right)
+pub fn add(left: u32, right: u32) -> u32 {
+    left + right
 }
 
 #[uniffi::export]
-pub fn multiply(left: u32, right: u32) -> Option<u32> {
-    Some(left * right)
+pub fn multiply(left: u32, right: u32) -> u32 {
+    left * right
 }
 
 #[uniffi::export]
-pub fn devide(left: u32, right: u32) -> Option<u32> {
+pub fn divide(left: u32, right: u32) -> Option<u32> {
    Some(left / right)
 }
 
 #[uniffi::export]
-pub fn devide_checked(left: u32, right: u32) -> Option<u32> {
+pub fn can_divide(left: u32, right: u32) -> Option<bool> {
+    Some(left > right)
+}
+
+#[uniffi::export]
+pub fn divide_checked(left: u32, right: u32) -> Option<u32> {
     left.checked_div(right)
 }
 
@@ -64,5 +69,26 @@ pub fn add_f32(left: f32, right: f32) -> Option<f32> {
 pub fn add_f64(left: f64, right: f64) -> Option<f64> {
    Some(left + right)
 }
+
+macro_rules! get_back {
+    ($T:ty, $n:ident ) => {
+        #[uniffi::export]
+        pub fn $n(value: $T) -> Option<$T> {
+            Some(value)
+        }
+    };
+}
+
+// Make sure optional types behave correctly
+get_back!(u8, get_back_u8);
+get_back!(u16, get_back_u16);
+get_back!(u32, get_back_u32);
+get_back!(u64, get_back_u64);
+get_back!(i8, get_back_i8);
+get_back!(i16, get_back_i16);
+get_back!(i32, get_back_i32);
+get_back!(i64, get_back_i64);
+get_back!(f64, get_back_f64);
+get_back!(f32, get_back_f32);
 
 uniffi::include_scaffolding!("api");
