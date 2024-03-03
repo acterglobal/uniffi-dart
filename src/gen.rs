@@ -17,6 +17,7 @@ mod enums;
 mod functions;
 mod objects;
 mod primitives;
+mod compounds;
 mod records;
 mod types;
 mod utils;
@@ -123,22 +124,25 @@ impl BindingsConfig for Config {
 pub struct DartWrapper<'a> {
     config: &'a Config,
     ci: &'a ComponentInterface,
-    type_helper_code: dart::Tokens,
+    type_renderer: TypeHelpersRenderer<'a>,
 }
 
 impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
-        DartWrapper { ci, config, type_helper_code: type_renderer.render() }
+        DartWrapper { ci, config, type_renderer }
     }
 
     fn generate(&self) -> dart::Tokens {
         let package_name = self.config.package_name();
         let libname = self.config.cdylib_name();
+
+        let (type_helper_code, functions_definitions) = &self.type_renderer.render();
+        
         quote! {
             library $package_name;
 
-            $(&self.type_helper_code) // Imports, Types and Type Helper
+            $(type_helper_code) // Imports, Types and Type Helper
 
             class Api {
                 final Pointer<T> Function<T extends NativeType>(String symbolName)
@@ -177,7 +181,7 @@ impl<'a> DartWrapper<'a> {
                     }
                 }
 
-               
+                $(functions_definitions)
             }
         }
     }

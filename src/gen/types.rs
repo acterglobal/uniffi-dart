@@ -1,15 +1,15 @@
-use std::{cell::RefCell, collections::{HashSet, BTreeSet}};
+use std::{borrow::BorrowMut, cell::{Ref, RefCell}, collections::{BTreeSet, HashMap, HashSet}, io::Read};
 
 use genco::prelude::*;
 use uniffi_bindgen::{interface::{FfiType, Type}, ComponentInterface};
 
-use super::{Config, render::{ Renderer, TypeHelperRenderer}};
-use super::records;
-use super::enums;
-use super::objects;
-use super::functions;
-use crate::gen::render::primitives;
+use super::{render::{ Renderable, AsRenderable, Renderer, TypeHelperRenderer}, Config};
+use super::{primitives, enums, objects, records, functions};
 
+
+type TypeDefinitions = dart::Tokens;
+type TypeHelperDefinitions = dart::Tokens;
+type FunctionDefinition = dart::Tokens;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ImportRequirement {
@@ -22,7 +22,7 @@ pub enum ImportRequirement {
 pub struct TypeHelpersRenderer<'a> {
     config: &'a Config,
     ci: &'a ComponentInterface,
-    include_once_names: RefCell<HashSet<String>>,
+    include_once_names: RefCell<HashMap<String, Type>>,
     imports: RefCell<BTreeSet<ImportRequirement>>,
 }
 
@@ -31,7 +31,7 @@ impl<'a> TypeHelpersRenderer<'a> {
         Self {
             config,
             ci,
-            include_once_names: RefCell::new(HashSet::new()),
+            include_once_names: RefCell::new(HashMap::new()),
             imports: RefCell::new(BTreeSet::new()),
         }
     }
@@ -42,14 +42,28 @@ impl<'a> TypeHelpersRenderer<'a> {
             None => crate_name.to_string(),
         }
     }
+
+    pub fn get_include_names(&self) -> HashMap<String, Type> {
+        self.include_once_names.clone().into_inner()
+    }
 }
 
 impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     // Checks if the type imports for each type have already been added
-    fn include_once_check(&self, name: &str) -> bool {
-        self.include_once_names
-            .borrow_mut()
-            .insert(name.to_string())
+    fn include_once_check(&self, name: &str, ty: &Type) -> bool {
+        let mut map = self.include_once_names
+            .borrow_mut();
+        let found = map.insert(name.to_string(), ty.clone()).is_some();
+        drop(map);
+        found
+    }
+
+    fn check(&self, name: &str) -> bool {
+        let map = self.include_once_names
+        .borrow();
+        let contains = map.contains_key(&name.to_string());
+        drop(map);
+        contains
     }
 
     fn add_import(&self, name: &str) -> bool {
@@ -66,29 +80,37 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
                 as_name: as_name.to_owned(),
             })
     }
+    
+    fn get_object(&self, name: &str) -> Option<&uniffi_bindgen::interface::Object> {
+        self.ci.get_object_definition(name)
+    }
 }
 
-impl Renderer for TypeHelpersRenderer<'_> {
+impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
     // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
     // this is so the generator knows what helper code to include.
 
-    fn render(&self) -> dart::Tokens {
+    fn render(&self) -> (dart::Tokens, dart::Tokens) {
 
         // Render all the types and their helpers
-        let types_and_functions = quote! {
+        let types_definitions = quote! {
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
 
             $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
-            $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj)))
-
-            $( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun)))
+            $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj, self)))
         };
 
         // Render all the imports
         let imports: dart::Tokens = quote!();
-        
-        quote! {
+
+        let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
+
+        let helpers_definitions = quote! {
+            $(for (_, ty) in self.get_include_names().iter() => $(ty.as_renderable().render_type_helper(self)) )
+        };
+
+        let types_helper_code = quote! {
             import "dart:async";
             import "dart:convert";
             import "dart:ffi";
@@ -243,16 +265,16 @@ impl Renderer for TypeHelpersRenderer<'_> {
             }
 
             // TODO: Make all the types use me!
-            abstract class FfiConverter<T, FfiType> {
-                T lift(Api api, FfiType value);
-                FfiType lower(Api api,T value);
+            abstract class FfiConverter<T, V> {
+                T lift(Api api, V value);
+                V lower(Api api,T value);
                 T read(ByteBuffer buf);
-                int allocationSize(T value);
+                int allocationSize([T value]);
                 void write(T value, ByteBuffer buf);
               
                 RustBuffer lowerIntoRustBuffer(Api api, T value) {
                   throw UnimplementedError("lower into rust implement lift from rust buffer");
-                  // final rbuf = RustBuffer.allocate(api, allocationSize(value));
+                  // final rbuf = RustBuffer.allocate(api, allocationSize());
                   // try {
                   //   final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
                   //   write(value, bbuf);
@@ -278,26 +300,26 @@ impl Renderer for TypeHelpersRenderer<'_> {
                   //   RustBuffer.deallocate(rbuf);
                   // }
                 }
-              }
+            }
               
-              abstract class FfiConverterRustBuffer<T>
+            abstract class FfiConverterRustBuffer<T>
                   implements FfiConverter<T, RustBuffer> {
                 @override
-                T lift(Api api, RustBuffer value) => liftFromRustBuffer(api, value);
+                T lift(Api api, RustBuffer value) => this.liftFromRustBuffer(api, value);
                 @override
-                RustBuffer lower(Api api, T value) => lowerIntoRustBuffer(api, value);
-              }
+                RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
+            }
 
-            // String liftString(Api api, Uint8List input) {        
-            //     // we have a i32 length at the front
-            //     return utf8.decoder.convert(input);
-            // }
+            String liftString(Api api, Uint8List input) {        
+                // we have a i32 length at the front
+                return utf8.decoder.convert(input);
+            }
 
            
-            // Uint8List lowerString(Api api, String input) {
-            //     // FIXME: this is too many memcopies!
-            //     return Utf8Encoder().convert(input);
-            // }
+            Uint8List lowerString(Api api, String input) {
+                // FIXME: this is too many memcopies!
+                return Utf8Encoder().convert(input);
+            }
 
 
             RustBuffer toRustBuffer(Api api, Uint8List data) {
@@ -320,7 +342,8 @@ impl Renderer for TypeHelpersRenderer<'_> {
             //     return lifter(api, buf);
             // }
 
-            // $(primitives::generate_wrapper_lifters())
+            $(primitives::generate_wrapper_lifters())
+         
 
             // Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
             //     if (inp == null) {
@@ -344,7 +367,9 @@ impl Renderer for TypeHelpersRenderer<'_> {
             //     return res;
             // }
 
-            // $(primitives::generate_wrapper_lowerers())
+            $(primitives::generate_primitives_lowerers())
+            $(primitives::generate_primitives_lifters())
+            $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
                 @Int32()
@@ -353,9 +378,14 @@ impl Renderer for TypeHelpersRenderer<'_> {
                 external Pointer<Uint8> data;
             }
 
-            $(types_and_functions)
 
-        }
+            $(helpers_definitions)
+
+            $(types_definitions)
+
+        };
+
+        (types_helper_code, function_definitions)
     }
 }
 
