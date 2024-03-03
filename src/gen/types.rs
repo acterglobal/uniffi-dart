@@ -367,8 +367,8 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             //     return res;
             // }
 
-            $(primitives::generate_primitives_lowerers())
-            $(primitives::generate_primitives_lifters())
+            // $(primitives::generate_primitives_lowerers())
+            // $(primitives::generate_primitives_lifters())
             $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
