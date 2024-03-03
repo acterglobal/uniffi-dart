@@ -1,1 +1,0 @@
-// TODO: Impliment renderable for enums
