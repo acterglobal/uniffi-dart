@@ -100,7 +100,7 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
                     Type::UInt64 | Type::Int64 | Type::Float64=> 8,
                     // Values lower than zero have variable lengths
                     Type::String => -1, // Expect a string
-                    _ => todo!("Sequence containing {:?}, not implimented", inner_type)
+                    _ => todo!("Sequence containing {:?}, not implemented", inner_type)
                 };
                 quote! {
                
