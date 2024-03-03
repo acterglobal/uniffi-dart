@@ -7,15 +7,22 @@ use uniffi_bindgen::interface::{Type, Literal, AsType, FfiType};
 
 use crate::gen::primitives;
 
+use super::{compounds, objects};
+use super::render::{Renderable, AsRenderable};
+
 
 pub struct DartCodeOracle;
 
 impl DartCodeOracle {
-    fn find(type_: &Type) -> Box<dyn CodeType> {
+    pub fn find(type_: &Type) -> Box<dyn CodeType> {
         type_.clone().as_type().as_codetype()
     }
 
-    fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
+    pub fn find_renderable(type_: &Type) -> Box<dyn Renderable> {
+        type_.clone().as_type().as_renderable()
+    }
+
+    pub fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
         match type_ {
             //Type::Enum(id) => Box::new(error::ErrorCodeType::new(id.clone())),
             _ => panic!("unsupported type for error: {type_:?}"),
@@ -166,7 +173,7 @@ impl DartCodeOracle {
     //         // AbiType::RefEnum(ty) => quote!(#(ty)),
     //     }
     // }
-    // TODO: Impliment error_ffi_converter, future_callback handler, future continuation type, allocation size handler
+    // TODO: implement error_ffi_converter, future_callback handler, future continuation type, allocation size handler
 
     pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
@@ -196,28 +203,29 @@ impl DartCodeOracle {
             | Type::UInt64
             | Type::Float32
             | Type::Float64 => inner,
-            Type::Boolean => quote!(($inner) > 0),
-            Type::String => quote!(liftString(api, $inner)),
-            Type::Object { name, .. } => quote!($name.lift(api, $inner)),
-            Type::Enum (name, .. ) => quote!($name.lift(api, $inner)),
-            Type::Optional ( inner_type ) => Self::type_lift_optional_inner_type(inner_type, inner),
+            Type::Boolean
+            | Type::String 
+            | Type::Object { .. } 
+            | Type::Enum(_) 
+            | Type::Optional( _ ) => quote!($(ty.as_codetype().lift())(api, $inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
+        
     }
 
 
-    fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
-        match **inner_type {
-            Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v))),
-            Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v))),
-            Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v))),
-            Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v))),
-            Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
-            Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
-            Type::String => quote!(liftOptional(api, $inner, (api, v) => $(Self::type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
-            _ => todo!("lift Option inner type: Type::{:?}", inner_type)
-        }
-    }
+    // fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
+    //     match **inner_type {
+    //         Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v))),
+    //         Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v))),
+    //         Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v))),
+    //         Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v))),
+    //         Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
+    //         Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
+    //         Type::String => quote!(liftOptional(api, $inner, (api, v) => $(Self::type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
+    //         _ => todo!("lift Option inner type: Type::{:?}", inner_type)
+    //     }
+    // }
 
     pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
@@ -231,14 +239,15 @@ impl DartCodeOracle {
             | Type::UInt64
             | Type::Float32
             | Type::Float64 => inner,
-            | Type::Boolean => quote!((($inner) ? 1 : 0)),
-            Type::String => quote!(lowerString(api, $inner)),
-            Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-            Type::Enum ( name, .. ) => {quote!($name.lower(api, $inner))},
-            Type::Optional ( inner_type ) => quote!(lowerOptional(api, $inner, (api, v) => $(Self::type_lower_fn(inner_type, quote!(v))))),
-            Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
-            _ => todo!("lower Type::{:?}", ty),
+             Type::Boolean
+            | Type::String
+            | Type::Object {..}
+            | Type::Enum(_)
+            | Type::Optional ( _ ) => quote!($(ty.as_codetype().lower())(api, $inner)),
+        //     Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
+             _ => todo!("lower Type::{:?}", ty),
         }
+       
     }
 
 }
@@ -330,6 +339,8 @@ impl<T: AsType> AsCodeType for T {
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
+            Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
+            Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(self.as_type(), *inner)),
             _ => todo!("As Type for Type::{:?}", self.as_type())
             // Type::Bytes => Box::new(primitives::BytesCodeType),
 
