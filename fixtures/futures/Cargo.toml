@@ -1,0 +1,25 @@
+[package]
+name = "futures"
+version = "0.1.0"
+edition = "2021"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[lib]
+name = "futures"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+uniffi = { version = "0.24.3", features = ["tokio"]}
+tokio = { version = "1.24.1", features = ["time"] }
+
+[build-dependencies]
+uniffi-dart = { path = "../../", features = ["build"] }
+
+[dev-dependencies]
+uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
+uniffi = { version = "0.24.3", features = [
+  "bindgen-tests",
+] }
+anyhow = "1"

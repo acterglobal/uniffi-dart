@@ -51,7 +51,7 @@ pub fn hello(input: String) -> String {
     format!("hello {input}")
 }
 
-include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
+uniffi::include_scaffolding!("api");
 
 mod uniffi_types {
     pub use crate::{World, WorldConfig};

@@ -91,23 +91,37 @@ pub fn new_string_value(value: String) -> Value {
 pub fn new_bool_value(value: bool) -> Value {
     Value::Bool { value }
 }
+// Holding off till refactor
+// #[uniffi::export]
+// pub fn new_public_key_value_without_argument() -> Value {
+//     Value::PublicKey { value: vec![3, 4, 4, 5, 4, 2546434, 4] }
+// }
+
+// #[uniffi::export]
+// pub fn new_public_key_value(value: Vec<i32>) -> Value {
+//     Value::PublicKey { value }
+// }
 
 #[uniffi::export]
 pub fn take_value(value: Value) -> String {
     match value {
-        Value::String { value } => format!("{}",value),
-        Value::Bool { value } => format!("{}",value),
-        Value::U8 { value } => format!("{}",value),
-        Value::U16 { value } => format!("{}",value),
-        Value::U32 { value } => format!("{}",value),
-        Value::U64 { value } => format!("{}",value),
-        Value::I8 { value } => format!("{}",value),
-        Value::I16 { value } => format!("{}",value),
-        Value::I32 { value } => format!("{}",value),
-        Value::I64 { value }  => format!("{}",value),
-        Value::F32 { value }  => format!("{}",value),
-        Value::F64 { value }  => format!("{}",value),
-       // Value::Enum { discriminator, fields } => format!("{}",value),
+        Value::String { value } => format!("{}", value),
+        Value::Bool { value } => format!("{}", value),
+        Value::U8 { value } => format!("{}", value),
+        Value::U16 { value } => format!("{}", value),
+        Value::U32 { value } => format!("{}", value),
+        Value::U64 { value } => format!("{}", value),
+        Value::I8 { value } => format!("{}", value),
+        Value::I16 { value } => format!("{}", value),
+        Value::I32 { value } => format!("{}", value),
+        Value::I64 { value }  => format!("{}", value),
+        Value::F32 { value }  => format!("{}", value),
+        Value::F64 { value }  => format!("{}", value),
+        //Value::Enum { discriminator, fields } => format!("{:?}, {:?}",discriminator, fields),
+        // Value::NonHomogenousCollection { elements } => format!("{:?}", elements),
+        // Value::HomogenousCollection { elements } => format!("{:?}", elements),
+        // Value::Map { entries } => format!("{:?}", entries),
+        //Value::PublicKey { value } => format!("{:?}", value),
     }
 }
 
@@ -158,13 +172,10 @@ pub enum Value {
     },
     F64 {
         value: f64
-    }
+    },
     // Enum {
     //     discriminator: u8,
     //     fields: Vec<Value>,
-    // },
-    // NonHomogenousCollection {
-    //     elements: Vec<Value>,
     // },
     // HomogenousCollection {
     //     elements: Vec<Value>,
@@ -172,11 +183,10 @@ pub enum Value {
     // Map {
     //     entries: Vec<MapEntry>,
     // },
+
+    // Holding off till refactor
     // PublicKey {
-    //     value: Vec<u8>,
-    // },
-    // Signature {
-    //     value: Vec<u8>,
+    //     value: Vec<i32>,
     // },
 }
 
@@ -186,4 +196,4 @@ pub struct MapEntry {
     pub value: Value,
 }
 
-include!(concat!(env!("OUT_DIR"), "/api.uniffi.rs"));
+uniffi::include_scaffolding!("api");
