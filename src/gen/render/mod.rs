@@ -1,9 +1,7 @@
 use genco::{lang::dart, quote};
-use uniffi_bindgen::{backend::CodeType, interface::{AsType, Object, Type}};
+use uniffi_bindgen::interface::{AsType, Enum, Object, Type};
 use super::{objects, oracle::AsCodeType};
-use super::{compounds, primitives};
-
-
+use super::{compounds, enums, primitives};
 
 /// This trait will be used by any type that generates dart code according to some logic, 
 pub trait Renderer<T> {
@@ -20,6 +18,7 @@ pub trait TypeHelperRenderer {
      fn add_import_as(&self, name: &str, as_name: &str) -> bool;
      // Helps Renderer Find Specific Types
      fn get_object(&self, name: &str) -> Option<&Object>;
+     fn get_enum(&self, name: &str) -> Option<&Enum>;
 }
 /// This trait is used by types that should be generated. The idea is to pass any struct that implements 
 /// this type to another struct that generates much larger portions of according to some internal logic code 
@@ -94,28 +93,28 @@ pub trait AsRenderable {
  impl<T: AsType> AsRenderable for T {
      fn as_renderable(&self) -> Box<dyn Renderable> {
          match self.as_type() {
-             Type::UInt8 => Box::new(primitives::UInt8CodeType),
-             Type::Int8 => Box::new(primitives::Int8CodeType),
-             Type::UInt16 => Box::new(primitives::UInt16CodeType),
-             Type::Int16 => Box::new(primitives::Int16CodeType),
-             Type::UInt32 => Box::new(primitives::UInt32CodeType),
-             Type::Int32 => Box::new(primitives::Int32CodeType),
-             Type::UInt64 => Box::new(primitives::UInt64CodeType),
-             Type::Int64 => Box::new(primitives::Int64CodeType),
-             Type::Float32 => Box::new(primitives::Float32CodeType),
-             Type::Float64 => Box::new(primitives::Float64CodeType),
-             Type::Boolean => Box::new(primitives::BooleanCodeType),
-             Type::String => Box::new(primitives::StringCodeType),
-             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
-             Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new( self.as_type(), *inner)),
-             Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(self.as_type(), *inner)),
+               Type::UInt8 => Box::new(primitives::UInt8CodeType),
+               Type::Int8 => Box::new(primitives::Int8CodeType),
+               Type::UInt16 => Box::new(primitives::UInt16CodeType),
+               Type::Int16 => Box::new(primitives::Int16CodeType),
+               Type::UInt32 => Box::new(primitives::UInt32CodeType),
+               Type::Int32 => Box::new(primitives::Int32CodeType),
+               Type::UInt64 => Box::new(primitives::UInt64CodeType),
+               Type::Int64 => Box::new(primitives::Int64CodeType),
+               Type::Float32 => Box::new(primitives::Float32CodeType),
+               Type::Float64 => Box::new(primitives::Float64CodeType),
+               Type::Boolean => Box::new(primitives::BooleanCodeType),
+               Type::String => Box::new(primitives::StringCodeType),
+               Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
+               Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new( self.as_type(), *inner)),
+               Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(self.as_type(), *inner)),
+               Type::Enum(id) => Box::new(enums::EnumCodeType::new(id)),
              _ => todo!("Renderable for Type::{:?}", self.as_type())
              // Type::Bytes => Box::new(primitives::BytesCodeType),
  
              // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
              // Type::Duration => Box::new(miscellany::DurationCodeType),
  
-             // Type::Enum(id) => Box::new(enum_::EnumCodeType::new(id)),
              // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
              // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
              // Type::CallbackInterface(id) => {
