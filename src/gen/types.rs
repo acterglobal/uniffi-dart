@@ -84,6 +84,10 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     fn get_object(&self, name: &str) -> Option<&uniffi_bindgen::interface::Object> {
         self.ci.get_object_definition(name)
     }
+    
+    fn get_enum(&self, name: &str) -> Option<&uniffi_bindgen::interface::Enum>{
+        self.ci.get_enum_definition(name)
+    }
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
@@ -97,7 +101,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
         let types_definitions = quote! {
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
 
-            $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm)))
+            $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm, self)))
             $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj, self)))
         };
 

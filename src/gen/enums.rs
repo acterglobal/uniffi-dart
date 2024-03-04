@@ -1,6 +1,9 @@
 use genco::prelude::*;
+use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Type, Enum, Variant, Field};
 
+use super::oracle::{DartCodeOracle, AsCodeType};
+use super::render::{Renderable, AsRenderable, TypeHelperRenderer};
 use super::types::{
     convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
     generate_type, type_lift_fn, type_lower_fn,
@@ -8,8 +11,60 @@ use super::types::{
 
 use super::utils::{class_name, enum_variant_name, var_name};
 
-pub fn generate_enum(obj: &Enum) -> dart::Tokens {
-    let cls_name = &class_name(obj.name());
+#[derive(Debug)]
+pub struct EnumCodeType {
+    id: String,
+}
+
+impl EnumCodeType {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+impl CodeType for EnumCodeType {
+    fn type_label(&self) -> String {
+        DartCodeOracle::class_name(&self.id)
+    }
+
+    fn canonical_name(&self) -> String {
+        format!("{}", self.id)
+    }
+
+    fn literal(&self, literal: &Literal) -> String {
+        if let Literal::Enum(v, _) = literal {
+            format!(
+                "{}{}",
+                self.type_label(),
+                DartCodeOracle::enum_variant_name(v)
+            )
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn ffi_converter_name(&self) -> String {
+        format!("{}", self.canonical_name()) // Objects will use factory methods
+    }
+}
+
+impl Renderable for EnumCodeType {
+    fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+        if type_helper.check(&self.id) {
+            quote!()
+        } else {
+            if let Some(enum_) = type_helper.get_enum(&self.id) {
+                generate_enum(enum_, type_helper)
+            } else {
+                unreachable!()
+            }
+        }
+    }
+}
+
+
+pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    let cls_name = &DartCodeOracle::class_name(obj.name());
     if obj.is_flat() {
         quote! {
             enum $cls_name {
@@ -25,8 +80,8 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
                     throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
                 }
     
-                static Uint8List lower(Api api, $cls_name input) {
-                    return createUint8ListFromInt(input.index + 1); // So enums aren't zero indexed?
+                static RustBuffer lower(Api api, $cls_name input) {
+                    return toRustBuffer(api, createUint8ListFromInt(input.index + 1)); // So enums aren't zero indexed?
                 }
             }
         }
@@ -49,7 +104,7 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
                     // //return $cls_name(7);
                 }
                 
-                static Uint8List lower(Api api, Value value) {
+                static RustBuffer lower(Api api, Value value) {
                     // Each variant has a lower method, simply pass on it's return
                     $(for (_index, variant) in obj.variants().iter().enumerate() =>
                         if (value is $(variant.name())$cls_name) {
@@ -61,10 +116,11 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
             }
 
             $(for (index, variant) in obj.variants().iter().enumerate()
-                => class $(class_name(variant.name()))$cls_name extends $cls_name {
-                        $(for field in variant.fields() => final $(generate_type(&field.as_type())) $(var_name(field.name()));  )
+                => class $(DartCodeOracle::class_name(variant.name()))$cls_name extends $cls_name {
+                    // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
+                        $(for field in variant.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
 
-                        $(class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
+                        $(DartCodeOracle::class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
 
                         $(generate_variant_factory(cls_name, variant))
 
@@ -78,39 +134,23 @@ pub fn generate_enum(obj: &Enum) -> dart::Tokens {
 
 fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Tokens {
     //
-    fn generate_variant_field_lifter(field: &Field, uint8_list_var: &dart::Tokens, results_list: dart::Tokens, index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
-        match field.as_type() {
-             Type::Int8 | Type::UInt8 => quote!($results_list.insert($index, liftInt8OrUint8($uint8_list_var, $offset_var)); $offset_var += 1; ),
-             Type::Int16 | Type::UInt16 => quote!($results_list.insert($index, liftInt16OrUint16($uint8_list_var, $offset_var)); $offset_var += 2; ),
-             Type::Int32 | Type::UInt32 => quote!($results_list.insert($index, liftInt32OrUint32($uint8_list_var, $offset_var)); $offset_var += 4; ),
-             Type::Int64 | Type::UInt64 => quote!($results_list.insert($index, liftInt64OrUint64($uint8_list_var, $offset_var)); $offset_var += 8; ),
-             Type::Float32 => quote!($results_list.insert($index, liftFloat32($uint8_list_var, $offset_var)); $offset_var += 4; ),
-             Type::Float64 => quote!($results_list.insert($index, liftFloat64($uint8_list_var, $offset_var)); $offset_var += 1;  ) ,
-             Type::Boolean => quote!($results_list.insert($index, liftBoolean($uint8_list_var, $offset_var)); $offset_var += 1;  ),
-             Type::String => quote!(final v = liftVaraibleLength($uint8_list_var, (buf) => liftString(api, buf), $offset_var);  $results_list.insert($index, v.data); $offset_var += v.offset;),
-             Type::Enum ( name ) => quote! {
-                print($uint8_list_var);
-                $results_list.insert($index, liftBoolean($uint8_list_var, $offset_var)); $offset_var += 1;
-             },
-             Type::Sequence ( inner_type ) => {
-                let element_size =  match inner_type.as_type() {
-                    Type::UInt8 |  Type::Int8 | Type::Boolean => 1,
-                    Type::UInt16 | Type::Int16 => 2,
-                    Type::UInt32 | Type::Int32 | Type::Float32=> 4,
-                    Type::UInt64 | Type::Int64 | Type::Float64=> 8,
-                    // Values lower than zero have variable lengths
-                    Type::String => -1, // Expect a string
-                    _ => todo!("Sequence containing {:?}, not implemented", inner_type)
-                };
-                quote! {
-               
-                final data = liftSequence(api, $uint8_list_var, liftInt8OrUint8, $element_size, $offset_var);  
-                $results_list.insert($index, data); 
-                //$offset_var += v.offset;
-             
-             }},
-             _ => todo!("offset/size of Type::{:?}", field.as_type())
-         }
+    fn generate_variant_field_lifter(field: &Field, input_list: &dart::Tokens, results_list: dart::Tokens, index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
+        if Type::Boolean == field.as_type() {
+            quote!(
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())( api, $input_list[$offset_var] ));
+                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
+            )
+        } else if Type::String == field.as_type() {
+            quote!(
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset+4 ))       ));
+                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
+            )          
+        } else {
+            quote!(
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset-1, offset + $(field.as_type().as_codetype().ffi_converter_name())().allocationSize() ))       ));
+                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
+            )
+        }
     }
 
     quote! {
@@ -127,36 +167,22 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
 }
 
 fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant) -> dart::Tokens {
-    fn generate_variant_field_lowerer(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
-        // TODO:  other enums, maps, and vectors etc...
-        let lowerer = match field.as_type() {
-            Type::Int8 => quote!(lowerInt8(this.$(field.name()))),
-            Type::UInt8 => quote!(lowerUint8(api, this.$(field.name()))),
-            Type::Int16 => quote!(lowerInt16(this.$(field.name()))),
-            Type::UInt16 => quote!(lowerUint16(this.$(field.name()))),
-            Type::Int32 | Type::UInt32 | Type::Int64 | Type::UInt64  => quote!(createUint8ListFromInt(this.$(field.name()))),
-            Type::Float32 => quote!(lowerFloat32(this.$(field.name()))),
-            Type::Float64  => quote!(lowerFloat64(this.$(field.name()))),
-            Type::Boolean => quote!(Uint8List.fromList([this.$(field.name()) ? 1 : 0])),
-            Type::String => quote!(lowerVaraibleLength(api,this.$(field.name()), lowerString) ),
-            Type::Sequence ( inner_type ) => quote!(lowerSequence(api, this.$(field.name()), lowerUint8, 1)),
-            _ => todo!("Add variant field lifter for type: {:?}", field.as_type())
-        };
+    fn generate_variant_field_lower(field: &Field, _index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
+        let lower_fn = quote!($(field.as_type().as_codetype().lower())(api, this.$(field.name())));
 
         quote! {
-            //throw UnimplementedError("Create a list for all the different types, strings, bools, other enums, etc");
-            final $(field.name()) = $(lowerer);  
-            $offset_var += $(field.name()).length;
+            final $(field.name()) = $(lower_fn);  
+            $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));
         }
     }
 
     quote! {
-        Uint8List lower(Api api) {
-            // Turn all the fields to their int lists reprsentations
+        RustBuffer lower(Api api) {
+            // Turn all the fields to their int lists representations
             final index = createUint8ListFromInt($(index + 1));
             int offset = 0;
             offset += index.length;
-            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lowerer(field, index, &quote!(offset))))
+            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lower(field, index, &quote!(offset))))
             // Create a list with big enough for all the fields and reset the offset
             final res = Uint8List(offset);
             offset = 0;
@@ -165,12 +191,25 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
             offset += index.length;
             // Now set the rest of the fields
             $(for field in variant.fields() => 
-                res.setAll(offset, $(field.name()));
-                offset += $(field.name()).length;
+                $(match field.as_type() {
+                    Type::Boolean => 
+                        res.setAll(offset, Uint8List.fromList([$(field.name())]));
+                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
+                    ,
+                    Type::String => 
+                        res.setAll(offset, createUint8ListFromInt(this.$(field.name()).length));
+                        offset += 4;
+                        res.setAll(offset, Uint8List.fromList($(field.name()).toIntList()));
+                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));
+                    ,
+                    _ => 
+                        res.setAll(offset, $(field.name()).toIntList());
+                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();  
+                    ,
+                })
             )
 
-            res.setAll(index.length, value);
-            return res;
+            return toRustBuffer(api, res);
         }
     }
 }

@@ -7,7 +7,7 @@ use uniffi_bindgen::interface::{Type, Literal, AsType, FfiType};
 
 use crate::gen::primitives;
 
-use super::{compounds, objects};
+use super::{compounds, enums, objects};
 use super::render::{Renderable, AsRenderable};
 
 
@@ -341,13 +341,14 @@ impl<T: AsType> AsCodeType for T {
             Type::String => Box::new(primitives::StringCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(self.as_type(), *inner)),
+            Type::Enum(id) => Box::new(enums::EnumCodeType::new(id)),
             _ => todo!("As Type for Type::{:?}", self.as_type())
             // Type::Bytes => Box::new(primitives::BytesCodeType),
 
             // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
             // Type::Duration => Box::new(miscellany::DurationCodeType),
 
-            // Type::Enum(id) => Box::new(enum_::EnumCodeType::new(id)),
+            // ,
             // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
             // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
             // Type::CallbackInterface(id) => {
