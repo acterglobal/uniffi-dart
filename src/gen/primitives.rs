@@ -219,7 +219,7 @@ macro_rules! impl_renderable_for_primitive {
                       
                         @override
                         int allocationSize([String value = ""]) {
-                          throw UnimplementedError("Probably a good time to add implement allocation size, use the string length"); // 1 = 8bits //TODO: Add the correct allocation size implementation for string
+                            return value.length + 4; // Four additional bytes for the length data
                         }
                       
                         @override
@@ -490,6 +490,24 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
 
 pub fn generate_wrapper_lowerers() -> dart::Tokens {
     quote! {
+        Uint8List createUint8ListFromInt(int value) {
+            int length = value.bitLength ~/ 8 + 1;
+        
+            // Ensure the length is either 4 or 8
+            if (length != 4 && length != 8) {
+            length = (value < 0x100000000) ? 4 : 8;
+            }
+        
+            Uint8List uint8List = Uint8List(length);
+        
+            for (int i = length - 1; i >= 0; i--) {
+            uint8List[i] = value & 0xFF;
+            value >>= 8;
+            }
+        
+            return uint8List;
+        }
+
         Uint8List lowerVaraibleLength<T>(Api api, T input, Uint8List Function(Api, T) lowerer) {
             final lowered = lowerer(api, input);
             final length = createUint8ListFromInt(lowered.length);
