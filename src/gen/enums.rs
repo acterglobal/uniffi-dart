@@ -135,6 +135,13 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Tokens {
     //
     fn generate_variant_field_lifter(field: &Field, input_list: &dart::Tokens, results_list: dart::Tokens, index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
+        if let Type::Sequence(_) = field.as_type() {
+            return quote!(
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset))       ));
+                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize($input_list);
+            )
+        }
+        
         if Type::Boolean == field.as_type() {
             quote!(
                 $results_list.insert($index, $(field.as_type().as_codetype().lift())( api, $input_list[$offset_var] ));

@@ -243,8 +243,9 @@ impl DartCodeOracle {
             | Type::String
             | Type::Object {..}
             | Type::Enum(_)
-            | Type::Optional ( _ ) => quote!($(ty.as_codetype().lower())(api, $inner)),
-        //     Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
+            | Type::Optional ( _ )
+            | Type::Sequence ( _ ) => quote!($(ty.as_codetype().lower())(api, $inner)),
+        //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
              _ => todo!("lower Type::{:?}", ty),
         }
        
@@ -341,6 +342,7 @@ impl<T: AsType> AsCodeType for T {
             Type::String => Box::new(primitives::StringCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(self.as_type(), *inner)),
+            Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(self.as_type(), *inner)),
             Type::Enum(id) => Box::new(enums::EnumCodeType::new(id)),
             _ => todo!("As Type for Type::{:?}", self.as_type())
             // Type::Bytes => Box::new(primitives::BytesCodeType),
@@ -356,7 +358,7 @@ impl<T: AsType> AsCodeType for T {
             // }
             // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
             // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
-            // Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(*inner)),
+            // ,
             // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
             // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
             // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),

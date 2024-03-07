@@ -5,19 +5,7 @@ Dart frontend for UniFFI bindings
 ![License: MIT](https://img.shields.io/github/license/acterglobal/uniffi-dart?style=flat-square) ![Status: experimental](https://img.shields.io/badge/status-experimental-red?style=flat-square)
 
 ## Work status
-
-- [x] simple arithmetic
-- [ ] primitives
-  - [x] bool
-- [x] strings
-- [x] rustbuffer
-- [ ] rustfuture
-- [x] rustcallstatus
-- [ ] enums
-- [ ] custom objects
-  - [x] object functions
-  - [x] returning custom objects
-- [ ] async & futures
+Reference: [TODOs](./TODO.md)
 
 ## MSRV: 1.65
 
