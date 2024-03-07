@@ -49,8 +49,8 @@ void main() {
       (api.newStringValue(inner_value.toString()) as StringValue);
   BoolValue boolValue = (api.newBoolValue(inner_bool) as BoolValue);
 
-  // PublicKeyValue publicKeyValue =
-  //     (api.newPublicKeyValue(inner_list) as PublicKeyValue);
+  PublicKeyValue publicKeyValue =
+      (api.newPublicKeyValue(inner_list) as PublicKeyValue);
 
   // PublicKeyValue publicKeyValue =
   //     (api.newPublicKeyValueWithoutArgument() as PublicKeyValue);
@@ -73,7 +73,7 @@ void main() {
     expect(stringValue.value, inner_value.toString());
     expect(boolValue.value, inner_bool);
     // Collections
-    // expect(publicKeyValue.value, inner_list);
+    expect(publicKeyValue.value, inner_list);
   });
 
   test('Passing Down/Lowering Complex Enums', () {
@@ -92,6 +92,6 @@ void main() {
     expect(api.takeValue(stringValue), inner_value.toString());
     expect(api.takeValue(boolValue), inner_bool.toString());
 
-    // expect(api.takeValue(publicKeyValue), inner_list.toString());
+    expect(api.takeValue(publicKeyValue), inner_list.toString());
   });
 }
