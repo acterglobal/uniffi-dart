@@ -113,9 +113,9 @@ macro_rules! impl_renderable_for_primitive {
                 quote! {
                     class $cl_name extends FfiConverter<$type_signature, RustBuffer> {
                         @override
-                        $type_signature lift(Api api, RustBuffer buf) {
+                        $type_signature lift(Api api, RustBuffer buf, [int offset = 0]) {
                             final uint_list = buf.toIntList();
-                            return uint_list.buffer.asByteData().get$data_type(1);
+                            return uint_list.buffer.asByteData().get$data_type(offset);
                         }
                       
                         @override
@@ -158,7 +158,7 @@ macro_rules! impl_renderable_for_primitive {
                 quote! {
                     class BoolFfiConverter extends FfiConverter<bool, int> {
                         @override
-                        bool lift(Api api, int value) {
+                        bool lift(Api api, int value, [int offset = 0]) {
                             return value == 1;
                         }
                       
@@ -199,8 +199,8 @@ macro_rules! impl_renderable_for_primitive {
                     // }
                     class StringFfiConverter extends FfiConverter<String, RustBuffer> {
                         @override
-                        String lift(Api api, RustBuffer buf) {
-                            final uint_list = buf.toIntList();
+                        String lift(Api api, RustBuffer buf, [int offset = 0]) {
+                            final uint_list = buf.toIntList().sublist(offset);
                             return utf8.decoder.convert(uint_list);
                         }
                       
@@ -242,7 +242,7 @@ macro_rules! impl_renderable_for_primitive {
                 quote! {
                     class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
-                        int lift(Api api, RustBuffer buf) {
+                        int lift(Api api, RustBuffer buf, [int offset = 0]) {
                             // final uint_list = buf.toIntList();
                             // return uint_list.buffer.asByteData().get$canonical_name(1);
                         }
