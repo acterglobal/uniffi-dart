@@ -211,7 +211,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
                     ,
                     _ => 
                         res.setAll(offset, $(field.name()).toIntList());
-                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();  
+                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));  
                     ,
                 })
             )

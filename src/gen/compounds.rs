@@ -213,25 +213,16 @@ macro_rules! impl_code_type_for_compound {
                         
                             @override
                             RustBuffer lower(Api api, $type_label value) {
-                                var element_byte_size = $inner_cl_converter_name().allocationSize();
-                                int capacity = value.length * element_byte_size;
-                                List<Uint8List> items = [Uint8List(capacity + 4)]; // Four bytes for the length
-                                int offset = 0;
-
-                                // Set the length of the vec
-                                items[0].setAll(offset, createUint8ListFromInt(capacity));
-                                offset += 4;
+                                List<Uint8List> items = [createUint8ListFromInt(value.length)];
 
                                 for (var i = 0; i < value.length; i++) {
                                     var inner_intlist = $lower_fn;
-                                    element_byte_size = inner_intlist.length;
                                     items.add(inner_intlist);
-                                    offset += element_byte_size;
                                 }
 
-                                // TODO: Now we know enough to set the capacity and length, let's do that and flatten the list
-                                throw UnimplementedError("finishung");
-                                // return toRustBuffer(api, items);
+                                Uint8List uint_list = Uint8List.fromList(items.expand((inner) => inner).toList());
+
+                                return toRustBuffer(api, uint_list);
                             }
                         
                             @override
