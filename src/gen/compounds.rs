@@ -246,7 +246,7 @@ macro_rules! impl_code_type_for_compound {
                     }
                 }
             }
-    }
+        }
    }
 }
 
