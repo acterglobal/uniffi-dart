@@ -49,11 +49,11 @@ void main() {
       (api.newStringValue(inner_value.toString()) as StringValue);
   BoolValue boolValue = (api.newBoolValue(inner_bool) as BoolValue);
 
-  PublicKeyValue publicKeyValue =
-      (api.newPublicKeyValue(inner_list) as PublicKeyValue);
-
   // PublicKeyValue publicKeyValue =
-  //     (api.newPublicKeyValueWithoutArgument() as PublicKeyValue);
+  //     (api.newPublicKeyValue(inner_list) as PublicKeyValue);
+
+  PublicKeyValue publicKeyValue =
+      (api.newPublicKeyValueWithoutArgument() as PublicKeyValue);
 
   test('Creating/Lifting Complex Enums', () {
     // Do we get the expected inner value? Correctly.

@@ -137,7 +137,7 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
     fn generate_variant_field_lifter(field: &Field, input_list: &dart::Tokens, results_list: dart::Tokens, index: usize, offset_var: &dart::Tokens) -> dart::Tokens {
         if let Type::Sequence(_) = field.as_type() {
             return quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset))       ));
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, buffer, $offset_var));
                 $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize($input_list);
             )
         }
@@ -149,12 +149,12 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
             )
         } else if Type::String == field.as_type() {
             quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset+4 ))       ));
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api,buffer, $offset_var+4));
                 $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
             )          
         } else {
             quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, toRustBuffer(api, $input_list.sublist(offset-1, offset + $(field.as_type().as_codetype().ffi_converter_name())().allocationSize() ))       ));
+                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, buffer, $offset_var));
                 $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
             )
         }
@@ -211,7 +211,7 @@ fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant)
                     ,
                     _ => 
                         res.setAll(offset, $(field.name()).toIntList());
-                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();  
+                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));  
                     ,
                 })
             )

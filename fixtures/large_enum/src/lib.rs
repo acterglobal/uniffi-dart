@@ -94,7 +94,7 @@ pub fn new_bool_value(value: bool) -> Value {
 // Holding off till refactor
 #[uniffi::export]
 pub fn new_public_key_value_without_argument() -> Value {
-    Value::PublicKey { value: vec![3, 4, 4, 5, 4, 2546434, 4] }
+    Value::PublicKey { value: vec![3, 4, 4, 5, 4, 24434398, 4] }
 }
 
 #[uniffi::export]

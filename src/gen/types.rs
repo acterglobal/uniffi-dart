@@ -270,7 +270,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             // TODO: Make all the types use me!
             abstract class FfiConverter<T, V> {
-                T lift(Api api, V value);
+                T lift(Api api, V value, [int offset]);
                 V lower(Api api,T value);
                 T read(ByteBuffer buf);
                 int allocationSize([T value]);
@@ -309,7 +309,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             abstract class FfiConverterRustBuffer<T>
                   implements FfiConverter<T, RustBuffer> {
                 @override
-                T lift(Api api, RustBuffer value) => this.liftFromRustBuffer(api, value);
+                T lift(Api api, RustBuffer value, [int offset = 0]) => this.liftFromRustBuffer(api, value);
                 @override
                 RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
             }
