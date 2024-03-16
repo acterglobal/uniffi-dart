@@ -93,13 +93,13 @@ macro_rules! impl_code_type_for_compound {
                         ("BoolFfiConverter().lift(api, intlist[5])".to_string(), "Uint8List.fromList([BoolFfiConverter().lower(api, value)])".to_string())
                     } else if cl_name.contains("String") {
                         // Only pass the string data to the lifter
-                        (self.inner().as_codetype().lift() + "(api, toRustBuffer(api, intlist.sublist(5)))" , self.inner().as_codetype().lower() + "(api, value).toIntList()")
+                        (inner_codetype.lift() + "(api, buf, 5)" , self.inner().as_codetype().lower() + "(api, value).toIntList()")
                     } else {
-                        (self.inner().as_codetype().lift() + "(api, buf)" ,  self.inner().as_codetype().lower() + "(api, value).toIntList()")
+                        (inner_codetype.lift() + "(api, buf, offset)" ,  self.inner().as_codetype().lower() + "(api, value).toIntList()")
                     };
                     
 
-                    let inner_cl_converter_name = self.inner().as_codetype().ffi_converter_name();
+                    let inner_cl_converter_name = inner_codetype.ffi_converter_name();
                     let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
                     let inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
 
@@ -107,7 +107,7 @@ macro_rules! impl_code_type_for_compound {
                     quote! {
                         class $cl_name extends FfiConverter<$type_label, RustBuffer> {
                             @override
-                            $type_label lift(Api api, RustBuffer buf) {
+                            $type_label lift(Api api, RustBuffer buf, [int offset = 1]) {
                                 var intlist = buf.toIntList();
                                 if (intlist.isEmpty || intlist.first == 0){
                                     return null;
@@ -174,38 +174,37 @@ macro_rules! impl_code_type_for_compound {
                     let cl_name = format!($canonical_name_pattern, inner_codetype.canonical_name()) + "FfiConverter";
                     let type_label = &format!("List<{}>", &inner_type_label);
 
+                    let inner_cl_converter_name = &self.inner().as_codetype().ffi_converter_name();
+                    let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
+                    let inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
                     // TODO: Generate the proper lifter for each of the items
 
                     let (lift_fn, lower_fn) = if cl_name.contains("Bool") {
                         ("BoolFfiConverter().lift(api, intlist[offset])".to_string(), "Uint8List.fromList([BoolFfiConverter().lower(api, value[i])])".to_string())
                     } else if cl_name.contains("String") {
                         // Only pass the string data to the lifter
-                        (self.inner().as_codetype().lift() + "(api, toRustBuffer(api, intlist.sublist(offset + 5)))" , self.inner().as_codetype().lower() + "(api, value[i]).toIntList()")
+                        (inner_codetype.lift() + "(api, buf, offset + 5)" , self.inner().as_codetype().lower() + "(api, value[i]).toIntList()")
                     } else {
-                        (self.inner().as_codetype().lift() + "(api, toRustBuffer(api, intlist.sublist(offset)))" ,  self.inner().as_codetype().lower() + "(api, value[i]).toIntList()")
+                        (inner_codetype.lift() + "(api, buf, offset)" ,  self.inner().as_codetype().lower() + "(api, value[i]).toIntList()")
                     };
-                    
+                    let allocation_fn_expr = inner_cl_converter_name.to_owned() + "().allocationSize(item)";
 
-                    let inner_cl_converter_name = &self.inner().as_codetype().ffi_converter_name();
-                    let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
-                    let inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
 
 
                     quote! {
                         class $cl_name extends FfiConverter<$type_label, RustBuffer> {
                             @override
-                            $type_label lift(Api api, RustBuffer buf) {
+                            $type_label lift(Api api, RustBuffer buf, [int offset = 0]) {
                                 $type_label res = [];
                                 var intlist = buf.toIntList();
-                                final length = intlist.buffer.asByteData().getInt32(0);
-                                intlist = intlist.sublist(4);
+                                final length = intlist.buffer.asByteData().getInt32(offset);
+                                offset += 4;
+                                intlist = intlist.sublist(offset);
                                 
-                                final element_byte_size = (intlist.length ~/ length);
-                                var offset = 0;
                                 
                                 for (var i = 0; i < length; i++) {
-                                    offset = element_byte_size * i; // Update the offset for the next loop
                                     final item = $lift_fn;
+                                    offset += $allocation_fn_expr;
                                     res.add(item);
                                 }
                     
@@ -214,25 +213,16 @@ macro_rules! impl_code_type_for_compound {
                         
                             @override
                             RustBuffer lower(Api api, $type_label value) {
-                                var element_byte_size = $inner_cl_converter_name().allocationSize();
-                                int capacity = value.length * element_byte_size;
-                                List<Uint8List> items = [Uint8List(capacity + 4)]; // Four bytes for the length
-                                int offset = 0;
-
-                                // Set the length of the vec
-                                items[0].setAll(offset, createUint8ListFromInt(capacity));
-                                offset += 4;
+                                List<Uint8List> items = [createUint8ListFromInt(value.length)];
 
                                 for (var i = 0; i < value.length; i++) {
                                     var inner_intlist = $lower_fn;
-                                    element_byte_size = inner_intlist.length;
                                     items.add(inner_intlist);
-                                    offset += element_byte_size;
                                 }
 
-                                // TODO: Now we know enough to set the capacity and length, let's do that and flatten the list
-                                throw UnimplementedError("finishung");
-                                // return toRustBuffer(api, items);
+                                Uint8List uint_list = Uint8List.fromList(items.expand((inner) => inner).toList());
+
+                                return toRustBuffer(api, uint_list);
                             }
                         
                             @override
@@ -256,7 +246,7 @@ macro_rules! impl_code_type_for_compound {
                     }
                 }
             }
-    }
+        }
    }
 }
 
