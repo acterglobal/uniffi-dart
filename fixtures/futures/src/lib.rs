@@ -1,13 +1,13 @@
-// use uniffi;
+use uniffi;
 
-//  use std::{
-//     future::Future,
-//     pin::Pin,
-//     sync::{Arc, Mutex, MutexGuard},
-//     task::{Context, Poll, Waker},
-//     thread,
-//     time::Duration,
-// };
+ use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex, MutexGuard},
+    task::{Context, Poll, Waker},
+    thread,
+    time::Duration,
+};
 
 // /// Non-blocking timer future.
 // pub struct TimerFuture {
@@ -118,18 +118,18 @@
 //     }
 // }
 
-// #[uniffi::export]
-// pub fn greet(who: String) -> String {
-//     format!("Hello, {who}")
-// }
+#[uniffi::export]
+pub fn greet(who: String) -> String {
+    format!("Hello, {who}")
+}
 
-// #[uniffi::export]
-// pub async fn always_ready() -> bool {
-//     true
-// }
+#[uniffi::export]
+pub async fn always_ready() -> bool {
+    true
+}
 
-// #[uniffi::export]
-// pub async fn void_function() {}
+#[uniffi::export]
+pub async fn void_function() {}
 
 // #[uniffi::export]
 // pub async fn say() -> String {
@@ -152,13 +152,13 @@
 //     true
 // }
 
-// // Our error.
+// Our error.
 // #[derive(uniffi::Error, Debug)]
 // pub enum MyError {
 //     Foo,
 // }
 
-// // An async function that can throw.
+// An async function that can throw.
 // #[uniffi::export]
 // pub async fn fallible_me(do_fail: bool) -> Result<u8, MyError> {
 //     if do_fail {
@@ -168,12 +168,12 @@
 //     }
 // }
 
-// #[uniffi::export(async_runtime = "tokio")]
-// pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
-//     tokio::time::sleep(Duration::from_millis(ms.into())).await;
+#[uniffi::export(async_runtime = "tokio")]
+pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
+    tokio::time::sleep(Duration::from_millis(ms.into())).await;
 
-//     format!("Hello, {who} (with Tokio)!")
-// }
+    format!("Hello, {who} (with Tokio)!")
+}
 
 // #[derive(uniffi::Record)]
 // pub struct MyRecord {
@@ -196,4 +196,4 @@
 //     .await;
 // }
  
-// uniffi::include_scaffolding!("api");
+uniffi::include_scaffolding!("api");
