@@ -1,5 +1,14 @@
 use uniffi;
+use uniffi;
 
+ use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex, MutexGuard},
+    task::{Context, Poll, Waker},
+    thread,
+    time::Duration,
+};
  use std::{
     future::Future,
     pin::Pin,
@@ -121,12 +130,22 @@ use uniffi;
 pub fn greet(who: String) -> String {
     format!("Hello, {who}")
 }
+#[uniffi::export]
+pub fn greet(who: String) -> String {
+    format!("Hello, {who}")
+}
 
 #[uniffi::export]
 pub async fn always_ready() -> bool {
     true
 }
+#[uniffi::export]
+pub async fn always_ready() -> bool {
+    true
+}
 
+#[uniffi::export]
+pub async fn void_function() {}
 #[uniffi::export]
 pub async fn void_function() {}
 
@@ -152,11 +171,13 @@ pub async fn void_function() {}
 // }
 
 // Our error.
+// Our error.
 // #[derive(uniffi::Error, Debug)]
 // pub enum MyError {
 //     Foo,
 // }
 
+// An async function that can throw.
 // An async function that can throw.
 // #[uniffi::export]
 // pub async fn fallible_me(do_fail: bool) -> Result<u8, MyError> {
@@ -170,7 +191,12 @@ pub async fn void_function() {}
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
     tokio::time::sleep(Duration::from_millis(ms.into())).await;
+#[uniffi::export(async_runtime = "tokio")]
+pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
+    tokio::time::sleep(Duration::from_millis(ms.into())).await;
 
+    format!("Hello, {who} (with Tokio)!")
+}
     format!("Hello, {who} (with Tokio)!")
 }
 
