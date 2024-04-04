@@ -11,7 +11,7 @@ name = "custom_types"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-uniffi = { version = "0.24.3" }
+uniffi = { workspace = true }
 url = "2.2"
 
 [build-dependencies]
@@ -19,7 +19,7 @@ uniffi-dart = { path = "../../", features = ["build"] }
 
 [dev-dependencies]
 uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
-uniffi = { version = "0.24.3", features = [
+uniffi = { workspace = true, features = [
   "bindgen-tests",
 ] }
 anyhow = "1"
