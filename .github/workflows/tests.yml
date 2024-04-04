@@ -50,7 +50,7 @@ jobs:
 
       - name: Run cargo nextest
         continue-on-error: ${{ matrix.rust == 'nightly' }}
-        run: cargo nextest run --all
+        run: cargo nextest run --all --nocapture
 
 
   lints:
