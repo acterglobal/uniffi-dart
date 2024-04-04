@@ -12,6 +12,9 @@ fn render_literal(literal: &Literal, inner: &Type) -> String {
         Literal::None => "null".into(),
         Literal::EmptySequence => "[]".into(),
         Literal::EmptyMap => "{}".into(),
+        Literal::Boolean(true) => "true".into(),
+        Literal::Boolean(false) => "false".into(),
+        Literal::String(s) => format!("'{s}'"),
 
         // For optionals
         _ => DartCodeOracle::find(inner).literal(literal),
