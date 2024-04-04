@@ -1,16 +1,15 @@
 use genco::lang::dart;
+use genco::prelude::*;
 use paste::paste;
 use uniffi_bindgen::backend::CodeType;
 use uniffi_bindgen::interface::{Literal, Type};
-use genco::prelude::*;
 
-use crate::gen::render::{Renderable, AsRenderable, TypeHelperRenderer};
-use super::oracle::{DartCodeOracle, AsCodeType};
-
+use super::oracle::{AsCodeType, DartCodeOracle};
+use crate::gen::render::{AsRenderable, Renderable, TypeHelperRenderer};
 
 fn render_literal(literal: &Literal, inner: &Type) -> String {
     match literal {
-        Literal::Null => "null".into() ,
+        Literal::None => "null".into(),
         Literal::EmptySequence => "[]".into(),
         Literal::EmptyMap => "{}".into(),
 
@@ -53,19 +52,19 @@ macro_rules! impl_code_type_for_compound {
                 fn ffi_converter_name(&self) -> String {
                     format!("{}FfiConverter", self.canonical_name())
                 }
-            
+
                 fn lower(&self) -> String {
                     format!("{}().lower", self.ffi_converter_name())
                 }
-            
+
                 fn write(&self) -> String {
                     format!("{}().write", self.ffi_converter_name())
                 }
-            
+
                 fn lift(&self) -> String {
                     format!("{}().lift", self.ffi_converter_name())
                 }
-            
+
                 fn read(&self) -> String {
                     format!("{}().read", self.ffi_converter_name())
                 }
@@ -74,8 +73,7 @@ macro_rules! impl_code_type_for_compound {
     }
  }
 
-
- macro_rules! impl_renderable_for_compound {
+macro_rules! impl_renderable_for_compound {
     ($T:ty, $type_label_pattern:literal, $canonical_name_pattern: literal) => {
        paste! {
             impl Renderable for $T {
@@ -97,7 +95,7 @@ macro_rules! impl_code_type_for_compound {
                     } else {
                         (inner_codetype.lift() + "(api, buf, offset)" ,  self.inner().as_codetype().lower() + "(api, value).toIntList()")
                     };
-                    
+
 
                     let inner_cl_converter_name = inner_codetype.ffi_converter_name();
                     let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
@@ -114,7 +112,7 @@ macro_rules! impl_code_type_for_compound {
                                 }
                                 return $lift_fn;
                             }
-                        
+
                             @override
                             RustBuffer lower(Api api, $type_label value) {
                                 if (value == null) {
@@ -137,24 +135,24 @@ macro_rules! impl_code_type_for_compound {
                                 res.setAll(offset, inner);
                                 return toRustBuffer(api, res);
                             }
-                        
+
                             @override
                             $type_label read(ByteBuffer buf) {
                                 // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                                 // considerations, after research on performance implications
                                 throw UnimplementedError("Should probably implement read now");
                             }
-                        
+
                             @override
                             int allocationSize([$type_label value]) {
-                                return $inner_cl_converter_name().allocationSize() + 4; 
+                                return $inner_cl_converter_name().allocationSize() + 4;
                             }
-                        
+
                             @override
                             void write($type_label value, ByteBuffer buf) {
                                 throw UnimplementedError("Should probably implement writes now");
                             }
-                        }                      
+                        }
                     }
                 }
             }
@@ -200,17 +198,17 @@ macro_rules! impl_code_type_for_compound {
                                 final length = intlist.buffer.asByteData().getInt32(offset);
                                 offset += 4;
                                 intlist = intlist.sublist(offset);
-                                
-                                
+
+
                                 for (var i = 0; i < length; i++) {
                                     final item = $lift_fn;
                                     offset += $allocation_fn_expr;
                                     res.add(item);
                                 }
-                    
+
                                 return res;
                             }
-                        
+
                             @override
                             RustBuffer lower(Api api, $type_label value) {
                                 List<Uint8List> items = [createUint8ListFromInt(value.length)];
@@ -224,25 +222,25 @@ macro_rules! impl_code_type_for_compound {
 
                                 return toRustBuffer(api, uint_list);
                             }
-                        
+
                             @override
                             $type_label read(ByteBuffer buf) {
                                 // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                                 // considerations, after research on performance implications
                                 throw UnimplementedError("Should probably implement read now");
                             }
-                        
+
                             @override
                             int allocationSize([$type_label? value]) {
                                 // TODO: Change allocation size to use the first 4 bits of the list given
-                                return ($inner_cl_converter_name().allocationSize() * value!.length) + 4; 
+                                return ($inner_cl_converter_name().allocationSize() * value!.length) + 4;
                             }
-                        
+
                             @override
                             void write($type_label value, ByteBuffer buf) {
                                 throw UnimplementedError("Should probably implement writes now");
                             }
-                        }                      
+                        }
                     }
                 }
             }

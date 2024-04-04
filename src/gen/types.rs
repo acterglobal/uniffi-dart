@@ -1,11 +1,21 @@
-use std::{borrow::BorrowMut, cell::{Ref, RefCell}, collections::{BTreeSet, HashMap, HashSet}, io::Read};
+use std::{
+    borrow::BorrowMut,
+    cell::{Ref, RefCell},
+    collections::{BTreeSet, HashMap, HashSet},
+    io::Read,
+};
 
 use genco::prelude::*;
-use uniffi_bindgen::{interface::{FfiType, Type}, ComponentInterface};
+use uniffi_bindgen::{
+    interface::{FfiType, Type},
+    ComponentInterface,
+};
 
-use super::{render::{ Renderable, AsRenderable, Renderer, TypeHelperRenderer}, Config};
-use super::{primitives, enums, objects, records, functions};
-
+use super::{enums, functions, objects, primitives, records};
+use super::{
+    render::{AsRenderable, Renderable, Renderer, TypeHelperRenderer},
+    Config,
+};
 
 type TypeDefinitions = dart::Tokens;
 type TypeHelperDefinitions = dart::Tokens;
@@ -18,7 +28,7 @@ pub enum ImportRequirement {
 }
 
 // TODO: Handle importing external packages defined in the configuration.
-// TODO: Finish refactor by moving all code that's not related to type helpers when Renderable has been implemented for the rest of the types 
+// TODO: Finish refactor by moving all code that's not related to type helpers when Renderable has been implemented for the rest of the types
 pub struct TypeHelpersRenderer<'a> {
     config: &'a Config,
     ci: &'a ComponentInterface,
@@ -51,16 +61,14 @@ impl<'a> TypeHelpersRenderer<'a> {
 impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     // Checks if the type imports for each type have already been added
     fn include_once_check(&self, name: &str, ty: &Type) -> bool {
-        let mut map = self.include_once_names
-            .borrow_mut();
+        let mut map = self.include_once_names.borrow_mut();
         let found = map.insert(name.to_string(), ty.clone()).is_some();
         drop(map);
         found
     }
 
     fn check(&self, name: &str) -> bool {
-        let map = self.include_once_names
-        .borrow();
+        let map = self.include_once_names.borrow();
         let contains = map.contains_key(&name.to_string());
         drop(map);
         contains
@@ -80,23 +88,21 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
                 as_name: as_name.to_owned(),
             })
     }
-    
+
     fn get_object(&self, name: &str) -> Option<&uniffi_bindgen::interface::Object> {
         self.ci.get_object_definition(name)
     }
-    
-    fn get_enum(&self, name: &str) -> Option<&uniffi_bindgen::interface::Enum>{
+
+    fn get_enum(&self, name: &str) -> Option<&uniffi_bindgen::interface::Enum> {
         self.ci.get_enum_definition(name)
     }
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
-
     // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
     // this is so the generator knows what helper code to include.
 
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
-
         // Render all the types and their helpers
         let types_definitions = quote! {
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
@@ -275,7 +281,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 T read(ByteBuffer buf);
                 int allocationSize([T value]);
                 void write(T value, ByteBuffer buf);
-              
+
                 RustBuffer lowerIntoRustBuffer(Api api, T value) {
                   throw UnimplementedError("lower into rust implement lift from rust buffer");
                   // final rbuf = RustBuffer.allocate(api, allocationSize());
@@ -289,7 +295,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                   //   throw e;
                   // }
                 }
-              
+
                 T liftFromRustBuffer(Api api, RustBuffer rbuf) {
                   throw UnimplementedError("Lift from rust implement lift from rust buffer");
                   // final byteBuf = rbuf.asByteBuffer();
@@ -305,7 +311,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                   // }
                 }
             }
-              
+
             abstract class FfiConverterRustBuffer<T>
                   implements FfiConverter<T, RustBuffer> {
                 @override
@@ -314,12 +320,12 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
             }
 
-            String liftString(Api api, Uint8List input) {        
+            String liftString(Api api, Uint8List input) {
                 // we have a i32 length at the front
                 return utf8.decoder.convert(input);
             }
 
-           
+
             Uint8List lowerString(Api api, String input) {
                 // FIXME: this is too many memcopies!
                 return Utf8Encoder().convert(input);
@@ -347,7 +353,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             // }
 
             $(primitives::generate_wrapper_lifters())
-         
+
 
             // Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
             //     if (inp == null) {
@@ -393,10 +399,9 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
     }
 }
 
-
 pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
     let Some(ret_type) = ret else {
-        return quote!(Void)
+        return quote!(Void);
     };
     match *ret_type {
         FfiType::UInt8 => quote!(Uint8),
@@ -420,7 +425,7 @@ pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
 
 pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
     let Some(ret_type) = ret else {
-        return quote!(void)
+        return quote!(void);
     };
     match *ret_type {
         FfiType::UInt8 => quote!(int),
@@ -453,38 +458,37 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         | Type::UInt64 => quote!(int),
         Type::Float32 | Type::Float64 => quote!(double),
         Type::String => quote!(String),
-        Type::Object{name, ..} => quote!($name),
+        Type::Object { name, .. } => quote!($name),
         Type::Boolean => quote!(bool),
-        Type::Optional( inner_type) => quote!($(generate_type(inner_type))?),
-        Type::Sequence ( inner_type ) => quote!(List<$(generate_type(inner_type))>),
-        Type::Enum ( name,..  ) => quote!($name),
+        Type::Optional { inner_type } => quote!($(generate_type(inner_type))?),
+        Type::Sequence { inner_type } => quote!(List<$(generate_type(inner_type))>),
+        Type::Enum { name, .. } => quote!($name),
         // Type::Record { name,..  } => quote!($name),
-        _ => todo!("Type::{:?}", ty)
-        // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
-        // AbiType::Isize | AbiType::Usize => quote!(int),
-        // AbiType::Bool => quote!(bool),
-        // AbiType::RefStr | AbiType::String => quote!(String),
-        // AbiType::RefSlice(ty) | AbiType::Vec(ty) => {
-        //     quote!(List<#(self.generate_wrapped_num_type(*ty))>)
-        // }
-        // AbiType::Option(ty) => quote!(#(self.generate_type(ty))?),
-        // AbiType::Result(ty) => self.generate_type(ty),
-        // AbiType::Tuple(tuple) => match tuple.len() {
-        //     0 => quote!(void),
-        //     1 => self.generate_type(&tuple[0]),
-        //     _ => quote!(List<dynamic>),
-        // },
-        // AbiType::RefObject(ty) | AbiType::Object(ty) => quote!(#ty),
-        // AbiType::RefIter(ty) | AbiType::Iter(ty) => quote!(Iter<#(self.generate_type(ty))>),
-        // AbiType::RefFuture(ty) | AbiType::Future(ty) => {
-        //     quote!(Future<#(self.generate_type(ty))>)
-        // }
-        // AbiType::RefStream(ty) | AbiType::Stream(ty) => {
-        //     quote!(Stream<#(self.generate_type(ty))>)
-        // }
-        // AbiType::Buffer(ty) => quote!(#(ffi_buffer_name_for(*ty))),
-        // AbiType::List(ty) => quote!(#(format!("FfiList{}", ty))),
-        // AbiType::RefEnum(ty) => quote!(#(ty)),
+        _ => todo!("Type::{:?}", ty), // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
+                                      // AbiType::Isize | AbiType::Usize => quote!(int),
+                                      // AbiType::Bool => quote!(bool),
+                                      // AbiType::RefStr | AbiType::String => quote!(String),
+                                      // AbiType::RefSlice(ty) | AbiType::Vec(ty) => {
+                                      //     quote!(List<#(self.generate_wrapped_num_type(*ty))>)
+                                      // }
+                                      // AbiType::Option(ty) => quote!(#(self.generate_type(ty))?),
+                                      // AbiType::Result(ty) => self.generate_type(ty),
+                                      // AbiType::Tuple(tuple) => match tuple.len() {
+                                      //     0 => quote!(void),
+                                      //     1 => self.generate_type(&tuple[0]),
+                                      //     _ => quote!(List<dynamic>),
+                                      // },
+                                      // AbiType::RefObject(ty) | AbiType::Object(ty) => quote!(#ty),
+                                      // AbiType::RefIter(ty) | AbiType::Iter(ty) => quote!(Iter<#(self.generate_type(ty))>),
+                                      // AbiType::RefFuture(ty) | AbiType::Future(ty) => {
+                                      //     quote!(Future<#(self.generate_type(ty))>)
+                                      // }
+                                      // AbiType::RefStream(ty) | AbiType::Stream(ty) => {
+                                      //     quote!(Stream<#(self.generate_type(ty))>)
+                                      // }
+                                      // AbiType::Buffer(ty) => quote!(#(ffi_buffer_name_for(*ty))),
+                                      // AbiType::List(ty) => quote!(#(format!("FfiList{}", ty))),
+                                      // AbiType::RefEnum(ty) => quote!(#(ty)),
     }
 }
 
@@ -499,7 +503,9 @@ pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens 
 pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     match ty {
         Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. }=> quote!(toRustBuffer(api, $inner)),
+        Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
+            quote!(toRustBuffer(api, $inner))
+        }
         _ => inner,
     }
 }
@@ -519,23 +525,32 @@ pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         Type::Boolean => quote!(($inner) > 0),
         Type::String => quote!(liftString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Enum (name, .. ) => quote!($name.lift(api, $inner)),
-        Type::Optional ( inner_type ) => type_lift_optional_inner_type(inner_type, inner),
+        Type::Enum { name, .. } => quote!($name.lift(api, $inner)),
+        Type::Optional { inner_type } => type_lift_optional_inner_type(inner_type, inner),
         _ => todo!("lift Type::{:?}", ty),
     }
 }
 
-
 fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
     match **inner_type {
-        Type::Int8 | Type::UInt8 => quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v))),
-        Type::Int16 | Type::UInt16 => quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v))),
-        Type::Int32 | Type::UInt32 => quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v))),
-        Type::Int64 | Type::UInt64 => quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v))),
+        Type::Int8 | Type::UInt8 => {
+            quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v)))
+        }
+        Type::Int16 | Type::UInt16 => {
+            quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v)))
+        }
+        Type::Int32 | Type::UInt32 => {
+            quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v)))
+        }
+        Type::Int64 | Type::UInt64 => {
+            quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v)))
+        }
         Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
         Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
-        Type::String => quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) ),
-        _ => todo!("lift Option inner type: Type::{:?}", inner_type)
+        Type::String => {
+            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) )
+        }
+        _ => todo!("lift Option inner type: Type::{:?}", inner_type),
     }
 }
 
@@ -551,12 +566,16 @@ pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         | Type::UInt64
         | Type::Float32
         | Type::Float64 => inner,
-        | Type::Boolean => quote!((($inner) ? 1 : 0)),
+        Type::Boolean => quote!((($inner) ? 1 : 0)),
         Type::String => quote!(lowerString(api, $inner)),
         Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-        Type::Enum ( name, .. ) => {quote!($name.lower(api, $inner))},
-        Type::Optional ( inner_type ) => quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v))))),
-        Type::Sequence ( inner_type ) => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
+        Type::Enum { name, .. } => {
+            quote!($name.lower(api, $inner))
+        }
+        Type::Optional { inner_type } => {
+            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v)))))
+        }
+        Type::Sequence { inner_type } => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
         _ => todo!("lower Type::{:?}", ty),
     }
 }

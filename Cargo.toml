@@ -37,7 +37,7 @@ uniffi = { workspace = true, features = [
 uniffi_bindgen = { workspace = true }
 camino = "1"
 serde = "1"
-toml = "0.8.12"
+toml = "0.5"
 genco = "0.17.5"
 proc-macro2 = "1.0.66"
 

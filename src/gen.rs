@@ -1,27 +1,27 @@
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
 // use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 
-mod render;
+mod compounds;
 mod enums;
 mod functions;
 mod objects;
+mod oracle;
 mod primitives;
-mod compounds;
 mod records;
+mod render;
 mod types;
 mod utils;
-mod oracle;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -29,35 +29,6 @@ pub struct Config {
     cdylib_name: Option<String>,
     #[serde(default)]
     external_packages: HashMap<String, String>,
-}
-
-// impl MergeWith for Config {
-//     fn merge_with(&self, other: &Self) -> Self {
-//         let package_name = if other.package_name.is_some() {
-//             other.package_name.clone()
-//         } else {
-//             self.package_name.clone()
-//         };
-//         let cdylib_name = if other.cdylib_name.is_some() {
-//             other.cdylib_name.clone()
-//         } else {
-//             self.cdylib_name.clone()
-//         };
-//         Self {
-//             package_name,
-//             cdylib_name,
-//         }
-//     }
-// }
-
-impl From<&ComponentInterface> for Config {
-    fn from(ci: &ComponentInterface) -> Self {
-        Config {
-            package_name: Some(ci.namespace().to_owned()),
-            cdylib_name: Some(ci.namespace().to_owned()),
-            external_packages: HashMap::new(),
-        }
-    }
 }
 
 impl Config {
@@ -79,36 +50,12 @@ impl Config {
 }
 
 impl BindingsConfig for Config {
-    // fn get_entry_from_bindings_table(_bindings: &Value) -> Option<Value> {
-    //     if let Some(table) = _bindings.as_table() {
-    //         table.get("dart").map(|v| v.clone())
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    // fn update_from_ci(ci: &ComponentInterface) -> Vec<(String, Value)> {
-    //     vec![
-    //         (
-    //             "package_name".to_string(),
-    //             Value::String(ci.namespace().to_string()),
-    //         ),
-    //         (
-    //             "cdylib_name".to_string(),
-    //             Value::String(ci.namespace().to_string()),
-    //         ),
-    //     ]
-    // }
-    const TOML_KEY: &'static str = "dart";
-
     fn update_from_ci(&mut self, ci: &ComponentInterface) {
-        self.cdylib_name
-            .get_or_insert_with(|| format!("uniffi_{}", ci.namespace()));
+        self.package_name = Some(ci.namespace().to_owned());
     }
 
     fn update_from_cdylib_name(&mut self, cdylib_name: &str) {
-        self.cdylib_name
-            .get_or_insert_with(|| cdylib_name.to_string());
+        self.cdylib_name = Some(cdylib_name.to_string());
     }
 
     fn update_from_dependency_configs(&mut self, config_map: HashMap<&str, &Self>) {
@@ -130,7 +77,11 @@ pub struct DartWrapper<'a> {
 impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
-        DartWrapper { ci, config, type_renderer }
+        DartWrapper {
+            ci,
+            config,
+            type_renderer,
+        }
     }
 
     fn generate(&self) -> dart::Tokens {
@@ -138,7 +89,7 @@ impl<'a> DartWrapper<'a> {
         let libname = self.config.cdylib_name();
 
         let (type_helper_code, functions_definitions) = &self.type_renderer.render();
-        
+
         quote! {
             library $package_name;
 
@@ -194,9 +145,10 @@ impl BindingGenerator for DartBindingGenerator {
 
     fn write_bindings(
         &self,
-        ci: ComponentInterface,
-        config: Self::Config,
+        ci: &ComponentInterface,
+        config: &Self::Config,
         out_dir: &Utf8Path,
+        try_format_code: bool,
     ) -> Result<()> {
         let filename = out_dir.join(format!("{}.dart", config.cdylib_name()));
         let tokens = DartWrapper::new(&ci, &config).generate();
@@ -205,56 +157,15 @@ impl BindingGenerator for DartBindingGenerator {
         let mut w = fmt::IoWriter::new(file);
 
         let fmt = fmt::Config::from_lang::<Dart>().with_indentation(fmt::Indentation::Space(4));
-        let config = dart::Config::default();
 
-        tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
+        tokens.format_file(&mut w.as_formatter(&fmt), &dart::Config::default())?;
         Ok(())
     }
-}
 
-fn parse_udl(udl_file: &Utf8Path) -> Result<ComponentInterface> {
-    let udl = std::fs::read_to_string(udl_file)
-        .with_context(|| format!("Failed to read UDL from {udl_file}"))?;
-    ComponentInterface::from_webidl(&udl).context("Failed to parse UDL")
-}
-
-fn get_config(
-    ci: &ComponentInterface,
-    crate_root: &Utf8Path,
-    config_file_override: Option<&Utf8Path>,
-) -> Result<Config> {
-    let default_config: Config = ci.into();
-
-    let config_file = match config_file_override {
-        Some(cfg) => Some(cfg.to_owned()),
-        None => crate_root.join("uniffi.toml").canonicalize_utf8().ok(),
-    };
-
-    match config_file {
-        Some(path) => {
-            let contents = std::fs::read_to_string(&path)
-                .with_context(|| format!("Failed to read config file from {path}"))?;
-            let mut loaded_config: Config = toml::de::from_str(&contents)
-                .with_context(|| format!("Failed to generate config from file {path}"))?;
-            loaded_config.update_from_ci(&ci);
-            Ok(loaded_config)
-        }
-        None => Ok(default_config),
+    fn check_library_path(&self, library_path: &Utf8Path, cdylib_name: Option<&str>) -> Result<()> {
+        // FIXME: not sure what to check for here...?
+        Ok(())
     }
-}
-
-fn get_out_dir(udl_file: &Utf8Path, out_dir_override: Option<&Utf8Path>) -> Result<Utf8PathBuf> {
-    Ok(match out_dir_override {
-        Some(s) => {
-            // Create the directory if it doesn't exist yet.
-            std::fs::create_dir_all(s)?;
-            s.canonicalize_utf8().context("Unable to find out-dir")?
-        }
-        None => udl_file
-            .parent()
-            .context("File has no parent directory")?
-            .to_owned(),
-    })
 }
 
 pub fn generate_dart_bindings(
@@ -263,13 +174,13 @@ pub fn generate_dart_bindings(
     out_dir_override: Option<&Utf8Path>,
     library_file: Option<&Utf8Path>,
 ) -> Result<()> {
-    let mut component = parse_udl(udl_file)?;
-    if let Some(library_file) = library_file {
-        uniffi_bindgen::macro_metadata::add_to_ci_from_library(&mut component, library_file)?;
-    }
-    let crate_root = &uniffi_bindgen::guess_crate_root(udl_file)?;
-
-    let config = get_config(&component, crate_root, config_file_override)?;
-    let out_dir = get_out_dir(udl_file, out_dir_override)?;
-    DartBindingGenerator.write_bindings(component, config, &out_dir)
+    uniffi_bindgen::generate_external_bindings(
+        &DartBindingGenerator {},
+        udl_file,
+        config_file_override,
+        out_dir_override,
+        library_file,
+        None,
+        true,
+    )
 }
