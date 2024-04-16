@@ -2,16 +2,13 @@ use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal, Type};
 use uniffi_bindgen::interface::{AsType, Method, Object};
 
-use crate::gen::oracle::{DartCodeOracle, AsCodeType};
+use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-
 use super::types::{generate_ffi_dart_type, generate_ffi_type};
 use super::utils::{class_name, fn_name, var_name};
-
-
 
 #[derive(Debug)]
 pub struct ObjectCodeType {
@@ -69,18 +66,29 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
             final Api _api;
             final Pointer<Void> _ptr;
 
+
+
             $(cls_name)._(this._api, this._ptr);
 
             factory $(cls_name).lift(Api api, Pointer<Void> ptr) {
                 return $(cls_name)._(api, ptr);
             }
 
+            Pointer<Void> uniffiClonePointer() {
+                final _uniffiClonePointerPtr = _api._lookup<
+                    NativeFunction<
+                        Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_clone().name())));
+                final _uniffiClonePointer = _uniffiClonePointerPtr.asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>();
+                return rustCall(_api, (res) => _uniffiClonePointer(_ptr, res));
+            }
+
             void drop() {
                 final _freePtr = _api._lookup<
-                NativeFunction<
-                    Void Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_free().name())));
-                final free = _freePtr.asFunction<void Function(Pointer<Void>, Pointer<RustCallStatus>)>();
-                rustCall(_api, (res) => free(_ptr, res));
+                    NativeFunction<
+                        Void Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_free().name())));
+                final _free = _freePtr.asFunction<void Function(Pointer<Void>, Pointer<RustCallStatus>)>();
+
+                rustCall(_api, (res) => _free(_ptr, res));
             }
 
             $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
@@ -98,7 +106,7 @@ pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> da
     let inner = quote! {
     rustCall(api, (res) =>
         _$(&fn_name)(
-            _ptr,
+            uniffiClonePointer(),
             $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
         res)
     )
