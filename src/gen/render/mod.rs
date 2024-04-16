@@ -1,27 +1,27 @@
+use super::{compounds, enums, primitives};
+use super::{objects, oracle::AsCodeType};
 use genco::{lang::dart, quote};
 use uniffi_bindgen::interface::{AsType, Enum, Object, Type};
-use super::{objects, oracle::AsCodeType};
-use super::{compounds, enums, primitives};
 
-/// This trait will be used by any type that generates dart code according to some logic, 
+/// This trait will be used by any type that generates dart code according to some logic,
 pub trait Renderer<T> {
-     fn render(&self) -> T;
+    fn render(&self) -> T;
 }
 
 // This trait contains helpful methods for rendering type helpers
 pub trait TypeHelperRenderer {
-     // Gives context about weather a type's helper code has already been included
-     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
-     fn check(&self, name: &str) -> bool;
-     // Helps type helper functions specify a required imports should be added
-     fn add_import(&self, name: &str) -> bool;
-     fn add_import_as(&self, name: &str, as_name: &str) -> bool;
-     // Helps Renderer Find Specific Types
-     fn get_object(&self, name: &str) -> Option<&Object>;
-     fn get_enum(&self, name: &str) -> Option<&Enum>;
+    // Gives context about weather a type's helper code has already been included
+    fn include_once_check(&self, name: &str, ty: &Type) -> bool;
+    fn check(&self, name: &str) -> bool;
+    // Helps type helper functions specify a required imports should be added
+    fn add_import(&self, name: &str) -> bool;
+    fn add_import_as(&self, name: &str, as_name: &str) -> bool;
+    // Helps Renderer Find Specific Types
+    fn get_object(&self, name: &str) -> Option<&Object>;
+    fn get_enum(&self, name: &str) -> Option<&Enum>;
 }
-/// This trait is used by types that should be generated. The idea is to pass any struct that implements 
-/// this type to another struct that generates much larger portions of according to some internal logic code 
+/// This trait is used by types that should be generated. The idea is to pass any struct that implements
+/// this type to another struct that generates much larger portions of according to some internal logic code
 /// and implements `Renderer`.
 pub trait Renderable {
      /// Renders the code that defines a type
@@ -77,57 +77,61 @@ pub trait Renderable {
                // AbiType::RefEnum(ty) => quote!(#(ty)),
            };
 
-           if type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
-               println!("{} Added", &ty.as_codetype().canonical_name());
-          }
+        if type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
+            println!("{} Added", &ty.as_codetype().canonical_name());
+        }
 
-          type_name
-     }
-     /// Renders code that defines a type and other code for type helpers for lifting, lowering, buffer conversion, etc... with access to the type helper
-     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens;
+        type_name
+    }
+    /// Renders code that defines a type and other code for type helpers for lifting, lowering, buffer conversion, etc... with access to the type helper
+    fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens;
 }
 
-
 pub trait AsRenderable {
-     fn as_renderable(&self) -> Box<dyn Renderable>;
- }
- 
- impl<T: AsType> AsRenderable for T {
-     fn as_renderable(&self) -> Box<dyn Renderable> {
-         match self.as_type() {
-               Type::UInt8 => Box::new(primitives::UInt8CodeType),
-               Type::Int8 => Box::new(primitives::Int8CodeType),
-               Type::UInt16 => Box::new(primitives::UInt16CodeType),
-               Type::Int16 => Box::new(primitives::Int16CodeType),
-               Type::UInt32 => Box::new(primitives::UInt32CodeType),
-               Type::Int32 => Box::new(primitives::Int32CodeType),
-               Type::UInt64 => Box::new(primitives::UInt64CodeType),
-               Type::Int64 => Box::new(primitives::Int64CodeType),
-               Type::Float32 => Box::new(primitives::Float32CodeType),
-               Type::Float64 => Box::new(primitives::Float64CodeType),
-               Type::Boolean => Box::new(primitives::BooleanCodeType),
-               Type::String => Box::new(primitives::StringCodeType),
-               Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
-               Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new( self.as_type(), *inner)),
-               Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(self.as_type(), *inner)),
-               Type::Enum(id) => Box::new(enums::EnumCodeType::new(id)),
-             _ => todo!("Renderable for Type::{:?}", self.as_type())
-             // Type::Bytes => Box::new(primitives::BytesCodeType),
- 
-             // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
-             // Type::Duration => Box::new(miscellany::DurationCodeType),
- 
-             // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
-             // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
-             // Type::CallbackInterface(id) => {
-             //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
-             // }
-             // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
-             // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
-             // Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(*inner)),
-             // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
-             // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
-             // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
+    fn as_renderable(&self) -> Box<dyn Renderable>;
+}
+
+impl<T: AsType> AsRenderable for T {
+    fn as_renderable(&self) -> Box<dyn Renderable> {
+        match self.as_type() {
+            Type::UInt8 => Box::new(primitives::UInt8CodeType),
+            Type::Int8 => Box::new(primitives::Int8CodeType),
+            Type::UInt16 => Box::new(primitives::UInt16CodeType),
+            Type::Int16 => Box::new(primitives::Int16CodeType),
+            Type::UInt32 => Box::new(primitives::UInt32CodeType),
+            Type::Int32 => Box::new(primitives::Int32CodeType),
+            Type::UInt64 => Box::new(primitives::UInt64CodeType),
+            Type::Int64 => Box::new(primitives::Int64CodeType),
+            Type::Float32 => Box::new(primitives::Float32CodeType),
+            Type::Float64 => Box::new(primitives::Float64CodeType),
+            Type::Boolean => Box::new(primitives::BooleanCodeType),
+            Type::String => Box::new(primitives::StringCodeType),
+            Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
+            Type::Optional { inner_type, .. } => Box::new(compounds::OptionalCodeType::new(
+                self.as_type(),
+                *inner_type,
+            )),
+            Type::Sequence { inner_type, .. } => Box::new(compounds::SequenceCodeType::new(
+                self.as_type(),
+                *inner_type,
+            )),
+            Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
+            _ => todo!("Renderable for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
+
+                                                                     // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
+                                                                     // Type::Duration => Box::new(miscellany::DurationCodeType),
+
+                                                                     // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
+                                                                     // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
+                                                                     // Type::CallbackInterface(id) => {
+                                                                     //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
+                                                                     // }
+                                                                     // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
+                                                                     // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
+                                                                     // Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(*inner)),
+                                                                     // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
+                                                                     // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
+                                                                     // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
         }
-     }
- }
+    }
+}
