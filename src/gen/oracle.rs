@@ -2,14 +2,13 @@ use genco::lang::dart;
 use genco::quote;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
-use uniffi_bindgen::backend::{CodeType};
-use uniffi_bindgen::interface::{Type, Literal, AsType, FfiType};
+use uniffi_bindgen::backend::CodeType;
+use uniffi_bindgen::interface::{AsType, FfiType, Literal, Type};
 
 use crate::gen::primitives;
 
+use super::render::{AsRenderable, Renderable};
 use super::{compounds, enums, objects};
-use super::render::{Renderable, AsRenderable};
-
 
 pub struct DartCodeOracle;
 
@@ -37,14 +36,14 @@ impl DartCodeOracle {
             id.to_string()
         }
     }
-    
+
     /// Check if the given identifier is a reserved keyword in Dart.
-     pub fn is_reserved_identifier(id: &str) -> bool {
+    pub fn is_reserved_identifier(id: &str) -> bool {
         RESERVED_IDENTIFIERS.contains(&id)
     }
 
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
-    
+
     pub fn class_name(nm: &str) -> String {
         Self::sanitize_identifier(&nm.to_upper_camel_case())
     }
@@ -55,7 +54,7 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of a variable name.
-    
+
     pub fn var_name(nm: &str) -> String {
         Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
@@ -79,17 +78,17 @@ impl DartCodeOracle {
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
     pub fn ffi_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
-            return quote!(void)
+            return quote!(void);
         };
         match *ret_type {
-            FfiType::UInt8 |
-            FfiType::UInt16 |
-            FfiType::UInt32 |
-            FfiType::UInt64 |
-            FfiType::Int8 |
-            FfiType::Int16 |
-            FfiType::Int32 |
-            FfiType::Int64 => quote!(int),
+            FfiType::UInt8
+            | FfiType::UInt16
+            | FfiType::UInt32
+            | FfiType::UInt64
+            | FfiType::Int8
+            | FfiType::Int16
+            | FfiType::Int32
+            | FfiType::Int64 => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
@@ -99,11 +98,11 @@ impl DartCodeOracle {
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
-    
+
     // TODO: Replace instances of `generate_ffi_type` with ffi_native_type_label
     pub fn ffi_native_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
-            return quote!(Void)
+            return quote!(Void);
         };
         match *ret_type {
             FfiType::UInt8 => quote!(Uint8),
@@ -124,7 +123,6 @@ impl DartCodeOracle {
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
-
 
     // This function is equivalent to type_lable in code type
     // pub fn generate_type(ty: &Type) -> dart::Tokens {
@@ -186,7 +184,9 @@ impl DartCodeOracle {
     pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
             Type::Object { .. } => inner,
-            Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. }=> quote!(toRustBuffer(api, $inner)),
+            Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
+                quote!(toRustBuffer(api, $inner))
+            }
             _ => inner,
         }
     }
@@ -204,15 +204,13 @@ impl DartCodeOracle {
             | Type::Float32
             | Type::Float64 => inner,
             Type::Boolean
-            | Type::String 
-            | Type::Object { .. } 
-            | Type::Enum(_) 
-            | Type::Optional( _ ) => quote!($(ty.as_codetype().lift())(api, $inner)),
+            | Type::String
+            | Type::Object { .. }
+            | Type::Enum { .. }
+            | Type::Optional { .. } => quote!($(ty.as_codetype().lift())(api, $inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
-        
     }
-
 
     // fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
     //     match **inner_type {
@@ -239,18 +237,16 @@ impl DartCodeOracle {
             | Type::UInt64
             | Type::Float32
             | Type::Float64 => inner,
-             Type::Boolean
+            Type::Boolean
             | Type::String
-            | Type::Object {..}
-            | Type::Enum(_)
-            | Type::Optional ( _ )
-            | Type::Sequence ( _ ) => quote!($(ty.as_codetype().lower())(api, $inner)),
-        //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
-             _ => todo!("lower Type::{:?}", ty),
+            | Type::Object { .. }
+            | Type::Enum { .. }
+            | Type::Optional { .. }
+            | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())(api, $inner)),
+            //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
+            _ => todo!("lower Type::{:?}", ty),
         }
-       
     }
-
 }
 
 // https://dart.dev/guides/language/language-tour#keywords
@@ -341,27 +337,32 @@ impl<T: AsType> AsCodeType for T {
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
-            Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(self.as_type(), *inner)),
-            Type::Sequence(inner) => Box::new(compounds::SequenceCodeType::new(self.as_type(), *inner)),
-            Type::Enum(id) => Box::new(enums::EnumCodeType::new(id)),
-            _ => todo!("As Type for Type::{:?}", self.as_type())
-            // Type::Bytes => Box::new(primitives::BytesCodeType),
+            Type::Optional { inner_type } => Box::new(compounds::OptionalCodeType::new(
+                self.as_type(),
+                *inner_type,
+            )),
+            Type::Sequence { inner_type } => Box::new(compounds::SequenceCodeType::new(
+                self.as_type(),
+                *inner_type,
+            )),
+            Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
+            _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
-            // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
-            // Type::Duration => Box::new(miscellany::DurationCodeType),
+                                                                  // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
+                                                                  // Type::Duration => Box::new(miscellany::DurationCodeType),
 
-            // ,
-            // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
-            // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
-            // Type::CallbackInterface(id) => {
-            //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
-            // }
-            // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
-            // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
-            // ,
-            // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
-            // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
-            // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
-       }
+                                                                  // ,
+                                                                  // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
+                                                                  // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
+                                                                  // Type::CallbackInterface(id) => {
+                                                                  //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
+                                                                  // }
+                                                                  // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
+                                                                  // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
+                                                                  // ,
+                                                                  // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
+                                                                  // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
+                                                                  // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
+        }
     }
 }

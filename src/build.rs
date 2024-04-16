@@ -10,6 +10,8 @@ pub fn generate_scaffolding(udl_file: &Utf8Path) -> Result<()> {
         udl_file,
         None::<&Utf8Path>,
         Some(out_dir),
+        None::<&Utf8Path>,
+        None,
     )?;
     Ok(())
 }
