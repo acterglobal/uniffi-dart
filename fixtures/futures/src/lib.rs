@@ -59,7 +59,6 @@
 //     }
 // }
 
-
 // /// Non-blocking timer future.
 // pub struct BrokenTimerFuture {
 //     shared_state: Arc<Mutex<SharedState>>,
@@ -186,7 +185,6 @@
 //     MyRecord { a, b }
 // }
 
-
 // #[uniffi::export]
 // pub async fn broken_sleep(ms: u16, fail_after: u16) {
 //     BrokenTimerFuture::new(
@@ -195,5 +193,5 @@
 //     )
 //     .await;
 // }
- 
+
 // uniffi::include_scaffolding!("api");

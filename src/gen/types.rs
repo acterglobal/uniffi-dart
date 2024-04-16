@@ -1,8 +1,6 @@
 use std::{
-    borrow::BorrowMut,
-    cell::{Ref, RefCell},
-    collections::{BTreeSet, HashMap, HashSet},
-    io::Read,
+    cell::RefCell,
+    collections::{BTreeSet, HashMap},
 };
 
 use genco::prelude::*;
@@ -13,12 +11,10 @@ use uniffi_bindgen::{
 
 use super::{enums, functions, objects, primitives, records};
 use super::{
-    render::{AsRenderable, Renderable, Renderer, TypeHelperRenderer},
+    render::{AsRenderable, Renderer, TypeHelperRenderer},
     Config,
 };
 
-type TypeDefinitions = dart::Tokens;
-type TypeHelperDefinitions = dart::Tokens;
 type FunctionDefinition = dart::Tokens;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -36,6 +32,7 @@ pub struct TypeHelpersRenderer<'a> {
     imports: RefCell<BTreeSet<ImportRequirement>>,
 }
 
+#[allow(dead_code)]
 impl<'a> TypeHelpersRenderer<'a> {
     pub fn new(config: &'a Config, ci: &'a ComponentInterface) -> Self {
         Self {
@@ -489,93 +486,5 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
                                       // AbiType::Buffer(ty) => quote!(#(ffi_buffer_name_for(*ty))),
                                       // AbiType::List(ty) => quote!(#(format!("FfiList{}", ty))),
                                       // AbiType::RefEnum(ty) => quote!(#(ty)),
-    }
-}
-
-pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-    match ty {
-        Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } => quote!($(inner).toIntList()),
-        _ => inner,
-    }
-}
-
-pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-    match ty {
-        Type::Object { .. } => inner,
-        Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
-            quote!(toRustBuffer(api, $inner))
-        }
-        _ => inner,
-    }
-}
-
-pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-    match ty {
-        Type::Int8
-        | Type::UInt8
-        | Type::Int16
-        | Type::UInt16
-        | Type::Int32
-        | Type::Int64
-        | Type::UInt32
-        | Type::UInt64
-        | Type::Float32
-        | Type::Float64 => inner,
-        Type::Boolean => quote!(($inner) > 0),
-        Type::String => quote!(liftString(api, $inner)),
-        Type::Object { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Enum { name, .. } => quote!($name.lift(api, $inner)),
-        Type::Optional { inner_type } => type_lift_optional_inner_type(inner_type, inner),
-        _ => todo!("lift Type::{:?}", ty),
-    }
-}
-
-fn type_lift_optional_inner_type(inner_type: &Box<Type>, inner: dart::Tokens) -> dart::Tokens {
-    match **inner_type {
-        Type::Int8 | Type::UInt8 => {
-            quote!(liftOptional(api, $inner, (api, v) => liftInt8OrUint8(v)))
-        }
-        Type::Int16 | Type::UInt16 => {
-            quote!(liftOptional(api, $inner, (api, v) => liftInt16OrUint16(v)))
-        }
-        Type::Int32 | Type::UInt32 => {
-            quote!(liftOptional(api, $inner, (api, v) => liftInt32OrUint32(v)))
-        }
-        Type::Int64 | Type::UInt64 => {
-            quote!(liftOptional(api, $inner, (api, v) => liftInt64OrUint64(v)))
-        }
-        Type::Float32 => quote!(liftOptional(api, $inner, (api, v) => liftFloat32(v))),
-        Type::Float64 => quote!(liftOptional(api, $inner, (api, v) => liftFloat64(v))),
-        Type::String => {
-            quote!(liftOptional(api, $inner, (api, v) => $(type_lift_fn(inner_type, quote!(v.sublist(5))))) )
-        }
-        _ => todo!("lift Option inner type: Type::{:?}", inner_type),
-    }
-}
-
-pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-    match ty {
-        Type::UInt32
-        | Type::Int8
-        | Type::UInt8
-        | Type::Int16
-        | Type::UInt16
-        | Type::Int32
-        | Type::Int64
-        | Type::UInt64
-        | Type::Float32
-        | Type::Float64 => inner,
-        Type::Boolean => quote!((($inner) ? 1 : 0)),
-        Type::String => quote!(lowerString(api, $inner)),
-        Type::Object { name, .. } => quote!($name.lower(api, $inner)),
-        Type::Enum { name, .. } => {
-            quote!($name.lower(api, $inner))
-        }
-        Type::Optional { inner_type, .. } => {
-            quote!(lowerOptional(api, $inner, (api, v) => $(type_lower_fn(inner_type, quote!(v)))))
-        }
-        Type::Sequence { inner_type, .. } => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
-        _ => todo!("lower Type::{:?}", ty),
     }
 }

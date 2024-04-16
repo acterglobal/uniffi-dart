@@ -24,7 +24,6 @@
 //     }
 // }
 
-
 // impl UniffiCustomTypeConverter for Url {
 //     type Builtin = String;
 

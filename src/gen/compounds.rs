@@ -5,7 +5,7 @@ use uniffi_bindgen::backend::CodeType;
 use uniffi_bindgen::interface::{Literal, Type};
 
 use super::oracle::{AsCodeType, DartCodeOracle};
-use crate::gen::render::{AsRenderable, Renderable, TypeHelperRenderer};
+use crate::gen::render::{Renderable, TypeHelperRenderer};
 
 fn render_literal(literal: &Literal, inner: &Type) -> String {
     match literal {
@@ -99,7 +99,7 @@ macro_rules! impl_renderable_for_compound {
 
                     let inner_cl_converter_name = inner_codetype.ffi_converter_name();
                     let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
-                    let inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
+                    let _inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
 
 
                     quote! {
@@ -174,7 +174,7 @@ macro_rules! impl_renderable_for_compound {
 
                     let inner_cl_converter_name = &self.inner().as_codetype().ffi_converter_name();
                     let inner_data_type = &inner_codetype.canonical_name().replace("UInt", "Uint").replace("Double", "Float");
-                    let inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
+                    let _inner_type_signature = if inner_data_type.contains("Float") { "double" } else { "int" };
                     // TODO: Generate the proper lifter for each of the items
 
                     let (lift_fn, lower_fn) = if cl_name.contains("Bool") {

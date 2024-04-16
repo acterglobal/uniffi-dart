@@ -12,7 +12,7 @@ pub fn multiply(left: u32, right: u32) -> u32 {
 
 #[uniffi::export]
 pub fn divide(left: u32, right: u32) -> Option<u32> {
-   Some(left / right)
+    Some(left / right)
 }
 
 #[uniffi::export]
@@ -57,17 +57,17 @@ pub fn add_i32(left: i32, right: i32) -> Option<i32> {
 
 #[uniffi::export]
 pub fn add_i64(left: i64, right: i64) -> Option<i64> {
-   Some( left + right)
+    Some(left + right)
 }
 
 #[uniffi::export]
 pub fn add_f32(left: f32, right: f32) -> Option<f32> {
-   Some(left + right)
+    Some(left + right)
 }
 
 #[uniffi::export]
 pub fn add_f64(left: f64, right: f64) -> Option<f64> {
-   Some(left + right)
+    Some(left + right)
 }
 
 macro_rules! get_back {

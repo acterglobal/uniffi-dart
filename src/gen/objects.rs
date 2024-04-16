@@ -1,8 +1,8 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal, Type};
+use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Method, Object};
 
-use crate::gen::oracle::{AsCodeType, DartCodeOracle};
+use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use crate::gen::render::{Renderable, TypeHelperRenderer};
@@ -27,7 +27,7 @@ impl CodeType for ObjectCodeType {
     }
 
     fn canonical_name(&self) -> String {
-        format!("{}", self.id)
+        self.id.to_string()
     }
 
     fn literal(&self, _literal: &Literal) -> String {
@@ -35,7 +35,7 @@ impl CodeType for ObjectCodeType {
     }
 
     fn ffi_converter_name(&self) -> String {
-        format!("{}", self.canonical_name()) // Objects will use factory methods
+        self.canonical_name().to_string() // Objects will use factory methods
     }
 }
 
@@ -48,12 +48,10 @@ impl Renderable for ObjectCodeType {
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
             quote!()
+        } else if let Some(obj) = type_helper.get_object(&self.id) {
+            generate_object(obj, type_helper)
         } else {
-            if let Some(obj) = type_helper.get_object(&self.id) {
-                generate_object(obj, type_helper)
-            } else {
-                unreachable!()
-            }
+            unreachable!()
         }
     }
 }
@@ -114,7 +112,7 @@ pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> da
 
     let (ret, body) = if let Some(ret) = fun.return_type() {
         (
-            ret.as_renderable().render_type(&ret, type_helper),
+            ret.as_renderable().render_type(ret, type_helper),
             quote! {
                 return $(DartCodeOracle::type_lift_fn(ret, inner));
             },

@@ -4,10 +4,6 @@ use uniffi_bindgen::interface::{AsType, Enum, Field, Type, Variant};
 
 use super::oracle::{AsCodeType, DartCodeOracle};
 use super::render::{AsRenderable, Renderable, TypeHelperRenderer};
-use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
-    generate_type, type_lift_fn, type_lower_fn,
-};
 
 use super::utils::{class_name, enum_variant_name, var_name};
 
@@ -28,7 +24,7 @@ impl CodeType for EnumCodeType {
     }
 
     fn canonical_name(&self) -> String {
-        format!("{}", self.id)
+        self.id.to_string()
     }
 
     fn literal(&self, literal: &Literal) -> String {
@@ -44,7 +40,7 @@ impl CodeType for EnumCodeType {
     }
 
     fn ffi_converter_name(&self) -> String {
-        format!("{}", self.canonical_name()) // Objects will use factory methods
+        self.canonical_name().to_string() // Objects will use factory methods
     }
 }
 
@@ -52,12 +48,10 @@ impl Renderable for EnumCodeType {
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
             quote!()
+        } else if let Some(enum_) = type_helper.get_enum(&self.id) {
+            generate_enum(enum_, type_helper)
         } else {
-            if let Some(enum_) = type_helper.get_enum(&self.id) {
-                generate_enum(enum_, type_helper)
-            } else {
-                unreachable!()
-            }
+            unreachable!()
         }
     }
 }
@@ -178,7 +172,7 @@ fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Token
     }
 }
 
-fn generate_variant_lowerer(_cls_name: &String, index: usize, variant: &Variant) -> dart::Tokens {
+fn generate_variant_lowerer(_cls_name: &str, index: usize, variant: &Variant) -> dart::Tokens {
     fn generate_variant_field_lower(
         field: &Field,
         _index: usize,
