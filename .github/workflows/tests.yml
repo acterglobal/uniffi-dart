@@ -1,25 +1,13 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
 
 name: Testing
 
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        continue-on-error: false
-        with:
-          command: check
 
   test:
     name: Test Suite
@@ -28,19 +16,29 @@ jobs:
       matrix:
         rust:
           - stable
-          - 1.70
+          - "1.74"
           - nightly
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v3
+      - uses: FrancisRussell/ferrous-actions@v0.1.0-beta.1
+        name: Cargo Cache
         with:
+          command: cache
+      - uses: FrancisRussell/ferrous-actions@v0.1.0-beta.2
+        name: Install Rust toolchain
+        with:
+          command: install-rustup
           toolchain: ${{ matrix.rust }}
-
-      - name: Install nextest
-        uses: taiki-e/install-action@nextest
+          profile: minimal
+          default: true
+      - uses: FrancisRussell/ferrous-actions@v0.1.0-beta.2
+        name: Install nextest
+        with:
+          command: cargo install
+          args: cargo-nextest
 
       - name: Install Dart toolchain
         uses: dart-lang/setup-dart@v1
@@ -57,28 +55,30 @@ jobs:
       matrix:
         rust:
           - stable
-          - 1.70.0
+          - "1.74"
           - nightly
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v3
+      - uses: FrancisRussell/ferrous-actions@v0.1.0-beta.1
+        name: Cargo Cache
         with:
+          command: cache
+      - uses: FrancisRussell/ferrous-actions@v0.1.0-beta.2
+        name: Install Rust toolchain
+        with:
+          command: install-rustup
           toolchain: ${{ matrix.rust }}
-          components: clippy, rustfmt
+          profile: minimal
+          components: clippy rustfmt
+          default: true
+          
+      - name: Format
+        continue-on-error: ${{ matrix.rust == 'nightly' }}
+        run: cargo fmt --all -- --check
 
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        continue-on-error:  ${{ matrix.rust == 'nightly' }}
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        continue-on-error:  ${{ matrix.rust == 'nightly' }}
-        with:
-          command: clippy
-          args: -- -D warnings
+      - name: Clippy
+        continue-on-error: ${{ matrix.rust == 'nightly' }}
+        run: cargo clippy -- -D warnings
