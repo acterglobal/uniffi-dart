@@ -19,7 +19,6 @@
 //     UnexpectedError,
 // }
 
-
 // #[derive(Debug, thiserror::Error)]
 // pub enum ComplexError {
 //     #[error("ReallyBadArgument")]
@@ -34,13 +33,11 @@
 //     }
 // }
 
-
 // impl From<uniffi::UnexpectedUniFFICallbackError> for ComplexError {
 //     fn from(e: uniffi::UnexpectedUniFFICallbackError) -> ComplexError {
 //         ComplexError::UnexpectedErrorWithReason { reason: e.reason }
 //     }
 // }
-
 
 // #[derive(Debug, Clone, uniffi::Object)]
 // pub struct RustGetters;
@@ -99,7 +96,6 @@
 //     }
 // }
 
-
 // impl Default for RustGetters {
 //     fn default() -> Self {
 //         Self::new()
@@ -129,6 +125,5 @@
 //         self.callback.from_simple_type(value)
 //     }
 // }
-
 
 // uniffi::include_scaffolding!("api");

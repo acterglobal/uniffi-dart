@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use camino::Utf8Path;
-use camino::Utf8PathBuf;
+
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -99,7 +99,7 @@ impl BindingsConfig for Config {
 
 pub struct DartWrapper<'a> {
     config: &'a Config,
-    ci: &'a ComponentInterface,
+    // ci: &'a ComponentInterface,
     type_renderer: TypeHelpersRenderer<'a>,
 }
 
@@ -107,7 +107,7 @@ impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
         DartWrapper {
-            ci,
+            // ci,
             config,
             type_renderer,
         }
@@ -180,7 +180,7 @@ impl BindingGenerator for DartBindingGenerator {
         _try_format_code: bool,
     ) -> Result<()> {
         let filename = out_dir.join(format!("{}.dart", config.cdylib_name()));
-        let tokens = DartWrapper::new(&ci, &config).generate();
+        let tokens = DartWrapper::new(ci, config).generate();
         let file = std::fs::File::create(filename)?;
 
         let mut w = fmt::IoWriter::new(file);
@@ -191,7 +191,11 @@ impl BindingGenerator for DartBindingGenerator {
         tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
         Ok(())
     }
-    fn check_library_path(&self, library_path: &Utf8Path, cdylib_name: Option<&str>) -> Result<()> {
+    fn check_library_path(
+        &self,
+        _library_path: &Utf8Path,
+        _cdylib_name: Option<&str>,
+    ) -> Result<()> {
         // FIXME: not sure what to check for here...?
         Ok(())
     }

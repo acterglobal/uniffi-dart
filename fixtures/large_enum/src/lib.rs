@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use uniffi;
 use uniffi::{Enum, Record};
 
-
 #[uniffi::export]
 pub fn new_flat_one() -> FlatEnum {
     FlatEnum::One
@@ -101,7 +100,9 @@ pub fn new_bool_value(value: bool) -> Value {
 
 #[uniffi::export]
 pub fn new_public_key_value_without_argument() -> Value {
-    Value::PublicKey { value: vec![3, 4, 4, 5, 4, 24434398, 4] }
+    Value::PublicKey {
+        value: vec![3, 4, 4, 5, 4, 24434398, 4],
+    }
 }
 
 #[uniffi::export]
@@ -121,9 +122,9 @@ pub fn take_value(value: Value) -> String {
         Value::I8 { value } => format!("{}", value),
         Value::I16 { value } => format!("{}", value),
         Value::I32 { value } => format!("{}", value),
-        Value::I64 { value }  => format!("{}", value),
-        Value::F32 { value }  => format!("{}", value),
-        Value::F64 { value }  => format!("{}", value),
+        Value::I64 { value } => format!("{}", value),
+        Value::F32 { value } => format!("{}", value),
+        Value::F64 { value } => format!("{}", value),
         //Value::Enum { discriminator, fields } => format!("{:?}, {:?}",discriminator, fields),
         // Value::NonHomogenousCollection { elements } => format!("{:?}", elements),
         // Value::HomogenousCollection { elements } => format!("{:?}", elements),
@@ -134,52 +135,28 @@ pub fn take_value(value: Value) -> String {
 
 #[derive(Debug, Clone, Enum)]
 pub enum FlatEnum {
-    One, 
-    Two, 
-    Three, 
-    Four
+    One,
+    Two,
+    Three,
+    Four,
 }
 
 // TODO: Add Collections (Maps, Vector, ...)
 #[derive(Debug, Clone, Enum)]
 pub enum Value {
-    String {
-        value: String,
-    },
-    Bool {
-        value: bool,
-    },
-    U8 {
-        value: u8,
-    },
-    U16 {
-        value: u16,
-    },
-    U32 {
-        value: u32,
-    },
-    U64 {
-        value: u64,
-    },
+    String { value: String },
+    Bool { value: bool },
+    U8 { value: u8 },
+    U16 { value: u16 },
+    U32 { value: u32 },
+    U64 { value: u64 },
 
-    I8 {
-        value: i8,
-    },
-    I16 {
-        value: i16,
-    },
-    I32 {
-        value: i32,
-    },
-    I64 {
-        value: i64,
-    },
-    F32 {
-        value: f32,
-    },
-    F64 {
-        value: f64
-    },
+    I8 { value: i8 },
+    I16 { value: i16 },
+    I32 { value: i32 },
+    I64 { value: i64 },
+    F32 { value: f32 },
+    F64 { value: f64 },
     // Enum {
     //     discriminator: u8,
     //     fields: Vec<Value>,
@@ -190,10 +167,7 @@ pub enum Value {
     // Record {
     //     entries: Vec<RecordEntry>,
     // },
-
-    PublicKey {
-        value: Vec<i32>,
-    },
+    PublicKey { value: Vec<i32> },
 }
 
 // #[derive(Clone, Debug, Record)]

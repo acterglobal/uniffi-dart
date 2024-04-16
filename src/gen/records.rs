@@ -1,11 +1,8 @@
 use genco::prelude::*;
-use uniffi_bindgen::interface::{AsType, Method, Record};
+use uniffi_bindgen::interface::{AsType, Record};
 
-use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer,
-    generate_type, type_lift_fn, type_lower_fn,
-};
-use super::utils::{class_name, fn_name, var_name};
+use super::types::generate_type;
+use super::utils::{class_name, var_name};
 
 pub fn generate_record(obj: &Record) -> dart::Tokens {
     let cls_name = &class_name(obj.name());

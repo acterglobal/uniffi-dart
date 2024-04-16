@@ -1,7 +1,7 @@
 use genco::prelude::*;
 use uniffi_bindgen::interface::{AsType, Function};
 
-use crate::gen::oracle::{DartCodeOracle, AsCodeType};
+use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use super::render::{Renderable, TypeHelperRenderer};
@@ -12,7 +12,11 @@ use super::types::{
 use super::utils::{fn_name, var_name};
 
 #[allow(unused_variables)]
-pub fn generate_function(api: &str, fun: &Function, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+pub fn generate_function(
+    api: &str,
+    fun: &Function,
+    type_helper: &dyn TypeHelperRenderer,
+) -> dart::Tokens {
     let ffi = fun.ffi_func();
     let fn_name = fn_name(fun.name());
     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
@@ -25,9 +29,9 @@ pub fn generate_function(api: &str, fun: &Function, type_helper: &dyn TypeHelper
     )
     };
 
-    let (ret, body) = if let Some(ret) = fun.return_type() {        
+    let (ret, body) = if let Some(ret) = fun.return_type() {
         (
-            ret.as_renderable().render_type(&ret, type_helper),
+            ret.as_renderable().render_type(ret, type_helper),
             quote! {
                 return $(DartCodeOracle::type_lift_fn(ret, inner));
             },

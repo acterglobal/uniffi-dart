@@ -3,7 +3,7 @@ use genco::quote;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
 use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{AsType, FfiType, Literal, Type};
+use uniffi_bindgen::interface::{AsType, FfiType, Type};
 
 use crate::gen::primitives;
 
@@ -12,6 +12,7 @@ use super::{compounds, enums, objects};
 
 pub struct DartCodeOracle;
 
+#[allow(dead_code)]
 impl DartCodeOracle {
     pub fn find(type_: &Type) -> Box<dyn CodeType> {
         type_.clone().as_type().as_codetype()
@@ -22,10 +23,7 @@ impl DartCodeOracle {
     }
 
     pub fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
-        match type_ {
-            //Type::Enum(id) => Box::new(error::ErrorCodeType::new(id.clone())),
-            _ => panic!("unsupported type for error: {type_:?}"),
-        }
+        panic!("unsupported type for error: {type_:?}")
     }
 
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.

@@ -390,7 +390,6 @@
 //     patch: Arc<Patch>,
 // }
 
-
 // #[derive(Debug, Clone, Copy, uniffi::Enum)]
 // pub enum Color {
 //     Red,

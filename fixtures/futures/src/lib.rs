@@ -59,7 +59,6 @@ use uniffi;
 //     }
 // }
 
-
 // /// Non-blocking timer future.
 // pub struct BrokenTimerFuture {
 //     shared_state: Arc<Mutex<SharedState>>,
@@ -185,7 +184,6 @@ pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
 // pub async fn new_my_record(a: String, b: u32) -> MyRecord {
 //     MyRecord { a, b }
 // }
-
 
 // #[uniffi::export]
 // pub async fn broken_sleep(ms: u16, fail_after: u16) {
