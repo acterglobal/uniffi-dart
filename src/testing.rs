@@ -39,7 +39,7 @@ pub fn run_test(fixture: &str, udl_path: &str, config_path: Option<&str>) -> Res
     version: 1.0.0
 
     environment:
-      sdk: '>=2.19.6 <3.0.0'
+      sdk: '>=3.2.0 <4.0.0'
     dev_dependencies:
       test: ^1.24.3
     dependencies:

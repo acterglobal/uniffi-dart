@@ -184,7 +184,10 @@ impl DartCodeOracle {
     pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
             Type::Object { .. } => inner,
-            Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
+            Type::String => {
+                quote!(RustBuffer.fromBytes(api, $inner.toNativeUtf8());)
+            }
+            Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
                 quote!(toRustBuffer(api, $inner))
             }
             _ => inner,
