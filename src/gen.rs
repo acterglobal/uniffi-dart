@@ -177,6 +177,7 @@ impl BindingGenerator for DartBindingGenerator {
         ci: &ComponentInterface,
         config: &Self::Config,
         out_dir: &Utf8Path,
+        _try_format_code: bool,
     ) -> Result<()> {
         let filename = out_dir.join(format!("{}.dart", config.cdylib_name()));
         let tokens = DartWrapper::new(&ci, &config).generate();
@@ -203,11 +204,12 @@ pub fn generate_dart_bindings(
     library_file: Option<&Utf8Path>,
 ) -> Result<()> {
     uniffi_bindgen::generate_external_bindings(
-        DartBindingGenerator {},
+        &DartBindingGenerator {},
         udl_file,
         config_file_override,
         out_dir_override,
         library_file,
         None,
+        true,
     )
 }
