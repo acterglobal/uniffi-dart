@@ -219,10 +219,10 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             }
 
             class RustBuffer extends Struct {
-                @Int32()
+                @Uint64()
                 external int capacity;
 
-                @Int32()
+                @Uint64()
                 external int len;
 
                 external Pointer<Uint8> data;
@@ -231,26 +231,26 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     final _fromBytesPtr = api._lookup<
                     NativeFunction<
                         RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_from_bytes().name())));
-                    final fromBytes =
+                    final _fromBytes =
                     _fromBytesPtr.asFunction<RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => fromBytes(bytes, res));
+                    return rustCall(api, (res) => _fromBytes(bytes, res));
                 }
 
                 // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
                 static RustBuffer allocate(Api api, int size) {
                     final _allocatePtr = api._lookup<
                         NativeFunction<
-                            RustBuffer Function(Int32, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
-                    final allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => allocate(size, res));
+                            RustBuffer Function(Int64, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
+                    final _allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
+                    return rustCall(api, (res) => _allocate(size, res));
                 }
 
                 void deallocate(Api api) {
                     final _freePtr = api._lookup<
                     NativeFunction<
                         Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
-                    final free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
-                    rustCall(api, (res) => free(this, res));
+                    final _free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
+                    rustCall(api, (res) => _free(this, res));
                 }
 
                 Uint8List toIntList() {
