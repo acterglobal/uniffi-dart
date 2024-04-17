@@ -1,9 +1,8 @@
+use crate::gen::render::{Renderable, TypeHelperRenderer};
+use genco::prelude::*;
 use paste::paste;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{Radix, Type};
-use crate::gen::render::{Renderable, TypeHelperRenderer};
-use crate::gen::oracle::DartCodeOracle;
-use genco::prelude::*;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -68,20 +67,20 @@ macro_rules! impl_code_type_for_primitive {
                 fn ffi_converter_name(&self) -> String {
                     format!("{}FfiConverter", self.canonical_name())
                 }
-            
+
                 // The following must create an instance of the converter object
                 fn lower(&self) -> String {
                     format!("{}().lower", self.ffi_converter_name())
                 }
-            
+
                 fn write(&self) -> String {
                     format!("{}().write", self.ffi_converter_name())
                 }
-            
+
                 fn lift(&self) -> String {
                     format!("{}().lift", self.ffi_converter_name())
                 }
-            
+
                 fn read(&self) -> String {
                     format!("{}().read", self.ffi_converter_name())
                 }
@@ -93,22 +92,33 @@ macro_rules! impl_code_type_for_primitive {
 macro_rules! impl_renderable_for_primitive {
     ($T:ty, $class_name:literal, $canonical_name:literal, $allocation_size:literal) => {
         impl Renderable for $T {
-            fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 // TODO: Need to modify behavior to allow
                 // if (type_helper.check($canonical_name)) {
                 //     return quote!()
                 // }
                 // This method can be expanded to generate type helper methods if needed.
-                let mut endian = (if $canonical_name.contains("Float") { "Endian.little" } else { "Endian.big" });
-                let final_uintlist = (if $canonical_name.contains("Float") { 
-                    String::from($canonical_name) + "List.fromList(buf.reversed.toList())" 
+                let mut endian = (if $canonical_name.contains("Float") {
+                    "Endian.little"
                 } else {
-                    String::from($canonical_name) + "List.fromList(buf.toList())" 
+                    "Endian.big"
+                });
+                let _final_uintlist = (if $canonical_name.contains("Float") {
+                    String::from($canonical_name) + "List.fromList(buf.reversed.toList())"
+                } else {
+                    String::from($canonical_name) + "List.fromList(buf.toList())"
                 });
 
                 let cl_name = String::from($canonical_name) + "FfiConverter";
-                let data_type = &$canonical_name.replace("UInt", "Uint").replace("Double", "Float");
-                let type_signature = if data_type.contains("Float") { "double" } else { endian = ""; "int" };
+                let data_type = &$canonical_name
+                    .replace("UInt", "Uint")
+                    .replace("Double", "Float");
+                let type_signature = if data_type.contains("Float") {
+                    "double"
+                } else {
+                    endian = "";
+                    "int"
+                };
 
                 quote! {
                     class $cl_name extends FfiConverter<$type_signature, RustBuffer> {
@@ -117,7 +127,7 @@ macro_rules! impl_renderable_for_primitive {
                             final uint_list = buf.toIntList();
                             return uint_list.buffer.asByteData().get$data_type(offset);
                         }
-                      
+
                         @override
                         RustBuffer lower(Api api, $type_signature value) {
                             final buf = Uint8List(this.allocationSize());
@@ -125,24 +135,24 @@ macro_rules! impl_renderable_for_primitive {
                             byteData.set$data_type(0, value, $endian);
                             return toRustBuffer(api, Uint8List.fromList(buf.toList()));
                         }
-                      
+
                         @override
                         $type_signature read(ByteBuffer buf) {
                             // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                             // considerations, after research on performance implications
                           throw UnimplementedError("Should probably implement read now");
                         }
-                      
+
                         @override
                         int allocationSize([$type_signature value = $allocation_size]) {
-                          return $allocation_size; 
+                          return $allocation_size;
                         }
-                      
+
                         @override
                         void write($type_signature value, ByteBuffer buf) {
                             throw UnimplementedError("Should probably implement writes now");
                         }
-                    }                      
+                    }
                 }
             }
         }
@@ -150,7 +160,7 @@ macro_rules! impl_renderable_for_primitive {
 
     (BooleanCodeType) => {
         impl Renderable for BooleanCodeType {
-            fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 // if (type_helper.check($canonical_name)) {
                 //     return quote!()
                 // }
@@ -161,37 +171,37 @@ macro_rules! impl_renderable_for_primitive {
                         bool lift(Api api, int value, [int offset = 0]) {
                             return value == 1;
                         }
-                      
+
                         @override
                         int lower(Api api, bool value) {
                             return value ? 1 : 0;
                         }
-                      
+
                         @override
                         bool read(ByteBuffer buf) {
                             // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                             // performance reasons
                           throw UnimplementedError("Should probably implement read now");
                         }
-                      
+
                         @override
                         int allocationSize([bool value = false]) {
                           return 1;
                         }
-                      
+
                         @override
                         void write(bool value, ByteBuffer buf) {
                             throw UnimplementedError("Should probably implement read now");
                         }
-                    }                 
+                    }
                 }
             }
         }
     };
-    
+
     (StringCodeType) => {
         impl Renderable for StringCodeType {
-            fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 // This method can be expanded to generate type helper methods if needed.
                 quote! {
                     // if (type_helper.check($canonical_name)) {
@@ -203,30 +213,30 @@ macro_rules! impl_renderable_for_primitive {
                             final uint_list = buf.toIntList().sublist(offset);
                             return utf8.decoder.convert(uint_list);
                         }
-                      
+
                         @override
                         RustBuffer lower(Api api, String value) {
                             // FIXME: this is too many memcopies!
                             return toRustBuffer(api, Utf8Encoder().convert(value));
                         }
-                      
+
                         @override
                         String read(ByteBuffer buf) {
                             // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                             // performance reasons
                           throw UnimplementedError("Should probably implement read now");
                         }
-                      
+
                         @override
                         int allocationSize([String value = ""]) {
                             return value.length + 4; // Four additional bytes for the length data
                         }
-                      
+
                         @override
                         void write(String value, ByteBuffer buf) {
                             throw UnimplementedError("Should probably implement read now");
                         }
-                    }                 
+                    }
                 }
             }
         }
@@ -236,7 +246,7 @@ macro_rules! impl_renderable_for_primitive {
         impl Renderable for $T {
             fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 if (type_helper.check($canonical_name)) {
-                    return quote!() // Return an empty string to avoid code duplication
+                    return quote!(); // Return an empty string to avoid code duplication
                 }
                 // TODO: implement bytes ffi methods
                 quote! {
@@ -246,7 +256,7 @@ macro_rules! impl_renderable_for_primitive {
                             // final uint_list = buf.toIntList();
                             // return uint_list.buffer.asByteData().get$canonical_name(1);
                         }
-                      
+
                         @override
                         RustBuffer lower(Api api, int value) {
                             // final uint_list = Uint8List.fromList([value ? 1 : 0]);
@@ -254,28 +264,28 @@ macro_rules! impl_renderable_for_primitive {
                             // byteData.setInt16(0, value, Endian.little);
                             // return buf;
                         }
-                      
+
                         @override
                         int read(ByteBuffer buf) {
                         //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
                         //     // performance reasons
                         //   throw UnimplementedError("Should probably implement read now");
                         }
-                      
+
                         @override
                         int allocationSize([T value]) {
-                        //   return $allocation_size; // 1 = 8bits//TODO: Add correct allocation size for bytes, change the arugment type 
+                        //   return $allocation_size; // 1 = 8bits//TODO: Add correct allocation size for bytes, change the arugment type
                         }
-                      
+
                         @override
                         void write(int value, ByteBuffer buf) {
                             // throw UnimplementedError("Should probably implement read now");
                         }
-                    }                 
+                    }
                 }
             }
         }
-    }
+    };
 }
 
 impl_code_type_for_primitive!(BooleanCodeType, "bool", "Bool");
@@ -307,8 +317,6 @@ impl_renderable_for_primitive!(UInt64CodeType, "int", "UInt64", 8);
 impl_renderable_for_primitive!(Float32CodeType, "double", "Double32", 4);
 impl_renderable_for_primitive!(Float64CodeType, "double", "Double64", 8);
 
-
-
 // Delete these later
 
 // TODO: Create struct that implement Renderer/Renderable for primitives
@@ -330,7 +338,7 @@ impl_renderable_for_primitive!(Float64CodeType, "double", "Double64", 8);
 
 //         int liftInt64OrUint64(Uint8List buf, [int offset = 1]) {
 //             return buf.buffer.asByteData().getInt64(offset);
-//         }  
+//         }
 
 //         double liftFloat32(Uint8List buf, [int offset = 1]) {
 //             return buf.buffer.asByteData().getFloat32(offset);
@@ -362,7 +370,7 @@ impl_renderable_for_primitive!(Float64CodeType, "double", "Double64", 8);
 
 //         int? liftInt64OrUint64(Uint8List buf, [int offset = 1]) {
 //             return buf.isEmpty ? null : buf.buffer.asByteData().getInt64(offset);
-//         }  
+//         }
 
 //         double? liftFloat32(Uint8List buf, [int offset = 1]) {
 //             if (!buf.isEmpty) {
@@ -372,10 +380,10 @@ impl_renderable_for_primitive!(Float64CodeType, "double", "Double64", 8);
 //             } else {
 //                 return null;
 //             }
-           
+
 //            // return buf.isEmpty ? null : buf.buffer.asByteData().getFloat32(offset);
 //         }
-        
+
 //         double? liftFloat64(Uint8List buf, [int offset = 1]) {
 //             return buf.isEmpty ? null : buf.buffer.asByteData().getFloat64(offset);
 //         }
@@ -393,7 +401,7 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             final int offset;
             DataOffset(this.data, this.offset);
         }
-        
+
         // Todo!: Make this guy handle varaible strings
         DataOffset<T> liftVaraibleLength<T>(
             Uint8List buf, T? Function(Uint8List) lifter,
@@ -408,10 +416,10 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             buf = buf.sublist(offset);
             final length = buf.buffer.asByteData().getInt32(0);
             buf = buf.sublist(4);
-            
+
             final element_byte_size = (buf.length ~/ length);
             offset = 0;
-            
+
             for (var i = 0; i < length; i++) {
                 offset = element_byte_size * i; // Update the offset for the next loop
                 final item = lifter(buf, offset);
@@ -425,22 +433,22 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
 
 // pub fn generate_primitives_lowerers() -> dart::Tokens {
 //     quote! {
-//         // TODO: implement lowerers for primitives        
+//         // TODO: implement lowerers for primitives
 //         Uint8List createUint8ListFromInt(int value) {
 //             int length = value.bitLength ~/ 8 + 1;
-        
+
 //             // Ensure the length is either 4 or 8
 //             if (length != 4 && length != 8) {
 //             length = (value < 0x100000000) ? 4 : 8;
 //             }
-        
+
 //             Uint8List uint8List = Uint8List(length);
-        
+
 //             for (int i = length - 1; i >= 0; i--) {
 //             uint8List[i] = value & 0xFF;
 //             value >>= 8;
 //             }
-        
+
 //             return uint8List;
 //         }
 
@@ -492,19 +500,19 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
     quote! {
         Uint8List createUint8ListFromInt(int value) {
             int length = value.bitLength ~/ 8 + 1;
-        
+
             // Ensure the length is either 4 or 8
             if (length != 4 && length != 8) {
             length = (value < 0x100000000) ? 4 : 8;
             }
-        
+
             Uint8List uint8List = Uint8List(length);
-        
+
             for (int i = length - 1; i >= 0; i--) {
             uint8List[i] = value & 0xFF;
             value >>= 8;
             }
-        
+
             return uint8List;
         }
 
@@ -521,17 +529,17 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
           int capacity = input.length * element_byte_size;
           Uint8List items = Uint8List(capacity + 4); // Four bytes for the length
           int offset = 0;
-        
+
           // Set the length of the vec
           items.setAll(offset, createUint8ListFromInt(capacity));
           offset += 4;
-        
+
           for (var i = 0; i < input.length; i++) {
             items.setRange(
                 offset, offset + element_byte_size, lowerer(api, input[i] as V));
             offset += element_byte_size;
           }
-        
+
           print("Items from sequence");
           print(items);
           return items;
