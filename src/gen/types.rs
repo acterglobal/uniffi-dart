@@ -394,52 +394,53 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 }
 
 
-pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
-    let Some(ret_type) = ret else {
-        return quote!(Void)
-    };
-    match *ret_type {
-        FfiType::UInt8 => quote!(Uint8),
-        FfiType::UInt16 => quote!(Uint16),
-        FfiType::UInt32 => quote!(Uint32),
-        FfiType::UInt64 => quote!(Uint64),
-        FfiType::Int8 => quote!(Int8),
-        FfiType::Int16 => quote!(Int16),
-        FfiType::Int32 => quote!(Int32),
-        FfiType::Int64 => quote!(Int64),
-        FfiType::Float32 => quote!(Float),
-        FfiType::Float64 => quote!(Double),
-        FfiType::RustBuffer(ref inner) => match inner {
-            Some(i) => quote!($i),
-            _ => quote!(RustBuffer),
-        },
-        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-        _ => todo!("FfiType::{:?}", ret_type),
-    }
-}
+// pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
+//     let Some(ret_type) = ret else {
+//         return quote!(Void)
+//     };
+//     match *ret_type {
+//         FfiType::UInt8 => quote!(Uint8),
+//         FfiType::UInt16 => quote!(Uint16),
+//         FfiType::UInt32 => quote!(Uint32),
+//         FfiType::UInt64 => quote!(Uint64),
+//         FfiType::Int8 => quote!(Int8),
+//         FfiType::Int16 => quote!(Int16),
+//         FfiType::Int32 => quote!(Int32),
+//         FfiType::Int64 => quote!(Int64),
+//         FfiType::Float32 => quote!(Float),
+//         FfiType::Float64 => quote!(Double),
+//         FfiType::RustBuffer(ref inner) => match inner {
+//             Some(i) => quote!($i),
+//             _ => quote!(RustBuffer),
+//         },
+//         FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+//         _ => todo!("FfiType::{:?}", ret_type),
+//     }
+// }
 
-pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
-    let Some(ret_type) = ret else {
-        return quote!(void)
-    };
-    match *ret_type {
-        FfiType::UInt8 => quote!(int),
-        FfiType::UInt16 => quote!(int),
-        FfiType::UInt32 => quote!(int),
-        FfiType::UInt64 => quote!(int),
-        FfiType::Int8 => quote!(int),
-        FfiType::Int16 => quote!(int),
-        FfiType::Int32 => quote!(int),
-        FfiType::Int64 => quote!(int),
-        FfiType::Float32 | FfiType::Float64 => quote!(double),
-        FfiType::RustBuffer(ref inner) => match inner {
-            Some(i) => quote!($i),
-            _ => quote!(RustBuffer),
-        },
-        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-        _ => todo!("FfiType::{:?}", ret_type),
-    }
-}
+// pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
+//     let Some(ret_type) = ret else {
+//         return quote!(void)
+//     };
+//     match *ret_type {
+//         FfiType::UInt8 => quote!(int),
+//         FfiType::UInt16 => quote!(int),
+//         FfiType::UInt32 => quote!(int),
+//         FfiType::UInt64 => quote!(int),
+//         FfiType::Int8 => quote!(int),
+//         FfiType::Int16 => quote!(int),
+//         FfiType::Int32 => quote!(int),
+//         FfiType::Int64 => quote!(int),
+//         FfiType::Float32 | FfiType::Float64 => quote!(double),
+//         FfiType::RustBuffer(ref inner) => match inner {
+//             Some(i) => quote!($i),
+//             _ => quote!(RustBuffer),
+//         },
+//         FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+//         //FfiType::ForeignExecutorHandle => ,
+//         _ => todo!("FfiType::{:?}", ret_type),
+//     }
+// }
 
 pub fn generate_type(ty: &Type) -> dart::Tokens {
     match ty {
