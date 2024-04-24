@@ -8,7 +8,6 @@ use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
 
-use super::types::{generate_ffi_dart_type, generate_ffi_type};
 use super::utils::{class_name, fn_name, var_name};
 
 
@@ -118,14 +117,14 @@ pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> da
     quote! {
         late final _$(&fn_name)Ptr = _api._lookup<
         NativeFunction<
-            $(generate_ffi_type(ffi.return_type())) Function(
-                $(for arg in &ffi.arguments() => $(generate_ffi_type(Some(&arg.type_()))),)
+            $(DartCodeOracle::ffi_native_type_label(ffi.return_type())) Function(
+                $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),)
                 Pointer<RustCallStatus>
         )>>($(format!("\"{ff_name}\"")));
 
         late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-        $(generate_ffi_dart_type(ffi.return_type())) Function(
-            $(for arg in &ffi.arguments() => $(generate_ffi_dart_type(Some(&arg.type_()))),)
+        $(DartCodeOracle::ffi_dart_type_label(ffi.return_type())) Function(
+            $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),)
             Pointer<RustCallStatus>
         )>();
 
