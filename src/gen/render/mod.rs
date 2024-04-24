@@ -41,10 +41,12 @@ pub trait Renderable {
                | Type::UInt64 => quote!(int),
                Type::Float32 | Type::Float64 => quote!(double),
                Type::String => quote!(String),
-               Type::Object{name, ..} => quote!($name),
+               Type::Object{name, ..} 
+               | Type::Record(name) => quote!($name),
                Type::Boolean => quote!(bool),
                Type::Optional( inner_type) => quote!($(&self.render_type(inner_type, type_helper))?),
                Type::Sequence ( inner_type ) => quote!(List<$(&self.render_type(inner_type, type_helper))>),
+               Type::Map ( key, value ) => quote!(Map<$(&self.render_type(key, type_helper)), $(&self.render_type(value, type_helper))>),
                Type::Enum ( name,..  ) => quote!($name),
               // Type:: { name,..  } => quote!($name),
                _ => todo!("Type::{:?}", ty)
