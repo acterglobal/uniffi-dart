@@ -77,11 +77,11 @@ impl DartCodeOracle {
     }
 
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
-    pub fn ffi_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
+    pub fn ffi_dart_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
             return quote!(void)
         };
-        match *ret_type {
+        match ret_type {
             FfiType::UInt8 |
             FfiType::UInt16 |
             FfiType::UInt32 |
@@ -95,17 +95,21 @@ impl DartCodeOracle {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
+            FfiType::ForeignExecutorHandle |
+            FfiType::FutureCallbackData |
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+            FfiType::FutureCallback { return_type   } => {
+                quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
+            }
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
     
-    // TODO: Replace instances of `generate_ffi_type` with ffi_native_type_label
-    pub fn ffi_native_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
-        let Some(ret_type) = ffi_type else {
+    pub fn ffi_native_type_label(ffi_ret_type: Option<&FfiType>) -> dart::Tokens {
+        let Some(ret_type) = ffi_ret_type else {
             return quote!(Void)
         };
-        match *ret_type {
+        match ret_type {
             FfiType::UInt8 => quote!(Uint8),
             FfiType::UInt16 => quote!(Uint16),
             FfiType::UInt32 => quote!(Uint32),
@@ -120,7 +124,12 @@ impl DartCodeOracle {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
+            FfiType::ForeignExecutorHandle |
+            FfiType::FutureCallbackData |
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+            FfiType::FutureCallback { return_type   } => {
+                quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
+            }
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
