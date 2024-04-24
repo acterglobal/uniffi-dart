@@ -5,7 +5,7 @@ use uniffi_bindgen::interface::{AsType, Type, Enum, Variant, Field};
 use super::oracle::{DartCodeOracle, AsCodeType};
 use super::render::{Renderable, AsRenderable, TypeHelperRenderer};
 use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
+    convert_from_rust_buffer, convert_to_rust_buffer,
     generate_type, type_lift_fn, type_lower_fn,
 };
 
