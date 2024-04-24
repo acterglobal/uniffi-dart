@@ -2,8 +2,8 @@ use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Enum, Field, Type, Variant};
 
-use super::oracle::{AsCodeType, DartCodeOracle};
-use super::render::{AsRenderable, Renderable, TypeHelperRenderer};
+use super::oracle::{DartCodeOracle, AsCodeType};
+use super::render::{Renderable, AsRenderable, TypeHelperRenderer};
 
 use super::utils::{class_name, enum_variant_name, var_name};
 
