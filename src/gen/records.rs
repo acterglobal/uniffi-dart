@@ -2,7 +2,7 @@ use genco::prelude::*;
 use uniffi_bindgen::interface::{AsType, Method, Record};
 
 use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
+    convert_from_rust_buffer, convert_to_rust_buffer,
     generate_type, type_lift_fn, type_lower_fn,
 };
 use super::utils::{class_name, fn_name, var_name};
