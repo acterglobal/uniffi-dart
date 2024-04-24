@@ -30,6 +30,8 @@ void main() {
   final inner_value_float = 84.68;
   final inner_bool = true;
 
+
+
   final inner_list = [3, 4, 4, 5, 4, 24434398, 4];
 
   // TODO: Collections (Maps, Vector, ...)
@@ -37,6 +39,12 @@ void main() {
   U16Value u16Value = (api.newU16Value(inner_value2) as U16Value);
   I8Value i8Value = (api.newI8Value(inner_value_small) as I8Value);
   I16Value i16Value = (api.newI16Value(inner_value2) as I16Value);
+
+  final mapEntry = {
+    'u8Value': u8Value,
+    'u16Value': u16Value,
+    'i8Value': i8Value,
+  };
 
   U32Value u32Value = (api.newU32Value(inner_value2) as U32Value);
   U64Value u64Value = (api.newU64Value(inner_value) as U64Value);
@@ -49,6 +57,7 @@ void main() {
       (api.newStringValue(inner_value.toString()) as StringValue);
   BoolValue boolValue = (api.newBoolValue(inner_bool) as BoolValue);
 
+  // MapEntryValue mapEntryValue = (api.newMapValue(mapEntry) as MapEntryValue);
   // PublicKeyValue publicKeyValue =
   //     (api.newPublicKeyValue(inner_list) as PublicKeyValue);
 
@@ -74,6 +83,7 @@ void main() {
     expect(boolValue.value, inner_bool);
     // Collections
     expect(publicKeyValue.value, inner_list);
+    // expect(mapEntryValue.value, mapEntry);
   });
 
   test('Passing Down/Lowering Complex Enums', () {
