@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use uniffi;
 use uniffi::{Enum, Record};
 
@@ -91,7 +93,12 @@ pub fn new_string_value(value: String) -> Value {
 pub fn new_bool_value(value: bool) -> Value {
     Value::Bool { value }
 }
-// Holding off till refactor
+
+// #[uniffi::export]
+// pub fn new_map_value(value: RecordEntry) -> Value {
+//     Value::Record { entries: vec![value] }
+// }
+
 #[uniffi::export]
 pub fn new_public_key_value_without_argument() -> Value {
     Value::PublicKey { value: vec![3, 4, 4, 5, 4, 24434398, 4] }
@@ -120,7 +127,7 @@ pub fn take_value(value: Value) -> String {
         //Value::Enum { discriminator, fields } => format!("{:?}, {:?}",discriminator, fields),
         // Value::NonHomogenousCollection { elements } => format!("{:?}", elements),
         // Value::HomogenousCollection { elements } => format!("{:?}", elements),
-        // Value::Map { entries } => format!("{:?}", entries),
+        // Value::Record { entries } => format!("{:?}", entries),
         Value::PublicKey { value } => format!("{:?}", value),
     }
 }
@@ -180,8 +187,8 @@ pub enum Value {
     // HomogenousCollection {
     //     elements: Vec<Value>,
     // },
-    // Map {
-    //     entries: Vec<MapEntry>,
+    // Record {
+    //     entries: Vec<RecordEntry>,
     // },
 
     PublicKey {
@@ -189,10 +196,14 @@ pub enum Value {
     },
 }
 
-#[derive(Clone, Debug, Record)]
-pub struct MapEntry {
-    pub key: Value,
-    pub value: Value,
-}
+// #[derive(Clone, Debug, Record)]
+// pub struct RecordEntry {
+//     pub value: Value,
+// }
+
+// #[derive(Clone, Debug, Record)]
+// pub struct RecordWithMapEntry {
+//     pub value: HashMap<Value, Value>,
+// }
 
 uniffi::include_scaffolding!("api");
