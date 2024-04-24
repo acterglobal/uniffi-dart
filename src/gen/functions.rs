@@ -6,7 +6,7 @@ use crate::gen::render::AsRenderable;
 
 use super::render::{Renderable, TypeHelperRenderer};
 use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer, generate_ffi_dart_type, generate_ffi_type,
+    convert_from_rust_buffer, convert_to_rust_buffer,
     generate_type, type_lift_fn, type_lower_fn,
 };
 use super::utils::{fn_name, var_name};
@@ -39,14 +39,14 @@ pub fn generate_function(api: &str, fun: &Function, type_helper: &dyn TypeHelper
     quote! {
         late final _$(&fn_name)Ptr = _lookup<
         NativeFunction<
-            $(generate_ffi_type(ffi.return_type())) Function(
-                $(for arg in &ffi.arguments() => $(generate_ffi_type(Some(&arg.type_()))),)
+            $(DartCodeOracle::ffi_native_type_label(ffi.return_type())) Function(
+                $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),)
                 Pointer<RustCallStatus>
         )>>($(format!("\"{ff_name}\"")));
 
         late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-        $(generate_ffi_dart_type(ffi.return_type())) Function(
-            $(for arg in &ffi.arguments() => $(generate_ffi_dart_type(Some(&arg.type_()))),)
+        $(DartCodeOracle::ffi_dart_type_label(ffi.return_type())) Function(
+            $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),)
             Pointer<RustCallStatus>
         )>();
 
