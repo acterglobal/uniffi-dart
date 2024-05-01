@@ -16,6 +16,19 @@ void main() {
     expect(world.isThere(), true);
   });
 
+  test("record test", () {
+    final world = api.newWorld("sarisa");
+    final state = world.state();
+    expect(state.name, "sarisa");
+    expect(state.inhabitants, 0);
+
+    world.inc_inhabitants();
+
+    final state = world.state();
+    // object has increased
+    expect(state.inhabitants, 1);
+  });
+
   test("stringed world test", () {
     var world = api.newWorldWithName("sari");
     expect(world.name(), "sari");
