@@ -17,16 +17,16 @@ void main() {
   });
 
   test("record test", () {
-    final world = api.newWorld("sarisa");
+    final world = api.newWorldWithName("sarisa");
     final state = world.state();
     expect(state.name, "sarisa");
     expect(state.inhabitants, 0);
 
-    world.inc_inhabitants();
+    world.incInhabitants();
 
-    final state = world.state();
+    final state2 = world.state();
     // object has increased
-    expect(state.inhabitants, 1);
+    expect(state2.inhabitants, 1);
   });
 
   test("stringed world test", () {

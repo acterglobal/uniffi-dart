@@ -1,8 +1,15 @@
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 use genco::prelude::*;
 use paste::paste;
-use uniffi_bindgen::backend::{CodeType, Literal};
+use uniffi_bindgen::backend::Literal;
 use uniffi_bindgen::interface::{Radix, Type};
+
+#[macro_use]
+mod macros;
+mod boolean;
+mod string;
+pub use boolean::BooleanCodeType;
+pub use string::StringCodeType;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -45,251 +52,6 @@ fn render_literal(literal: &Literal) -> String {
     }
 }
 
-macro_rules! impl_code_type_for_primitive {
-    ($T:ty, $class_name:literal, $canonical_name:literal) => {
-        paste! {
-            #[derive(Debug)]
-            pub struct $T;
-
-            impl CodeType for $T  {
-                fn type_label(&self,) -> String {
-                    $class_name.into()
-                }
-
-                fn literal(&self, literal: &Literal) -> String {
-                    render_literal(&literal)
-                }
-
-                fn canonical_name(&self,) -> String {
-                    $canonical_name.into()
-                }
-
-                fn ffi_converter_name(&self) -> String {
-                    format!("{}FfiConverter", self.canonical_name())
-                }
-
-                // The following must create an instance of the converter object
-                fn lower(&self) -> String {
-                    format!("{}().lower", self.ffi_converter_name())
-                }
-
-                fn write(&self) -> String {
-                    format!("{}().write", self.ffi_converter_name())
-                }
-
-                fn lift(&self) -> String {
-                    format!("{}().lift", self.ffi_converter_name())
-                }
-
-                fn read(&self) -> String {
-                    format!("{}().read", self.ffi_converter_name())
-                }
-            }
-        }
-    };
-}
-
-macro_rules! impl_renderable_for_primitive {
-    ($T:ty, $class_name:literal, $canonical_name:literal, $allocation_size:literal) => {
-        impl Renderable for $T {
-            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-                // TODO: Need to modify behavior to allow
-                // if (type_helper.check($canonical_name)) {
-                //     return quote!()
-                // }
-                // This method can be expanded to generate type helper methods if needed.
-                let mut endian = (if $canonical_name.contains("Float") {
-                    "Endian.little"
-                } else {
-                    "Endian.big"
-                });
-                let _final_uintlist = (if $canonical_name.contains("Float") {
-                    String::from($canonical_name) + "List.fromList(buf.reversed.toList())"
-                } else {
-                    String::from($canonical_name) + "List.fromList(buf.toList())"
-                });
-
-                let cl_name = String::from($canonical_name) + "FfiConverter";
-                let data_type = &$canonical_name
-                    .replace("UInt", "Uint")
-                    .replace("Double", "Float");
-                let type_signature = if data_type.contains("Float") {
-                    "double"
-                } else {
-                    endian = "";
-                    "int"
-                };
-
-                quote! {
-                    class $cl_name extends FfiConverter<$type_signature, RustBuffer> {
-                        @override
-                        $type_signature lift(Api api, RustBuffer buf, [int offset = 0]) {
-                            final uint_list = buf.toIntList();
-                            return uint_list.buffer.asByteData().get$data_type(offset);
-                        }
-
-                        @override
-                        RustBuffer lower(Api api, $type_signature value) {
-                            final buf = Uint8List(this.allocationSize());
-                            final byteData = ByteData.sublistView(buf);
-                            byteData.set$data_type(0, value, $endian);
-                            return toRustBuffer(api, Uint8List.fromList(buf.toList()));
-                        }
-
-                        @override
-                        $type_signature read(ByteBuffer buf) {
-                            // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            // considerations, after research on performance implications
-                          throw UnimplementedError("Should probably implement read now");
-                        }
-
-                        @override
-                        int allocationSize([$type_signature value = $allocation_size]) {
-                          return $allocation_size;
-                        }
-
-                        @override
-                        void write($type_signature value, ByteBuffer buf) {
-                            throw UnimplementedError("Should probably implement writes now");
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    (BooleanCodeType) => {
-        impl Renderable for BooleanCodeType {
-            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-                // if (type_helper.check($canonical_name)) {
-                //     return quote!()
-                // }
-                // This method can be expanded to generate type helper methods if needed.
-                quote! {
-                    class BoolFfiConverter extends FfiConverter<bool, int> {
-                        @override
-                        bool lift(Api api, int value, [int offset = 0]) {
-                            return value == 1;
-                        }
-
-                        @override
-                        int lower(Api api, bool value) {
-                            return value ? 1 : 0;
-                        }
-
-                        @override
-                        bool read(ByteBuffer buf) {
-                            // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            // performance reasons
-                          throw UnimplementedError("Should probably implement read now");
-                        }
-
-                        @override
-                        int allocationSize([bool value = false]) {
-                          return 1;
-                        }
-
-                        @override
-                        void write(bool value, ByteBuffer buf) {
-                            throw UnimplementedError("Should probably implement read now");
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    (StringCodeType) => {
-        impl Renderable for StringCodeType {
-            fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-                // This method can be expanded to generate type helper methods if needed.
-                quote! {
-                    // if (type_helper.check($canonical_name)) {
-                    //     return quote!()
-                    // }
-                    class StringFfiConverter extends FfiConverter<String, RustBuffer> {
-                        @override
-                        String lift(Api api, RustBuffer buf, [int offset = 0]) {
-                            final uint_list = buf.toIntList().sublist(offset);
-                            return utf8.decoder.convert(uint_list);
-                        }
-
-                        @override
-                        RustBuffer lower(Api api, String value) {
-                            // FIXME: this is too many memcopies!
-                            return toRustBuffer(api, Utf8Encoder().convert(value));
-                        }
-
-                        @override
-                        String read(ByteBuffer buf) {
-                            // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            // performance reasons
-                          throw UnimplementedError("Should probably implement read now");
-                        }
-
-                        @override
-                        int allocationSize([String value = ""]) {
-                            return value.length + 4; // Four additional bytes for the length data
-                        }
-
-                        @override
-                        void write(String value, ByteBuffer buf) {
-                            throw UnimplementedError("Should probably implement read now");
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    (BytesCodeType, $class_name:literal, $canonical_name:literal, $allocation_size:literal) => {
-        impl Renderable for $T {
-            fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-                if (type_helper.check($canonical_name)) {
-                    return quote!(); // Return an empty string to avoid code duplication
-                }
-                // TODO: implement bytes ffi methods
-                quote! {
-                    class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
-                        @override
-                        int lift(Api api, RustBuffer buf, [int offset = 0]) {
-                            // final uint_list = buf.toIntList();
-                            // return uint_list.buffer.asByteData().get$canonical_name(1);
-                        }
-
-                        @override
-                        RustBuffer lower(Api api, int value) {
-                            // final uint_list = Uint8List.fromList([value ? 1 : 0]);
-                            // final byteData = ByteData.sublistView(buf);
-                            // byteData.setInt16(0, value, Endian.little);
-                            // return buf;
-                        }
-
-                        @override
-                        int read(ByteBuffer buf) {
-                        //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                        //     // performance reasons
-                        //   throw UnimplementedError("Should probably implement read now");
-                        }
-
-                        @override
-                        int allocationSize([T value]) {
-                        //   return $allocation_size; // 1 = 8bits//TODO: Add correct allocation size for bytes, change the arugment type
-                        }
-
-                        @override
-                        void write(int value, ByteBuffer buf) {
-                            // throw UnimplementedError("Should probably implement read now");
-                        }
-                    }
-                }
-            }
-        }
-    };
-}
-
-impl_code_type_for_primitive!(BooleanCodeType, "bool", "Bool");
-impl_code_type_for_primitive!(StringCodeType, "String", "String");
 impl_code_type_for_primitive!(BytesCodeType, "Uint8List", "Uint8List");
 impl_code_type_for_primitive!(Int8CodeType, "int", "Int8");
 impl_code_type_for_primitive!(Int16CodeType, "int", "Int16");
@@ -302,8 +64,6 @@ impl_code_type_for_primitive!(UInt64CodeType, "int", "UInt64");
 impl_code_type_for_primitive!(Float32CodeType, "double", "Double32");
 impl_code_type_for_primitive!(Float64CodeType, "double", "Double64");
 
-impl_renderable_for_primitive!(BooleanCodeType);
-impl_renderable_for_primitive!(StringCodeType);
 // TODO: implement BytesCodeType
 // impl_renderable_for_primitive!(BytesCodeType, "Uint8List", "Uint8List", 1);
 impl_renderable_for_primitive!(Int8CodeType, "int", "Int8", 1);

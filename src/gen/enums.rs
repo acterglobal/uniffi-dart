@@ -64,7 +64,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 $(for variant in obj.variants() => $(enum_variant_name(variant.name())),);
 
                 factory $cls_name.lift(Api api, RustBuffer buffer) {
-                    final index = buffer.toIntList().buffer.asByteData().getInt32(0);
+                    final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
                     $(for (index, variant) in obj.variants().iter().enumerate() =>
                         if (index == $(index+1)) {
                             return $cls_name.$(enum_variant_name(variant.name()));
@@ -84,7 +84,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 $cls_name();
 
                 factory $cls_name.lift(Api api, RustBuffer buffer) {
-                    final index = buffer.toIntList().buffer.asByteData().getInt32(0);
+                    final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
                     // Pass lifting onto the appropriate variant. based on index...variants are not 0 index
                     $(for (index, variant) in obj.variants().iter().enumerate() =>
                         if (index == $(index+1)) {
@@ -108,18 +108,17 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
             }
 
-            $(for (index, variant) in obj.variants().iter().enumerate()
-                => class $(DartCodeOracle::class_name(variant.name()))$cls_name extends $cls_name {
-                    // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
-                        $(for field in variant.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
+            $(for (index, variant) in obj.variants().iter().enumerate() =>
+            class $(DartCodeOracle::class_name(variant.name()))$cls_name extends $cls_name {
+                // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
+                $(for field in variant.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
 
-                        $(DartCodeOracle::class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
+                $(DartCodeOracle::class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
 
-                        $(generate_variant_factory(cls_name, variant))
+                $(generate_variant_factory(cls_name, variant))
 
-                        $(generate_variant_lowerer(cls_name, index, variant))
-                    }
-            )
+                $(generate_variant_lowerer(cls_name, index, variant))
+            })
         }
         //TODO!: Generate the lowering code for each variant
     }

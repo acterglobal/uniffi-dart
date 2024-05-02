@@ -106,7 +106,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
         // Render all the types and their helpers
         let types_definitions = quote! {
-            $( for rec in self.ci.record_definitions() => $(records::generate_record(rec)))
+            $( for rec in self.ci.record_definitions() => $(records::generate_record(rec, self)))
 
             $( for enm in self.ci.enum_definitions() => $(enums::generate_enum(enm, self)))
             $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj, self)))
@@ -182,6 +182,12 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             const int CALL_ERROR = 1;
             const int CALL_PANIC = 2;
 
+            class LiftRetVal<T> {
+                final T value;
+                final int bytesRead;
+                const LiftRetVal(this.value, this.bytesRead);
+            }
+
             class RustCallStatus extends Struct {
                 @Int8()
                 external int code;
@@ -207,7 +213,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     throw callStatus.ref.errorBuf;
                 case CALL_PANIC:
                     if (callStatus.ref.errorBuf.len > 0) {
-                        final message = liftString(api, callStatus.ref.errorBuf.toIntList());
+                        final message = FfiConverterString.lift(api, callStatus.ref.errorBuf);
                         calloc.free(callStatus);
                         throw UniffiInternalError.panicked(message);
                     } else {
@@ -254,82 +260,14 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     rustCall(api, (res) => _free(this, res));
                 }
 
-                Uint8List toIntList() {
-                    final buf = Uint8List(len);
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        buf[i] = precast.elementAt(i).value;
-                    }
-                    return buf;
+                Uint8List asUint8List() {
+                    return data.cast<Uint8>().asTypedList(len);
                 }
 
                 @override
                 String toString() {
-                    String res = "RustBuffer { capacity: $capacity, len: $len, data: $data }";
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        int char = precast.elementAt(i).value;
-                        res += String.fromCharCode(char);
-                    }
-                    return res;
+                    return "RustBuffer { capacity: $capacity, len: $len, data: $data }";
                 }
-            }
-
-            // TODO: Make all the types use me!
-            abstract class FfiConverter<T, V> {
-                T lift(Api api, V value, [int offset]);
-                V lower(Api api,T value);
-                T read(ByteBuffer buf);
-                int allocationSize([T value]);
-                void write(T value, ByteBuffer buf);
-
-                RustBuffer lowerIntoRustBuffer(Api api, T value) {
-                  throw UnimplementedError("lower into rust implement lift from rust buffer");
-                  // final rbuf = RustBuffer.allocate(api, allocationSize());
-                  // try {
-                  //   final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
-                  //   write(value, bbuf);
-                  //   rbuf.len = bbuf.position();
-                  //   return rbuf;
-                  // } catch (e) {
-                  //   RustBuffer.deallocate(api, rbuf);
-                  //   throw e;
-                  // }
-                }
-
-                T liftFromRustBuffer(Api api, RustBuffer rbuf) {
-                  throw UnimplementedError("Lift from rust implement lift from rust buffer");
-                  // final byteBuf = rbuf.asByteBuffer();
-                  // try {
-                  //   final item = read(byteBuf);
-                  //   if (byteBuf.hasRemaining) {
-                  //     throw Exception(
-                  //         "Junk remaining in buffer after lifting, something is very wrong!!");
-                  //   }
-                  //   return item;
-                  // } finally {
-                  //   RustBuffer.deallocate(rbuf);
-                  // }
-                }
-            }
-
-            abstract class FfiConverterRustBuffer<T>
-                  implements FfiConverter<T, RustBuffer> {
-                @override
-                T lift(Api api, RustBuffer value, [int offset = 0]) => this.liftFromRustBuffer(api, value);
-                @override
-                RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
-            }
-
-            String liftString(Api api, Uint8List input) {
-                // we have a i32 length at the front
-                return utf8.decoder.convert(input);
-            }
-
-
-            Uint8List lowerString(Api api, String input) {
-                // FIXME: this is too many memcopies!
-                return Utf8Encoder().convert(input);
             }
 
 
@@ -346,40 +284,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
-            // T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
-            //     if (buf.isEmpty || buf.first == 0){
-            //         return null;
-            //     }
-            //     return lifter(api, buf);
-            // }
-
             $(primitives::generate_wrapper_lifters())
-
-
-            // Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
-            //     if (inp == null) {
-            //         final res = Uint8List(1);
-            //         res.first = 0;
-            //         return res;
-            //     }
-            //     // converting the inner
-            //     final inner = lowerer(api, inp);
-            //     // preparing the outer
-            //     final offset = 5;
-            //     final res = Uint8List(inner.length + offset);
-            //     // first byte sets the option to as true
-            //     res.setAll(0, [1]);
-            //     // then set the inner size
-            //     final len = Uint32List(1);
-            //     len.first = inner.length;
-            //     res.setAll(1, len.buffer.asUint8List().reversed);
-            //     // then add the actual data
-            //     res.setAll(offset, inner);
-            //     return res;
-            // }
-
-            // $(primitives::generate_primitives_lowerers())
-            // $(primitives::generate_primitives_lifters())
             $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
