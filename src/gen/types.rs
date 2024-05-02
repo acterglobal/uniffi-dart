@@ -93,6 +93,10 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     fn get_enum(&self, name: &str) -> Option<&uniffi_bindgen::interface::Enum> {
         self.ci.get_enum_definition(name)
     }
+
+    fn get_record(&self, name: &str) -> Option<&uniffi_bindgen::interface::Record> {
+        self.ci.get_record_definition(name)
+    }
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {

@@ -8,7 +8,7 @@ use uniffi_bindgen::interface::{AsType, FfiType, Type};
 use crate::gen::primitives;
 
 use super::render::{AsRenderable, Renderable};
-use super::{compounds, enums, objects};
+use super::{compounds, enums, objects, records};
 
 pub struct DartCodeOracle;
 
@@ -205,6 +205,7 @@ impl DartCodeOracle {
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
+            | Type::Record { .. }
             | Type::Optional { .. } => quote!($(ty.as_codetype().lift())(api, $inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
@@ -240,6 +241,7 @@ impl DartCodeOracle {
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Optional { .. }
+            | Type::Record { .. }
             | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())(api, $inner)),
             //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
             _ => todo!("lower Type::{:?}", ty),
@@ -344,6 +346,9 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
+            Type::Record { name, module_path } => {
+                Box::new(records::RecordCodeType::new(name, module_path))
+            }
             _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
                                                                   // Type::Timestamp => Box::new(miscellany::TimestampCodeType),

@@ -1,7 +1,7 @@
-use super::{compounds, enums, primitives};
+use super::{compounds, enums, primitives, records};
 use super::{objects, oracle::AsCodeType};
 use genco::{lang::dart, quote};
-use uniffi_bindgen::interface::{AsType, Enum, Object, Type};
+use uniffi_bindgen::interface::{AsType, Enum, Object, Record, Type};
 
 /// This trait will be used by any type that generates dart code according to some logic,
 pub trait Renderer<T> {
@@ -19,6 +19,7 @@ pub trait TypeHelperRenderer {
     // Helps Renderer Find Specific Types
     fn get_object(&self, name: &str) -> Option<&Object>;
     fn get_enum(&self, name: &str) -> Option<&Enum>;
+    fn get_record(&self, name: &str) -> Option<&Record>;
 }
 /// This trait is used by types that should be generated. The idea is to pass any struct that implements
 /// this type to another struct that generates much larger portions of according to some internal logic code
@@ -48,6 +49,7 @@ pub trait Renderable {
                 quote!(List<$(&self.render_type(inner_type, type_helper))>)
             }
             Type::Enum { name, .. } => quote!($name),
+            Type::Record { name, .. } => quote!($name),
             // Type:: { name,..  } => quote!($name),
             _ => todo!("Type::{:?}", ty), // AbiType::Num(ty) => self.generate_wrapped_num_type(*ty),
                                           // AbiType::Isize | AbiType::Usize => quote!(int),
@@ -115,6 +117,9 @@ impl<T: AsType> AsRenderable for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
+            Type::Record { name, module_path } => {
+                Box::new(records::RecordCodeType::new(name, module_path))
+            }
             _ => todo!("Renderable for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
                                                                      // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
