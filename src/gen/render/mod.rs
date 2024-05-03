@@ -9,6 +9,7 @@ pub trait Renderer<T> {
 }
 
 // This trait contains helpful methods for rendering type helpers
+#[allow(dead_code)]
 pub trait TypeHelperRenderer {
     // Gives context about weather a type's helper code has already been included
     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
@@ -26,6 +27,7 @@ pub trait TypeHelperRenderer {
 /// and implements `Renderer`.
 pub trait Renderable {
     /// Renders the code that defines a type
+    #[allow(dead_code)]
     fn render(&self) -> dart::Tokens {
         quote!()
     }

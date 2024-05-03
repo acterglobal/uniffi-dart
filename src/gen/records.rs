@@ -9,6 +9,7 @@ use uniffi_bindgen::interface::{AsType, Record};
 #[derive(Debug)]
 pub struct RecordCodeType {
     id: String,
+    #[allow(dead_code)]
     module_path: String,
 }
 
