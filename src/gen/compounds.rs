@@ -79,33 +79,44 @@ macro_rules! impl_renderable_for_compound {
                                 if (ByteData.view(buf.buffer, buf.offsetInBytes).getInt8(0) == 0){
                                     return LiftRetVal(null, 1);
                                 }
-                                return $inner_cl_converter_name.read(api, Uint8List.view(buf.buffer, buf.offsetInBytes + 1));
+                                return $inner_cl_converter_name.read(api, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)).copyWithOffset(1);
+                            }
+
+
+                            static int allocationSize([$type_label value]) {
+                                if (value == null) {
+                                    return 1;
+                                }
+                                return $inner_cl_converter_name.allocationSize(value) + 1;
                             }
 
                             static RustBuffer lower(Api api, $type_label value) {
-                                return $cl_name.lowerIntoRustBuffer(api, value);
-                            }
-
-                            static RustBuffer lowerIntoRustBuffer(Api api, $type_label value, [int offset = 0]) {
                                 if (value == null) {
                                     return toRustBuffer(api, Uint8List.fromList([0]));
                                 }
-                                throw "not yet supported";
-                            //     final total_len = $inner_cl_converter_name.rustLen(api, value) + offset;
-                            //     // converting the inner
-                            //     final inner = $inner_cl_converter_name.lowerIntoRustBuffer(api, value);
-                            //     // preparing the outer
-                            //     final offset = 5;
-                            //     final res = Uint8List(inner.length + offset);
-                            //     // first byte sets the option to as true
-                            //     res.setAll(0, [1]);
-                            //     // then set the inner size
-                            //     final len = Uint32List(1);
-                            //     len.first = inner.length;
-                            //     res.setAll(1, len.buffer.asUint8List().reversed);
-                            //     // then add the actual data
-                            //     res.setAll(offset, inner);
-                            //     return toRustBuffer(api, res);
+
+                                final length = $cl_name.allocationSize(value);
+
+                                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
+                                final buf = frameData.asTypedList(length); // Create a list that uses our pointer to copy in the data.
+
+                                $cl_name.write(api, value, buf);
+
+                                final bytes = calloc<ForeignBytes>();
+                                bytes.ref.len = length;
+                                bytes.ref.data = frameData;
+                                return RustBuffer.fromBytes(api, bytes.ref);
+                            }
+
+                            static int write(Api api, $type_label value, Uint8List buf) {
+                                if (value == null) {
+                                    buf[0] = 0;
+                                    return 1;
+                                }
+                                // we have a value
+                                buf[0] = 1;
+
+                                return $inner_cl_converter_name.write(api, value, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)) + 1;
                             }
 
                             // @override
@@ -115,10 +126,6 @@ macro_rules! impl_renderable_for_compound {
                             //     throw UnimplementedError("Should probably implement read now");
                             // }
 
-                            // @override
-                            // int allocationSize([$type_label value]) {
-                            //     return $inner_cl_converter_name().allocationSize() + 4;
-                            // }
 
                             // @override
                             // void write($type_label value, ByteBuffer buf) {

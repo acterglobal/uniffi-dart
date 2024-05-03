@@ -17,15 +17,19 @@ void main() {
   });
 
   test("record test", () {
-    final world = api.newWorldWithName("sarisa");
+    World world = api.newWorldWithName("sarisa");
     final state = world.state();
     expect(state.name, "sarisa");
     expect(state.inhabitants, 0);
 
-    world.incInhabitants();
+    world = world.incInhabitants();
+    // original stayed the same
+    expect(state.inhabitants, 0);
+    expect(state.name, "sarisa");
+    // object has increased
 
     final state2 = world.state();
-    // object has increased
+    expect(state2.name, "sarisa");
     expect(state2.inhabitants, 1);
   });
 

@@ -7,6 +7,17 @@ macro_rules! impl_code_type_for_primitive {
             #[derive(Debug)]
             pub struct $T;
 
+            impl $T {
+                fn endian_ness(&self) -> &str {
+                    (if $canonical_name.contains("Float") {
+                        ", Endian.little"
+                    } else {
+                        ""
+                    })
+
+                }
+            }
+
             impl uniffi_bindgen::backend::CodeType for $T  {
                 fn type_label(&self,) -> String {
                     $class_name.into()
@@ -28,43 +39,35 @@ macro_rules! impl_renderable_for_primitive {
     ($T:ty, $class_name:literal, $canonical_name:literal, $allocation_size:literal) => {
         impl Renderable for $T {
             fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+                use uniffi_bindgen::backend::CodeType;
                 // TODO: Need to modify behavior to allow
                 // if (type_helper.check($canonical_name)) {
                 //     return quote!()
                 // }
                 // This method can be expanded to generate type helper methods if needed.
-                let mut endian = (if $canonical_name.contains("Float") {
-                    "Endian.little"
-                } else {
-                    "Endian.big"
-                });
-                let _final_uintlist = (if $canonical_name.contains("Float") {
-                    String::from($canonical_name) + "List.fromList(buf.reversed.toList())"
-                } else {
-                    String::from($canonical_name) + "List.fromList(buf.toList())"
-                });
+                let endian = self.endian_ness();
+                // let _final_uintlist = (if $canonical_name.contains("Float") {
+                //     String::from($canonical_name) + "List.fromList(buf.reversed.toList())"
+                // } else {
+                //     String::from($canonical_name) + "List.fromList(buf.toList())"
+                // });
 
-                let cl_name = &format!("FfiConverter{}", $canonical_name);
-                let data_type = &$canonical_name
-                    .replace("UInt", "Uint")
-                    .replace("Double", "Float");
-                let type_signature = if data_type.contains("Float") {
-                    "double"
-                } else {
-                    endian = "";
-                    "int"
-                };
+                let cl_name = &self.ffi_converter_name();
+                let type_signature = &self.type_label();
+                let conversion_name = &$canonical_name
+                                    .replace("UInt", "Uint")
+                                    .replace("Double", "Float");
 
                 quote! {
                     class $cl_name {
                         static LiftRetVal<$type_signature> read(Api api, Uint8List buf) {
-                            return LiftRetVal(buf.buffer.asByteData().get$data_type(0), $allocation_size);
+                            return LiftRetVal(buf.buffer.asByteData().get$conversion_name(0), $allocation_size);
                         }
 
                         static RustBuffer lower(Api api, $type_signature value) {
                             final buf = Uint8List($cl_name.allocationSize());
                             final byteData = ByteData.sublistView(buf);
-                            byteData.set$data_type(0, value, $endian);
+                            byteData.set$conversion_name(0, value$endian);
                             return toRustBuffer(api, Uint8List.fromList(buf.toList()));
                         }
 

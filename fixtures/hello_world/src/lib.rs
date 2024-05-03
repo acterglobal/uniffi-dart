@@ -26,6 +26,7 @@ impl World {
 }
 
 #[uniffi::export]
+// original stayed the same
 impl World {
     fn is_there(&self) -> bool {
         true
@@ -39,10 +40,10 @@ impl World {
         self.0.clone()
     }
 
-    fn inc_inhabitants(self: Arc<Self>) -> u8 {
+    fn inc_inhabitants(self: Arc<Self>) -> Arc<Self> {
         let mut me = Arc::try_unwrap(self).unwrap_or_else(|x| (*x).clone());
         me.0.inhabitants += 1;
-        me.0.inhabitants
+        Arc::new(me)
     }
 
     fn prefixed_name(&self, inp: Option<String>) -> Option<String> {

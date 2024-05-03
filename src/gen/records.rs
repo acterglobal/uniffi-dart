@@ -2,6 +2,8 @@ use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Record};
 
+use crate::gen::render::AsRenderable;
+
 use super::oracle::{AsCodeType, DartCodeOracle};
 use super::render::{Renderable, TypeHelperRenderer};
 use super::types::generate_type;
@@ -48,7 +50,12 @@ impl Renderable for RecordCodeType {
 pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     let cls_name = &class_name(obj.name());
     let ffi_conv_name = &class_name(&obj.as_codetype().ffi_converter_name());
+    for f in obj.fields() {
+        // make sure all our field types are added to the includes
+        type_helper.include_once_check(&f.as_codetype().canonical_name(), &f.as_type());
+    }
     quote! {
+
         class $cls_name {
             $(for f in obj.fields() => final $(generate_type(&f.as_type())) $(var_name(f.name()));)
 

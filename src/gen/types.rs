@@ -186,7 +186,12 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 final T value;
                 final int bytesRead;
                 const LiftRetVal(this.value, this.bytesRead);
+
+                LiftRetVal<T> copyWithOffset(int offset) {
+                    return LiftRetVal(value, bytesRead + offset);
+                }
             }
+
 
             class RustCallStatus extends Struct {
                 @Int8()
@@ -269,7 +274,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     return "RustBuffer { capacity: $capacity, len: $len, data: $data }";
                 }
             }
-
 
             RustBuffer toRustBuffer(Api api, Uint8List data) {
                 final length = data.length;
