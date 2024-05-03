@@ -1,13 +1,10 @@
-use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{AsType, Record};
-
-use crate::gen::render::AsRenderable;
-
 use super::oracle::{AsCodeType, DartCodeOracle};
 use super::render::{Renderable, TypeHelperRenderer};
 use super::types::generate_type;
 use super::utils::{class_name, var_name};
+use genco::prelude::*;
+use uniffi_bindgen::backend::{CodeType, Literal};
+use uniffi_bindgen::interface::{AsType, Record};
 
 #[derive(Debug)]
 pub struct RecordCodeType {
@@ -82,8 +79,20 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
                 ), new_offset);
             }
 
-            static RustBuffer lowerIntoRustBuffer(Api api, $cls_name value) {
-                throw "not yet supported";
+            static RustBuffer lower(Api api, $cls_name value) {
+                final total_length = $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize(value.$(var_name(f.name()))) + ) 0;
+                final buf = Uint8List(total_length);
+                $ffi_conv_name.write(api, value, buf);
+                return toRustBuffer(api, buf);
+            }
+
+            static int write(Api api, $cls_name value, Uint8List buf) {
+                int new_offset = buf.offsetInBytes;
+
+                $(for f in obj.fields() =>
+                new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(api, value.$(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
+                )
+                return new_offset - buf.offsetInBytes;
             }
         }
     }

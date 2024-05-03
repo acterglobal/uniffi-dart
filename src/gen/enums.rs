@@ -38,10 +38,6 @@ impl CodeType for EnumCodeType {
             unreachable!();
         }
     }
-
-    fn ffi_converter_name(&self) -> String {
-        self.canonical_name().to_string() // Objects will use factory methods
-    }
 }
 
 impl Renderable for EnumCodeType {
@@ -57,20 +53,30 @@ impl Renderable for EnumCodeType {
 }
 
 pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    let cls_name = &DartCodeOracle::class_name(obj.name());
+    let cls_name = &obj.as_codetype().canonical_name();
+    let ffi_converter_name = &obj.as_codetype().ffi_converter_name();
     if obj.is_flat() {
         quote! {
             enum $cls_name {
-                $(for variant in obj.variants() => $(enum_variant_name(variant.name())),);
+                $(for variant in obj.variants() =>
+                $(enum_variant_name(variant.name())),)
+                ;
+            }
 
-                factory $cls_name.lift(Api api, RustBuffer buffer) {
+            class $ffi_converter_name {
+
+                static $cls_name lift(Api api, RustBuffer buffer) {
                     final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
-                    $(for (index, variant) in obj.variants().iter().enumerate() =>
-                        if (index == $(index+1)) {
+                    switch(index) {
+                        $(for (index, variant) in obj.variants().iter().enumerate() =>
+
+                        case $(index + 1):
                             return $cls_name.$(enum_variant_name(variant.name()));
-                        }
-                    )
-                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
+
+                        )
+                        default:
+                            throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
+                    }
                 }
 
                 static RustBuffer lower(Api api, $cls_name input) {
@@ -79,146 +85,104 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
             }
         }
     } else {
+        let mut variants = vec![];
+
+        for (index, obj) in obj.variants().iter().enumerate() {
+            for f in obj.fields() {
+                // make sure all our field types are added to the includes
+                type_helper.include_once_check(&f.as_codetype().canonical_name(), &f.as_type());
+            }
+            variants.push(quote!{
+                class $(class_name(obj.name()))$cls_name extends $cls_name {
+
+                    $(for field in obj.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
+
+                    $(class_name(obj.name()))$cls_name._($(for field in obj.fields() => this.$(var_name(field.name())), ));
+
+                    static LiftRetVal<$(class_name(obj.name()))$cls_name> read(Api api, Uint8List buf) {
+                        int new_offset = buf.offsetInBytes;
+
+                        $(for f in obj.fields() =>
+                            final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(api, Uint8List.view(buf.buffer, new_offset));
+                            final $(var_name(f.name())) = $(var_name(f.name()))_lifted.value;
+                            new_offset += $(var_name(f.name()))_lifted.bytesRead;
+                        )
+                        return LiftRetVal($(class_name(obj.name()))$cls_name._(
+                            $(for f in obj.fields() => $(var_name(f.name())),)
+                        ), new_offset);
+                    }
+
+                    @override
+                    RustBuffer lower(Api api) {
+                        final buf = Uint8List(allocationSize());
+                        write(api, buf);
+                        return toRustBuffer(api, buf);
+                    }
+
+                    @override
+                    int allocationSize() {
+                        return $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize($(var_name(f.name()))) + ) 4;
+                    }
+
+                    @override
+                    int write(Api api, Uint8List buf) {
+                        buf.buffer.asByteData(buf.offsetInBytes).setInt32(0, $(index + 1)); // write index into first position;
+                        int new_offset = buf.offsetInBytes + 4;
+
+                        $(for f in obj.fields() =>
+                        new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(api, $(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
+                        )
+
+                        return new_offset - buf.offsetInBytes;
+                    }
+                }
+            });
+        }
+
         quote! {
             abstract class $cls_name {
-                $cls_name();
+                RustBuffer lower(Api api);
+                int allocationSize();
+                int write(Api api, Uint8List buf);
+            }
 
-                factory $cls_name.lift(Api api, RustBuffer buffer) {
-                    final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
-                    // Pass lifting onto the appropriate variant. based on index...variants are not 0 index
-                    $(for (index, variant) in obj.variants().iter().enumerate() =>
-                        if (index == $(index+1)) {
-                            return $(variant.name())$cls_name.lift(api, buffer);
-                        }
-                    )
-                    // If no return happens
-                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
-                    // return $(class_name(obj.variants()[6].name()))Value(6);
-                    // //return $cls_name(7);
+            class $ffi_converter_name {
+
+                static $cls_name lift(Api api, RustBuffer buffer) {
+                    return $ffi_converter_name.read(api, buffer.asUint8List()).value;
                 }
 
-                static RustBuffer lower(Api api, Value value) {
-                    // Each variant has a lower method, simply pass on it's return
-                    $(for (_index, variant) in obj.variants().iter().enumerate() =>
-                        if (value is $(variant.name())$cls_name) {
-                            return value.lower(api);
-                        }
-                    )
-                    throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant to lower");
+                static LiftRetVal<$cls_name> read(Api api, Uint8List buf) {
+                    final index = buf.buffer.asByteData(buf.offsetInBytes).getInt32(0);
+                    // Pass lifting onto the appropriate variant. based on index...variants are not 0 index
+                    final subview = Uint8List.view(buf.buffer, buf.offsetInBytes + 4);
+                    switch(index) {
+                        $(for (index, variant) in obj.variants().iter().enumerate() =>
+                        case $(index + 1):
+                            return $(variant.name())$cls_name.read(api, subview);
+                        )
+                        // If no return happens
+                        default:  throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
+                    }
+                }
+
+                static RustBuffer lower(Api api, $cls_name value) {
+                    return value.lower(api);
+                }
+
+                static int allocationSize($cls_name value) {
+                    return value.allocationSize();
+                }
+
+                static int write(Api api, $cls_name value, Uint8List buf) {
+                    return value.write(api, buf);
+
                 }
             }
 
-            $(for (index, variant) in obj.variants().iter().enumerate() =>
-            class $(DartCodeOracle::class_name(variant.name()))$cls_name extends $cls_name {
-                // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
-                $(for field in variant.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
+            $(variants)
 
-                $(DartCodeOracle::class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
-
-                $(generate_variant_factory(cls_name, variant))
-
-                $(generate_variant_lowerer(cls_name, index, variant))
-            })
         }
         //TODO!: Generate the lowering code for each variant
-    }
-}
-
-fn generate_variant_factory(cls_name: &String, variant: &Variant) -> dart::Tokens {
-    //
-    fn generate_variant_field_lifter(
-        field: &Field,
-        input_list: &dart::Tokens,
-        results_list: dart::Tokens,
-        index: usize,
-        offset_var: &dart::Tokens,
-    ) -> dart::Tokens {
-        if let Type::Sequence { .. } = field.as_type() {
-            return quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, buffer, $offset_var));
-                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize($input_list);
-            );
-        }
-
-        if Type::Boolean == field.as_type() {
-            quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())( api, $input_list[$offset_var] ));
-                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
-            )
-        } else if Type::String == field.as_type() {
-            quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api,buffer, $offset_var+4));
-                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
-            )
-        } else {
-            quote!(
-                $results_list.insert($index, $(field.as_type().as_codetype().lift())(api, buffer, $offset_var));
-                $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
-            )
-        }
-    }
-
-    quote! {
-        factory $(class_name(variant.name()))$cls_name.lift(Api api, RustBuffer buffer) {
-            Uint8List input = buffer.toIntList();
-            int offset = 4; // Start at 4, because the first 32bits are the enum index
-            List<dynamic> results = [];
-
-            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lifter(field, &quote!(input), quote!(results), index, &quote!(offset), )))
-
-            return $(class_name(variant.name()))$cls_name($( for (index, _) in variant.fields().iter().enumerate() => results[$(index)], ));
-        }
-    }
-}
-
-fn generate_variant_lowerer(_cls_name: &str, index: usize, variant: &Variant) -> dart::Tokens {
-    fn generate_variant_field_lower(
-        field: &Field,
-        _index: usize,
-        offset_var: &dart::Tokens,
-    ) -> dart::Tokens {
-        let lower_fn = quote!($(field.as_type().as_codetype().lower())(api, this.$(field.name())));
-
-        quote! {
-            final $(field.name()) = $(lower_fn);
-            $offset_var += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));
-        }
-    }
-
-    quote! {
-        RustBuffer lower(Api api) {
-            // Turn all the fields to their int lists representations
-            final index = createUint8ListFromInt($(index + 1));
-            int offset = 0;
-            offset += index.length;
-            $(for (index, field) in variant.fields().iter().enumerate() => $(generate_variant_field_lower(field, index, &quote!(offset))))
-            // Create a list with big enough for all the fields and reset the offset
-            final res = Uint8List(offset);
-            offset = 0;
-            // First set the index
-            res.setAll(offset, index);
-            offset += index.length;
-            // Now set the rest of the fields
-            $(for field in variant.fields() =>
-                $(match field.as_type() {
-                    Type::Boolean =>
-                        res.setAll(offset, Uint8List.fromList([$(field.name())]));
-                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize();
-                    ,
-                    Type::String =>
-                        res.setAll(offset, createUint8ListFromInt(this.$(field.name()).length));
-                        offset += 4;
-                        res.setAll(offset, Uint8List.fromList($(field.name()).toIntList()));
-                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));
-                    ,
-                    _ =>
-                        res.setAll(offset, $(field.name()).toIntList());
-                        offset += $(field.as_type().as_codetype().ffi_converter_name())().allocationSize(this.$(field.name()));
-                    ,
-                })
-            )
-
-            return toRustBuffer(api, res);
-        }
     }
 }

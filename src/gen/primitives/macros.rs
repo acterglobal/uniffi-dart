@@ -1,21 +1,8 @@
-use genco::prelude::*;
-use paste::paste;
-
 macro_rules! impl_code_type_for_primitive {
     ($T:ty, $class_name:literal, $canonical_name:literal) => {
         paste! {
             #[derive(Debug)]
             pub struct $T;
-
-            impl $T {
-                fn endian(&self) -> &str {
-                    (if $canonical_name.contains("Float") {
-                        ", Endian.little"
-                    } else {
-                        ""
-                    })
-                }
-            }
 
             impl uniffi_bindgen::backend::CodeType for $T  {
                 fn type_label(&self,) -> String {
@@ -39,7 +26,11 @@ macro_rules! impl_renderable_for_primitive {
         impl Renderable for $T {
             fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 use uniffi_bindgen::backend::CodeType;
-                let endian = self.endian();
+                let endian = (if $canonical_name.contains("Float") {
+                    ", Endian.little"
+                } else {
+                    ""
+                });
 
                 let cl_name = &self.ffi_converter_name();
                 let type_signature = &self.type_label();
@@ -49,12 +40,15 @@ macro_rules! impl_renderable_for_primitive {
 
                 quote! {
                     class $cl_name {
+                        static $type_signature lift(Api api, RustBuffer buf) {
+                            return $cl_name.read(api, buf.asUint8List()).value;
+                        }
                         static LiftRetVal<$type_signature> read(Api api, Uint8List buf) {
-                            return LiftRetVal(buf.buffer.asByteData().get$conversion_name(0), $allocation_size);
+                            return LiftRetVal(buf.buffer.asByteData(buf.offsetInBytes).get$conversion_name(0), $allocation_size);
                         }
 
                         static RustBuffer lower(Api api, $type_signature value) {
-                            final buf = Uint8List($cl_name.allocationSize());
+                            final buf = Uint8List($cl_name.allocationSize(value));
                             final byteData = ByteData.sublistView(buf);
                             byteData.set$conversion_name(0, value$endian);
                             return toRustBuffer(api, Uint8List.fromList(buf.toList()));
@@ -62,6 +56,11 @@ macro_rules! impl_renderable_for_primitive {
 
                         static int allocationSize([$type_signature value = 0]) {
                           return $allocation_size;
+                        }
+
+                        static int write(Api api, $type_signature value, Uint8List buf) {
+                            buf.buffer.asByteData(buf.offsetInBytes).set$conversion_name(0, value$endian);
+                            return $cl_name.allocationSize();
                         }
 
                     }

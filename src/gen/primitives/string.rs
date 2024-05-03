@@ -10,7 +10,7 @@ use uniffi_bindgen::backend::CodeType;
 pub struct StringCodeType;
 impl CodeType for StringCodeType {
     fn type_label(&self) -> String {
-        return "String".to_owned();
+        "String".to_owned()
     }
 }
 

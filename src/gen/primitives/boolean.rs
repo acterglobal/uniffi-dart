@@ -29,6 +29,15 @@ impl Renderable for BooleanCodeType {
                 static RustBuffer lowerIntoRustBuffer(Api api, bool value) {
                     return toRustBuffer(api, Uint8List.fromList([FfiConverterBool.lower(api, value)]));
                 }
+
+                static int allocationSize([bool value = false]) {
+                    return 1;
+                }
+
+                static int write(Api api, bool value, Uint8List buf) {
+                    buf.setAll(0, [value ? 1 : 0]);
+                    return allocationSize();
+                }
             }
         }
     }
