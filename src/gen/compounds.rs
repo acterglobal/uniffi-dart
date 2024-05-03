@@ -2,21 +2,10 @@ use genco::lang::dart;
 use genco::prelude::*;
 use paste::paste;
 use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{Literal, Type};
+use uniffi_bindgen::interface::Type;
 
 use super::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::{Renderable, TypeHelperRenderer};
-
-fn render_literal(literal: &Literal, inner: &Type) -> String {
-    match literal {
-        Literal::None => "null".into(),
-        Literal::EmptySequence => "[]".into(),
-        Literal::EmptyMap => "{}".into(),
-
-        // For optionals
-        _ => DartCodeOracle::find(inner).literal(literal),
-    }
-}
 
 macro_rules! impl_code_type_for_compound {
      ($T:ty, $type_label_pattern:literal, $canonical_name_pattern: literal) => {
@@ -118,19 +107,6 @@ macro_rules! impl_renderable_for_compound {
 
                                 return $inner_cl_converter_name.write(api, value, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)) + 1;
                             }
-
-                            // @override
-                            // $type_label read(ByteBuffer buf) {
-                            //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            //     // considerations, after research on performance implications
-                            //     throw UnimplementedError("Should probably implement read now");
-                            // }
-
-
-                            // @override
-                            // void write($type_label value, ByteBuffer buf) {
-                            //     throw UnimplementedError("Should probably implement writes now");
-                            // }
                         }
                     }
                 }
@@ -201,24 +177,6 @@ macro_rules! impl_renderable_for_compound {
 
                                 return toRustBuffer(api, uint_list);
                             }
-
-                            // @override
-                            // $type_label read(ByteBuffer buf) {
-                            //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                            //     // considerations, after research on performance implications
-                            //     throw UnimplementedError("Should probably implement read now");
-                            // }
-
-                            // @override
-                            // int allocationSize([$type_label? value]) {
-                            //     // TODO: Change allocation size to use the first 4 bits of the list given
-                            //     return ($inner_cl_converter_name().allocationSize() * value!.length) + 4;
-                            // }
-
-                            // @override
-                            // void write($type_label value, ByteBuffer buf) {
-                            //     throw UnimplementedError("Should probably implement writes now");
-                            // }
                         }
                     }
                 }

@@ -8,13 +8,12 @@ macro_rules! impl_code_type_for_primitive {
             pub struct $T;
 
             impl $T {
-                fn endian_ness(&self) -> &str {
+                fn endian(&self) -> &str {
                     (if $canonical_name.contains("Float") {
                         ", Endian.little"
                     } else {
                         ""
                     })
-
                 }
             }
 
@@ -40,17 +39,7 @@ macro_rules! impl_renderable_for_primitive {
         impl Renderable for $T {
             fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
                 use uniffi_bindgen::backend::CodeType;
-                // TODO: Need to modify behavior to allow
-                // if (type_helper.check($canonical_name)) {
-                //     return quote!()
-                // }
-                // This method can be expanded to generate type helper methods if needed.
-                let endian = self.endian_ness();
-                // let _final_uintlist = (if $canonical_name.contains("Float") {
-                //     String::from($canonical_name) + "List.fromList(buf.reversed.toList())"
-                // } else {
-                //     String::from($canonical_name) + "List.fromList(buf.toList())"
-                // });
+                let endian = self.endian();
 
                 let cl_name = &self.ffi_converter_name();
                 let type_signature = &self.type_label();
@@ -75,10 +64,6 @@ macro_rules! impl_renderable_for_primitive {
                           return $allocation_size;
                         }
 
-                        // @override
-                        // void write($type_signature value, ByteBuffer buf) {
-                        //     throw UnimplementedError("Should probably implement writes now");
-                        // }
                     }
                 }
             }
