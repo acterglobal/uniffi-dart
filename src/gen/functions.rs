@@ -5,10 +5,6 @@ use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use super::render::{Renderable, TypeHelperRenderer};
-use super::types::{
-    convert_from_rust_buffer, convert_to_rust_buffer,
-    generate_type, type_lift_fn, type_lower_fn,
-};
 use super::utils::{fn_name, var_name};
 
 #[allow(unused_variables)]
