@@ -1,7 +1,6 @@
 use uniffi;
-use uniffi;
 
- use std::{
+use std::{
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex, MutexGuard},
@@ -9,14 +8,7 @@ use uniffi;
     thread,
     time::Duration,
 };
- use std::{
-    future::Future,
-    pin::Pin,
-    sync::{Arc, Mutex, MutexGuard},
-    task::{Context, Poll, Waker},
-    thread,
-    time::Duration,
-};
+
 
 // /// Non-blocking timer future.
 // pub struct TimerFuture {
@@ -130,22 +122,12 @@ use uniffi;
 pub fn greet(who: String) -> String {
     format!("Hello, {who}")
 }
-#[uniffi::export]
-pub fn greet(who: String) -> String {
-    format!("Hello, {who}")
-}
 
 #[uniffi::export]
 pub async fn always_ready() -> bool {
     true
 }
-#[uniffi::export]
-pub async fn always_ready() -> bool {
-    true
-}
 
-#[uniffi::export]
-pub async fn void_function() {}
 #[uniffi::export]
 pub async fn void_function() {}
 

@@ -92,12 +92,12 @@ impl DartCodeOracle {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
-            FfiType::ForeignExecutorHandle |
-            FfiType::FutureCallbackData |
+            // FfiType::ForeignExecutorHandle |
+            // FfiType::FutureCallbackData |
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::FutureCallback { return_type   } => {
-                quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
-            }
+            // FfiType::FutureCallback { return_type   } => {
+            //     quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
+            // }
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -121,12 +121,12 @@ impl DartCodeOracle {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
-            FfiType::ForeignExecutorHandle |
-            FfiType::FutureCallbackData |
+            // FfiType::ForeignExecutorHandle |
+            // FfiType::FutureCallbackData |
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::FutureCallback { return_type   } => {
-                quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
-            }
+            // FfiType::FutureCallback { return_type   } => {
+            //     quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
+            // }
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
