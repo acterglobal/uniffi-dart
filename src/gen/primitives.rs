@@ -22,6 +22,7 @@ fn render_literal(literal: &Literal) -> String {
             | Type::UInt32
             | Type::UInt64
             | Type::Float32
+            | Type::Duration
             | Type::Float64 => num_str,
             _ => panic!("Unexpected literal: {} is not a number", num_str),
         }
@@ -47,7 +48,6 @@ fn render_literal(literal: &Literal) -> String {
             },
         ),
         Literal::Float(string, type_) => typed_number(type_, string.clone()),
-
         _ => unreachable!("Literal"),
     }
 }
@@ -63,6 +63,7 @@ impl_code_type_for_primitive!(UInt32CodeType, "int", "UInt32");
 impl_code_type_for_primitive!(UInt64CodeType, "int", "UInt64");
 impl_code_type_for_primitive!(Float32CodeType, "double", "Double32");
 impl_code_type_for_primitive!(Float64CodeType, "double", "Double64");
+impl_code_type_for_primitive!(DurationCodeType, "duration", "Duration");
 
 // TODO: implement BytesCodeType
 // impl_renderable_for_primitive!(BytesCodeType, "Uint8List", "Uint8List", 1);
@@ -76,6 +77,7 @@ impl_renderable_for_primitive!(UInt32CodeType, "int", "UInt32", 4);
 impl_renderable_for_primitive!(UInt64CodeType, "int", "UInt64", 8);
 impl_renderable_for_primitive!(Float32CodeType, "double", "Double32", 4);
 impl_renderable_for_primitive!(Float64CodeType, "double", "Double64", 8);
+impl_renderable_for_primitive!(DurationCodeType, "duration", "Duration", 16);
 
 pub fn generate_wrapper_lifters() -> dart::Tokens {
     quote! {
@@ -92,6 +94,13 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             final length = buf.buffer.asByteData().getInt32(offset); // the length in Uint8
             final liftedData = lifter(buf.sublist(offset + 4));
             return DataOffset(liftedData, length);
+        }
+
+        DataOffset<T> liftDuration(Uint8List buf, [int offset = 0]) {
+            final seconds = buf.buffer.asByteData().getInt64(offset);
+            final nanoseconds = buf.buffer.asByteData().getInt64(offset + 8);
+            final duration = Duration(seconds: seconds, nanoseconds: nanoseconds);
+            return DataOffset(duration, offset);
         }
 
         List<T> liftSequence<T>(Api api, Uint8List buf, Function(Uint8List, [int offset]) lifter, [int element_byte_size = 1,int offset = 0]) {
@@ -141,6 +150,13 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
             res.setAll(0, length);
             res.setAll(length.length, lowered);
             return res;
+        }
+
+        Uint8List lowerDuration(Api api, Duration input) {
+            Uint8List uint8List = Uint8List(16);
+            uint8List.buffer.asByteData().setInt64(0, input.seconds);
+            uint8List.buffer.asByteData().setInt64(8, input.nanoseconds);
+            return uint8List;
         }
 
         Uint8List lowerSequence<T, V>(Api api, List<T> input, Uint8List Function(Api, V) lowerer, int element_byte_size) {

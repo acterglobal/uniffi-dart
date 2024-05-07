@@ -206,6 +206,7 @@ impl DartCodeOracle {
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Record { .. }
+            | Type::Duration { .. }
             | Type::Optional { .. } => quote!($(ty.as_codetype().lift())(api, $inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
@@ -242,6 +243,7 @@ impl DartCodeOracle {
             | Type::Enum { .. }
             | Type::Optional { .. }
             | Type::Record { .. }
+            | Type::Duration { .. }
             | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())(api, $inner)),
             //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
             _ => todo!("lower Type::{:?}", ty),

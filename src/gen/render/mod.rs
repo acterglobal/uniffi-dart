@@ -41,7 +41,8 @@ pub trait Renderable {
             | Type::Int64
             | Type::UInt16
             | Type::Int32
-            | Type::UInt64 => quote!(int),
+            | Type::UInt64
+            | Type::Duration => quote!(int),
             Type::Float32 | Type::Float64 => quote!(double),
             Type::String => quote!(String),
             Type::Object { name, .. } => quote!($name),
@@ -109,6 +110,7 @@ impl<T: AsType> AsRenderable for T {
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
+            Type::Duration => Box::new(primitives::DurationCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional { inner_type, .. } => Box::new(compounds::OptionalCodeType::new(
                 self.as_type(),
@@ -122,10 +124,10 @@ impl<T: AsType> AsRenderable for T {
             Type::Record { name, module_path } => {
                 Box::new(records::RecordCodeType::new(name, module_path))
             }
+
             _ => todo!("Renderable for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
                                                                      // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
-                                                                     // Type::Duration => Box::new(miscellany::DurationCodeType),
 
                                                                      // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
                                                                      // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
