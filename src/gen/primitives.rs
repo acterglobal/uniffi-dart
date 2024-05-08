@@ -96,10 +96,10 @@ pub fn generate_wrapper_lifters() -> dart::Tokens {
             return DataOffset(liftedData, length);
         }
 
-        DataOffset<T> liftDuration(Uint8List buf, [int offset = 0]) {
+        DataOffset<Duration> liftDuration(Uint8List buf, [int offset = 0]) {
             final seconds = buf.buffer.asByteData().getInt64(offset);
-            final nanoseconds = buf.buffer.asByteData().getInt64(offset + 8);
-            final duration = Duration(seconds: seconds, nanoseconds: nanoseconds);
+            final microseconds = buf.buffer.asByteData().getInt64(offset + 8);
+            final duration = Duration(seconds: seconds, microseconds: microseconds);
             return DataOffset(duration, offset);
         }
 
@@ -152,10 +152,10 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
             return res;
         }
 
-        Uint8List lowerDuration(Api api, Duration input) {
+        Uint8List lowerDuration(Duration input) {
             Uint8List uint8List = Uint8List(16);
-            uint8List.buffer.asByteData().setInt64(0, input.seconds);
-            uint8List.buffer.asByteData().setInt64(8, input.nanoseconds);
+            uint8List.buffer.asByteData().setInt64(0, input.inSeconds);
+            uint8List.buffer.asByteData().setInt64(8, input.inMicroseconds % 1000000);
             return uint8List;
         }
 
