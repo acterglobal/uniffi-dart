@@ -200,13 +200,13 @@ impl DartCodeOracle {
             | Type::UInt32
             | Type::UInt64
             | Type::Float32
-            | Type::Float64 => inner,
+            | Type::Float64
+            | Type::Duration => inner,
             Type::Boolean
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Record { .. }
-            | Type::Duration { .. }
             | Type::Optional { .. } => quote!($(ty.as_codetype().lift())(api, $inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
@@ -236,14 +236,14 @@ impl DartCodeOracle {
             | Type::Int64
             | Type::UInt64
             | Type::Float32
-            | Type::Float64 => inner,
+            | Type::Float64
+            | Type::Duration => inner,
             Type::Boolean
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Optional { .. }
             | Type::Record { .. }
-            | Type::Duration { .. }
             | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())(api, $inner)),
             //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
             _ => todo!("lower Type::{:?}", ty),
@@ -338,6 +338,7 @@ impl<T: AsType> AsCodeType for T {
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
+            Type::Duration => Box::new(primitives::DurationCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional { inner_type } => Box::new(compounds::OptionalCodeType::new(
                 self.as_type(),
