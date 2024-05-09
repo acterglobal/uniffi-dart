@@ -173,12 +173,6 @@ pub async fn void_function() {}
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
     tokio::time::sleep(Duration::from_millis(ms.into())).await;
-#[uniffi::export(async_runtime = "tokio")]
-pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
-    tokio::time::sleep(Duration::from_millis(ms.into())).await;
-
-    format!("Hello, {who} (with Tokio)!")
-}
     format!("Hello, {who} (with Tokio)!")
 }
 
