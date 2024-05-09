@@ -162,51 +162,50 @@ impl<'a> DartWrapper<'a> {
             definitions
         }
 
-
         quote! {
             library $package_name;
 
             $(type_helper_code) // Imports, Types and Type Helper
 
-            class Api {
-                final Pointer<T> Function<T extends NativeType>(String symbolName)
-                    _lookup;
+            // class Api {
+            //     final Pointer<T> Function<T extends NativeType>(String symbolName)
+            //         _lookup;
 
-                Api(DynamicLibrary dynamicLibrary)
-                    : _lookup = dynamicLibrary.lookup;
+            //     Api(DynamicLibrary dynamicLibrary)
+            //         : _lookup = dynamicLibrary.lookup;
 
-                Api.fromLookup(
-                    Pointer<T> Function<T extends NativeType>(String symbolName)
-                        lookup)
-                    : _lookup = lookup;
+            //     Api.fromLookup(
+            //         Pointer<T> Function<T extends NativeType>(String symbolName)
+            //             lookup)
+            //         : _lookup = lookup;
 
-                factory Api.loadStatic() {
-                    return Api(DynamicLibrary.executable());
-                }
+            //     factory Api.loadStatic() {
+            //         return Api(DynamicLibrary.executable());
+            //     }
 
-                factory Api.loadDynamic(String name) {
-                    return Api(DynamicLibrary.open(name));
-                }
+            //     factory Api.loadDynamic(String name) {
+            //         return Api(DynamicLibrary.open(name));
+            //     }
 
-                factory Api.load() {
-                    String? name;
-                    if (Platform.isLinux) name = $(format!("\"lib{libname}.so\""));
-                    if (Platform.isAndroid) name = $(format!("\"lib{libname}.so\""));
-                    if (Platform.isMacOS) name = $(format!("\"lib{libname}.dylib\""));
-                    if (Platform.isIOS) name = "";
-                    if (Platform.isWindows) name = $(format!("\"{libname}.dll\""));
-                    if (name == null) {
-                        throw UnsupportedError("This platform is not supported.");
-                    }
-                    if (name == "") {
-                        return Api.loadStatic();
-                    } else {
-                        return Api.loadDynamic(name);
-                    }
-                }
+            //     factory Api.load() {
+            //         String? name;
+            //         if (Platform.isLinux) name = $(format!("\"lib{libname}.so\""));
+            //         if (Platform.isAndroid) name = $(format!("\"lib{libname}.so\""));
+            //         if (Platform.isMacOS) name = $(format!("\"lib{libname}.dylib\""));
+            //         if (Platform.isIOS) name = "";
+            //         if (Platform.isWindows) name = $(format!("\"{libname}.dll\""));
+            //         if (name == null) {
+            //             throw UnsupportedError("This platform is not supported.");
+            //         }
+            //         if (name == "") {
+            //             return Api.loadStatic();
+            //         } else {
+            //             return Api.loadDynamic(name);
+            //         }
+            //     }
 
-                $(functions_definitions)
-            }
+            //     $(functions_definitions)
+            // }
 
 
 
@@ -232,7 +231,31 @@ impl<'a> DartWrapper<'a> {
                 static final _UniffiLib instance = _UniffiLib._();
 
                 $(uniffi_function_definitions(self.ci))
-               
+
+                static void _checkApiVersion() {
+                    final bindingsVersion = $(self.ci.uniffi_contract_version());
+                    final scaffoldingVersion = _UniffiLib.instance.$(self.ci.ffi_uniffi_contract_version().name())();
+                    if (bindingsVersion != scaffoldingVersion) {
+                      throw UniffiInternalError("UniFFI contract version mismatch: bindings version $bindingsVersion, scaffolding version $scaffoldingVersion");
+                    }
+                }
+
+                static void _checkApiChecksums() {
+                    $(for (name, expected_checksum) in self.ci.iter_checksums() =>       
+                        if (_UniffiLib.instance.$(name)() != $expected_checksum) {
+                          throw UniffiInternalError("UniFFI API checksum mismatch");
+                        }
+                    )
+                }
+            }
+
+            void initialize() {
+                _UniffiLib._open();
+            }
+            
+            void ensureInitialized() {
+                _UniffiLib._checkApiVersion();
+                _UniffiLib._checkApiChecksums();
             }
 
 
