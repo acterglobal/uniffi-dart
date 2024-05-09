@@ -127,220 +127,220 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             import "package:ffi/ffi.dart";
             $(imports)
 
-            class UniffiInternalError implements Exception {
-                static const int bufferOverflow = 0;
-                static const int incompleteData = 1;
-                static const int unexpectedOptionalTag = 2;
-                static const int unexpectedEnumCase = 3;
-                static const int unexpectedNullPointer = 4;
-                static const int unexpectedRustCallStatusCode = 5;
-                static const int unexpectedRustCallError = 6;
-                static const int unexpectedStaleHandle = 7;
-                static const int rustPanic = 8;
+            // class UniffiInternalError implements Exception {
+            //     static const int bufferOverflow = 0;
+            //     static const int incompleteData = 1;
+            //     static const int unexpectedOptionalTag = 2;
+            //     static const int unexpectedEnumCase = 3;
+            //     static const int unexpectedNullPointer = 4;
+            //     static const int unexpectedRustCallStatusCode = 5;
+            //     static const int unexpectedRustCallError = 6;
+            //     static const int unexpectedStaleHandle = 7;
+            //     static const int rustPanic = 8;
 
-                final int errorCode;
-                final String? panicMessage;
+            //     final int errorCode;
+            //     final String? panicMessage;
 
-                const UniffiInternalError(this.errorCode, this.panicMessage);
+            //     const UniffiInternalError(this.errorCode, this.panicMessage);
 
-                static UniffiInternalError panicked(String message) {
-                return UniffiInternalError(rustPanic, message);
-                }
+            //     static UniffiInternalError panicked(String message) {
+            //     return UniffiInternalError(rustPanic, message);
+            //     }
 
-                @override
-                String toString() {
-                switch (errorCode) {
-                    case bufferOverflow:
-                    return "UniFfi::BufferOverflow";
-                    case incompleteData:
-                    return "UniFfi::IncompleteData";
-                    case unexpectedOptionalTag:
-                    return "UniFfi::UnexpectedOptionalTag";
-                    case unexpectedEnumCase:
-                    return "UniFfi::UnexpectedEnumCase";
-                    case unexpectedNullPointer:
-                    return "UniFfi::UnexpectedNullPointer";
-                    case unexpectedRustCallStatusCode:
-                    return "UniFfi::UnexpectedRustCallStatusCode";
-                    case unexpectedRustCallError:
-                    return "UniFfi::UnexpectedRustCallError";
-                    case unexpectedStaleHandle:
-                    return "UniFfi::UnexpectedStaleHandle";
-                    case rustPanic:
-                    return "UniFfi::rustPanic: $$panicMessage";
-                    default:
-                    return "UniFfi::UnknownError: $$errorCode";
-                }
-                }
-            }
+            //     @override
+            //     String toString() {
+            //     switch (errorCode) {
+            //         case bufferOverflow:
+            //         return "UniFfi::BufferOverflow";
+            //         case incompleteData:
+            //         return "UniFfi::IncompleteData";
+            //         case unexpectedOptionalTag:
+            //         return "UniFfi::UnexpectedOptionalTag";
+            //         case unexpectedEnumCase:
+            //         return "UniFfi::UnexpectedEnumCase";
+            //         case unexpectedNullPointer:
+            //         return "UniFfi::UnexpectedNullPointer";
+            //         case unexpectedRustCallStatusCode:
+            //         return "UniFfi::UnexpectedRustCallStatusCode";
+            //         case unexpectedRustCallError:
+            //         return "UniFfi::UnexpectedRustCallError";
+            //         case unexpectedStaleHandle:
+            //         return "UniFfi::UnexpectedStaleHandle";
+            //         case rustPanic:
+            //         return "UniFfi::rustPanic: $$panicMessage";
+            //         default:
+            //         return "UniFfi::UnknownError: $$errorCode";
+            //     }
+            //     }
+            // }
 
-            const int CALL_SUCCESS = 0;
-            const int CALL_ERROR = 1;
-            const int CALL_PANIC = 2;
+            // const int CALL_SUCCESS = 0;
+            // const int CALL_ERROR = 1;
+            // const int CALL_PANIC = 2;
 
-            class RustCallStatus extends Struct {
-                @Int8()
-                external int code;
-                external RustBuffer errorBuf;
+            // class RustCallStatus extends Struct {
+            //     @Int8()
+            //     external int code;
+            //     external RustBuffer errorBuf;
 
-                static Pointer<RustCallStatus> allocate({int count = 1}) =>
-                calloc<RustCallStatus>(count * sizeOf<RustCallStatus>()).cast();
-            }
+            //     static Pointer<RustCallStatus> allocate({int count = 1}) =>
+            //     calloc<RustCallStatus>(count * sizeOf<RustCallStatus>()).cast();
+            // }
 
-            T noop<T>(T t) {
-                return t;
-            }
+            // T noop<T>(T t) {
+            //     return t;
+            // }
 
-            T rustCall<T>(Api api, T Function(Pointer<RustCallStatus>) callback) {
-                var callStatus = RustCallStatus.allocate();
-                final returnValue = callback(callStatus);
+            // T rustCall<T>(Api api, T Function(Pointer<RustCallStatus>) callback) {
+            //     var callStatus = RustCallStatus.allocate();
+            //     final returnValue = callback(callStatus);
 
-                switch (callStatus.ref.code) {
-                case CALL_SUCCESS:
-                    calloc.free(callStatus);
-                    return returnValue;
-                case CALL_ERROR:
-                    throw callStatus.ref.errorBuf;
-                case CALL_PANIC:
-                    if (callStatus.ref.errorBuf.len > 0) {
-                        final message = liftString(api, callStatus.ref.errorBuf.toIntList());
-                        calloc.free(callStatus);
-                        throw UniffiInternalError.panicked(message);
-                    } else {
-                        calloc.free(callStatus);
-                        throw UniffiInternalError.panicked("Rust panic");
-                    }
-                default:
-                    throw UniffiInternalError(callStatus.ref.code, null);
-                }
-            }
+            //     switch (callStatus.ref.code) {
+            //     case CALL_SUCCESS:
+            //         calloc.free(callStatus);
+            //         return returnValue;
+            //     case CALL_ERROR:
+            //         throw callStatus.ref.errorBuf;
+            //     case CALL_PANIC:
+            //         if (callStatus.ref.errorBuf.len > 0) {
+            //             final message = liftString(api, callStatus.ref.errorBuf.toIntList());
+            //             calloc.free(callStatus);
+            //             throw UniffiInternalError.panicked(message);
+            //         } else {
+            //             calloc.free(callStatus);
+            //             throw UniffiInternalError.panicked("Rust panic");
+            //         }
+            //     default:
+            //         throw UniffiInternalError(callStatus.ref.code, null);
+            //     }
+            // }
 
-            class RustBuffer extends Struct {
-                @Uint64()
-                external int capacity;
+            // class RustBuffer extends Struct {
+            //     @Uint64()
+            //     external int capacity;
 
-                @Uint64()
-                external int len;
+            //     @Uint64()
+            //     external int len;
 
-                external Pointer<Uint8> data;
+            //     external Pointer<Uint8> data;
 
-                static RustBuffer fromBytes(Api api, ForeignBytes bytes) {
-                    final _fromBytesPtr = api._lookup<
-                    NativeFunction<
-                        RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_from_bytes().name())));
-                    final _fromBytes =
-                    _fromBytesPtr.asFunction<RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => _fromBytes(bytes, res));
-                }
+            //     static RustBuffer fromBytes(Api api, ForeignBytes bytes) {
+            //         final _fromBytesPtr = api._lookup<
+            //         NativeFunction<
+            //             RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_from_bytes().name())));
+            //         final _fromBytes =
+            //         _fromBytesPtr.asFunction<RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>();
+            //         return rustCall(api, (res) => _fromBytes(bytes, res));
+            //     }
 
-                // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
-                static RustBuffer allocate(Api api, int size) {
-                    final _allocatePtr = api._lookup<
-                        NativeFunction<
-                            RustBuffer Function(Int64, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
-                    final _allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => _allocate(size, res));
-                }
+            //     // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
+            //     static RustBuffer allocate(Api api, int size) {
+            //         final _allocatePtr = api._lookup<
+            //             NativeFunction<
+            //                 RustBuffer Function(Int64, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
+            //         final _allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
+            //         return rustCall(api, (res) => _allocate(size, res));
+            //     }
 
-                void deallocate(Api api) {
-                    final _freePtr = api._lookup<
-                    NativeFunction<
-                        Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
-                    final _free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
-                    rustCall(api, (res) => _free(this, res));
-                }
+            //     void deallocate(Api api) {
+            //         final _freePtr = api._lookup<
+            //         NativeFunction<
+            //             Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
+            //         final _free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
+            //         rustCall(api, (res) => _free(this, res));
+            //     }
 
-                Uint8List toIntList() {
-                    final buf = Uint8List(len);
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        buf[i] = precast.elementAt(i).value;
-                    }
-                    return buf;
-                }
+            //     Uint8List toIntList() {
+            //         final buf = Uint8List(len);
+            //         final precast = data.cast<Uint8>();
+            //         for (int i = 0; i < len; i++) {
+            //             buf[i] = precast.elementAt(i).value;
+            //         }
+            //         return buf;
+            //     }
 
-                @override
-                String toString() {
-                    String res = "RustBuffer { capacity: $capacity, len: $len, data: $data }";
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        int char = precast.elementAt(i).value;
-                        res += String.fromCharCode(char);
-                    }
-                    return res;
-                }
-            }
+            //     @override
+            //     String toString() {
+            //         String res = "RustBuffer { capacity: $capacity, len: $len, data: $data }";
+            //         final precast = data.cast<Uint8>();
+            //         for (int i = 0; i < len; i++) {
+            //             int char = precast.elementAt(i).value;
+            //             res += String.fromCharCode(char);
+            //         }
+            //         return res;
+            //     }
+            // }
 
-            // TODO: Make all the types use me!
-            abstract class FfiConverter<T, V> {
-                T lift(Api api, V value, [int offset]);
-                V lower(Api api,T value);
-                T read(ByteBuffer buf);
-                int allocationSize([T value]);
-                void write(T value, ByteBuffer buf);
+            // // TODO: Make all the types use me!
+            // abstract class FfiConverter<T, V> {
+            //     T lift(Api api, V value, [int offset]);
+            //     V lower(Api api,T value);
+            //     T read(ByteBuffer buf);
+            //     int allocationSize([T value]);
+            //     void write(T value, ByteBuffer buf);
 
-                RustBuffer lowerIntoRustBuffer(Api api, T value) {
-                  throw UnimplementedError("lower into rust implement lift from rust buffer");
-                  // final rbuf = RustBuffer.allocate(api, allocationSize());
-                  // try {
-                  //   final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
-                  //   write(value, bbuf);
-                  //   rbuf.len = bbuf.position();
-                  //   return rbuf;
-                  // } catch (e) {
-                  //   RustBuffer.deallocate(api, rbuf);
-                  //   throw e;
-                  // }
-                }
+            //     RustBuffer lowerIntoRustBuffer(Api api, T value) {
+            //       throw UnimplementedError("lower into rust implement lift from rust buffer");
+            //       // final rbuf = RustBuffer.allocate(api, allocationSize());
+            //       // try {
+            //       //   final bbuf = rbuf.data.asByteBuffer(0, rbuf.capacity);
+            //       //   write(value, bbuf);
+            //       //   rbuf.len = bbuf.position();
+            //       //   return rbuf;
+            //       // } catch (e) {
+            //       //   RustBuffer.deallocate(api, rbuf);
+            //       //   throw e;
+            //       // }
+            //     }
 
-                T liftFromRustBuffer(Api api, RustBuffer rbuf) {
-                  throw UnimplementedError("Lift from rust implement lift from rust buffer");
-                  // final byteBuf = rbuf.asByteBuffer();
-                  // try {
-                  //   final item = read(byteBuf);
-                  //   if (byteBuf.hasRemaining) {
-                  //     throw Exception(
-                  //         "Junk remaining in buffer after lifting, something is very wrong!!");
-                  //   }
-                  //   return item;
-                  // } finally {
-                  //   RustBuffer.deallocate(rbuf);
-                  // }
-                }
-            }
+            //     T liftFromRustBuffer(Api api, RustBuffer rbuf) {
+            //       throw UnimplementedError("Lift from rust implement lift from rust buffer");
+            //       // final byteBuf = rbuf.asByteBuffer();
+            //       // try {
+            //       //   final item = read(byteBuf);
+            //       //   if (byteBuf.hasRemaining) {
+            //       //     throw Exception(
+            //       //         "Junk remaining in buffer after lifting, something is very wrong!!");
+            //       //   }
+            //       //   return item;
+            //       // } finally {
+            //       //   RustBuffer.deallocate(rbuf);
+            //       // }
+            //     }
+            // }
 
-            abstract class FfiConverterRustBuffer<T>
-                  implements FfiConverter<T, RustBuffer> {
-                @override
-                T lift(Api api, RustBuffer value, [int offset = 0]) => this.liftFromRustBuffer(api, value);
-                @override
-                RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
-            }
+            // abstract class FfiConverterRustBuffer<T>
+            //       implements FfiConverter<T, RustBuffer> {
+            //     @override
+            //     T lift(Api api, RustBuffer value, [int offset = 0]) => this.liftFromRustBuffer(api, value);
+            //     @override
+            //     RustBuffer lower(Api api, T value) => this.lowerIntoRustBuffer(api, value);
+            // }
 
-            String liftString(Api api, Uint8List input) {
-                // we have a i32 length at the front
-                return utf8.decoder.convert(input);
-            }
-
-
-            Uint8List lowerString(Api api, String input) {
-                // FIXME: this is too many memcopies!
-                return Utf8Encoder().convert(input);
-            }
+            // String liftString(Api api, Uint8List input) {
+            //     // we have a i32 length at the front
+            //     return utf8.decoder.convert(input);
+            // }
 
 
-            RustBuffer toRustBuffer(Api api, Uint8List data) {
-                final length = data.length;
+            // Uint8List lowerString(Api api, String input) {
+            //     // FIXME: this is too many memcopies!
+            //     return Utf8Encoder().convert(input);
+            // }
 
-                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
-                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
-                pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
 
-                final bytes = calloc<ForeignBytes>();
-                bytes.ref.len = length;
-                bytes.ref.data = frameData;
-                return RustBuffer.fromBytes(api, bytes.ref);
-            }
+            // RustBuffer toRustBuffer(Api api, Uint8List data) {
+            //     final length = data.length;
+
+            //     final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
+            //     final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
+            //     pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
+
+            //     final bytes = calloc<ForeignBytes>();
+            //     bytes.ref.len = length;
+            //     bytes.ref.data = frameData;
+            //     return RustBuffer.fromBytes(api, bytes.ref);
+            // }
 
             // T? liftOptional<T>(Api api, Uint8List buf, T? Function(Api, Uint8List) lifter) {
             //     if (buf.isEmpty || buf.first == 0){
@@ -349,7 +349,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             //     return lifter(api, buf);
             // }
 
-            $(primitives::generate_wrapper_lifters())
+            //$(primitives::generate_wrapper_lifters())
 
 
             // Uint8List lowerOptional<T>(Api api, T? inp, Uint8List Function(Api, T) lowerer) {
@@ -376,19 +376,19 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             // $(primitives::generate_primitives_lowerers())
             // $(primitives::generate_primitives_lifters())
-            $(primitives::generate_wrapper_lowerers())
+            // $(primitives::generate_wrapper_lowerers())
 
-            class ForeignBytes extends Struct {
-                @Int32()
-                external int len;
+            // class ForeignBytes extends Struct {
+            //     @Int32()
+            //     external int len;
 
-                external Pointer<Uint8> data;
-            }
+            //     external Pointer<Uint8> data;
+            // }
 
 
-            $(helpers_definitions)
+            // $(helpers_definitions)
 
-            $(types_definitions)
+            // $(types_definitions)
 
         };
 
