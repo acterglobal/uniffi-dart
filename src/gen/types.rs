@@ -390,6 +390,278 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             // $(types_definitions)
 
+
+
+            // New Helper classes and functions
+
+            class UniffiInternalError implements Exception {
+                final String message;
+            
+                UniffiInternalError(this.message);
+            
+                @override
+                String toString() => "UniffiInternalError: $message";
+            }
+            
+            const int CALL_SUCCESS = 0;
+            const int CALL_ERROR = 1;
+            const int CALL_UNEXPECTED_ERROR = 2;
+            
+            class RustCallStatus extends Struct {
+                @Int8()
+                external int code;
+            
+                external RustBuffer errorBuf;
+            
+                //Pointer<RustCallStatus> asPointer() => Pointer<RustCallStatus>.fromAddress(address);
+            }
+            
+            void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, RustCallStatus status) {
+                if (status.code == CALL_SUCCESS) {
+                return;
+                } else if (status.code == CALL_ERROR) {
+                throw errorHandler.lift(status.errorBuf);
+                } else if (status.code == CALL_UNEXPECTED_ERROR) {
+                if (status.errorBuf.len > 0) {
+                    throw UniffiInternalError(FfiConverterString().lift(status.errorBuf));
+                } else {
+                    throw UniffiInternalError("Rust panic");
+                }
+                } else {
+                throw UniffiInternalError("Unexpected RustCallStatus code: ${status.code}");
+                }
+            }
+            
+            T rustCall<T>(T Function(Pointer<RustCallStatus>) callback) {
+                final status = calloc<RustCallStatus>();
+                try {
+                return callback(status);
+                } finally {
+                calloc.free(status);
+                }
+            }
+            
+            T rustCallWithError<T>(UniffiRustCallStatusErrorHandler errorHandler, T Function(Pointer<RustCallStatus>) callback) {
+                final status = calloc<RustCallStatus>();
+                try {
+                final result = callback(status);
+                checkCallStatus(errorHandler, status.ref);
+                return result;
+                } finally {
+                calloc.free(status);
+                }
+            }
+            
+            class NullRustCallStatusErrorHandler extends UniffiRustCallStatusErrorHandler {
+                @override
+                Exception lift(RustBuffer errorBuf) {
+                errorBuf.free();
+                return UniffiInternalError("Unexpected CALL_ERROR");
+                }
+            }
+            
+            abstract class UniffiRustCallStatusErrorHandler {
+                Exception lift(RustBuffer errorBuf);
+            }
+            
+            class RustBuffer extends Struct {
+                @Uint64()
+                external int capacity;
+            
+                @Uint64()
+                external int len;
+            
+                external Pointer<Uint8> data;
+            
+                static RustBuffer alloc(int size) {
+                return rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_alloc(size));
+                }
+            
+                // static RustBuffer from(Pointer<Uint8> bytes, int len) {
+                //   final foreignBytes = ForeignBytes(len: len, data: bytes);
+                //   return rustCall((status) => _UniffiLib.instance.ffi_uniffi_futures_rustbuffer_from_bytes(foreignBytes));
+                // }
+            
+                void free() {
+                rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_free(this));
+                }
+            
+                RustBuffer reserve(int additionalCapacity) {
+                return rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_reserve(this, additionalCapacity));
+                }
+            
+                Uint8List asTypedList() {
+                final dataList = data.asTypedList(len);
+                final byteData = ByteData.sublistView(dataList);
+                return Uint8List.view(byteData.buffer);
+                }
+            
+                @override
+                String toString() {
+                return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
+                }
+            }
+            
+            class ForeignBytes extends Struct {
+                @Int32()
+                external int len;
+                external Pointer<Uint8> data;
+            
+                //ForeignBytes({required this.len, required this.data});
+            
+                // factory ForeignBytes.fromTypedData(Uint8List typedData) {
+                //   final data = calloc<Uint8>(typedData.length);
+                //   final dataList = data.asTypedList(typedData.length);
+                //   dataList.setAll(0, typedData);
+                //   return ForeignBytes(len: typedData.length, data: data);
+                // }
+            
+                void free() {
+                calloc.free(data);
+                }
+            }
+            
+            abstract class FfiConverter<D, F> {
+                const FfiConverter();
+            
+                D lift(F value);
+                F lower(D value);
+                D read(ByteData buffer, int offset);
+                void write(D value, ByteData buffer, int offset);
+                int size(D value);
+            }
+            
+            mixin FfiConverterPrimitive<T> on FfiConverter<T, T> {
+                @override
+                T lift(T value) => value;
+            
+                @override
+                T lower(T value) => value;
+            }
+            
+            class FfiConverterBool implements FfiConverter<bool, int> {
+                const FfiConverterBool();
+            
+                @override
+                bool lift(int value) => value != 0;
+            
+                @override
+                int lower(bool value) => value ? 1 : 0;
+            
+                @override
+                bool read(ByteData buffer, int offset) => buffer.getInt8(offset) != 0;
+            
+                @override
+                void write(bool value, ByteData buffer, int offset) {
+                buffer.setInt8(offset, lower(value));
+                }
+            
+                @override
+                int size(value) => 1;
+            }
+            
+            class FfiConverterString implements FfiConverter<String, RustBuffer> {
+                const FfiConverterString();
+            
+                String lift(RustBuffer value, [int offset = 4]) {
+                try {
+                    final data = value.asTypedList().buffer.asUint8List(offset);
+                    return utf8.decode(data);
+                } finally {
+                    value.free();
+                }
+                }
+            
+                @override
+                RustBuffer lower(String value) {
+                final buffer = RustBuffer.alloc(size(value));
+                write(value, buffer.data.cast<Uint8>().asTypedList(size(value)).buffer.asByteData(), 0);
+                return buffer;
+                }
+            
+                @override
+                String read(ByteData buffer, int offset) {
+                final length = buffer.getInt32(offset);
+                final stringBytes = buffer.buffer.asUint8List(offset + 4, length);
+                return utf8.decode(stringBytes);
+                }
+            
+                @override
+                void write(String value, ByteData buffer, int offset) {
+                final stringBytes = utf8.encode(value);
+                buffer.setInt32(offset, stringBytes.length);
+                buffer.buffer.asUint8List(offset + 4).setAll(0, stringBytes);
+                }
+            
+                @override
+                int size(value) => 4 + utf8.encode(value).length;
+            }
+
+            const int UNIFFI_RUST_FUTURE_POLL_READY = 0;
+            const int UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
+
+            class UniffiContinuationMap {
+                final _map = <int, Completer<int>>{};
+                int _nextId = 0;
+            
+                int insert(Completer<int> completer) {
+                final id = _nextId++;
+                _map[id] = completer;
+                return id;
+                }
+            
+                Completer<int> remove(int id) {
+                final completer = _map.remove(id);
+                if (completer == null) {
+                    throw Exception("Invalid continuation ID: $id");
+                }
+                return completer;
+                }
+            }
+            
+            final _uniffiContinuationMap = UniffiContinuationMap();
+            
+            typedef UniffiRustFutureContinuationCallback = Void Function(Int64 userData, Int32 result);
+            final _uniffiRustFutureContinuationCallback = Pointer.fromFunction<UniffiRustFutureContinuationCallback>(_uniffiContinuationCallback);
+            
+            void _uniffiContinuationCallback(int userData, int result) {
+                final completer = _uniffiContinuationMap.remove(userData);
+                completer.complete(result);
+            }
+            
+            Future<T> uniffiRustCallAsync<T, F>(
+                int Function() rustFutureFunc,
+                void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+                F Function(int, Pointer<RustCallStatus>) completeFunc,
+                void Function(int) freeFunc,
+                T Function(F) liftFunc, [
+                UniffiRustCallStatusErrorHandler? errorHandler,
+            ]) async {
+                final rustFuture = rustFutureFunc();
+                try {
+                int pollResult;
+                do {
+                    pollResult = await Future<int>(() {
+                    final completer = Completer<int>();
+                    pollFunc(
+                        rustFuture,
+                        _uniffiRustFutureContinuationCallback,
+                        _uniffiContinuationMap.insert(completer),
+                    );
+                    return completer.future;
+                    });
+                } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+            
+                final result = rustCallWithError(
+                    errorHandler ?? NullRustCallStatusErrorHandler(),
+                    (status) => completeFunc(rustFuture, status),
+                );
+                return liftFunc(result);
+                } finally {
+                freeFunc(rustFuture);
+                }
+            }
+  
         };
 
         (types_helper_code, function_definitions)
