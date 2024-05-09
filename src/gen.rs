@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 // use uniffi_bindgen::MergeWith;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
+use crate::gen::oracle::DartCodeOracle;
+
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 
@@ -99,7 +101,7 @@ impl BindingsConfig for Config {
 
 pub struct DartWrapper<'a> {
     config: &'a Config,
-    // ci: &'a ComponentInterface,
+    ci: &'a ComponentInterface,
     type_renderer: TypeHelpersRenderer<'a>,
 }
 
@@ -107,7 +109,7 @@ impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
         DartWrapper {
-            // ci,
+            ci,
             config,
             type_renderer,
         }
@@ -118,6 +120,48 @@ impl<'a> DartWrapper<'a> {
         let libname = self.config.cdylib_name();
 
         let (type_helper_code, functions_definitions) = &self.type_renderer.render();
+
+        fn uniffi_function_definitions(ci: &ComponentInterface) -> dart::Tokens {
+            let mut definitions = quote!();
+
+            for fun in ci.iter_ffi_function_definitions() {
+                let fun_name = fun.name();
+                let (native_return_type, dart_return_type) = match fun.return_type() {
+                    Some(return_type) => 
+                    (
+                        quote! { $(DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
+                        quote! { $(DartCodeOracle::ffi_dart_type_label(Some(&return_type))) }
+                    ),
+                    None => (quote! { Void }, quote! { void }),
+                };
+                
+                let (native_args, dart_args) = {
+                    let mut native_args = quote!();
+                    let mut dart_args = quote!();
+    
+                    for arg in fun.arguments() {
+                        native_args.append(quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),));
+                        dart_args.append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
+                    }
+    
+                    (native_args, dart_args)
+                };
+            
+                let lookup_fn = quote! {
+                    _dylib.lookupFunction<
+                        $native_return_type Function($(&native_args)),
+                        $(&dart_return_type) Function($(&dart_args))
+                    >($(format!("\"{}\"", fun_name)))
+                };
+            
+                definitions.append(quote! {
+                    late final $dart_return_type Function($dart_args) $fun_name = $lookup_fn;
+                });
+            }
+
+            definitions
+        }
+
 
         quote! {
             library $package_name;
@@ -163,9 +207,53 @@ impl<'a> DartWrapper<'a> {
 
                 $(functions_definitions)
             }
+
+
+
+
+
+
+
+
+
+
+            class _UniffiLib {
+                _UniffiLib._();
+
+                static final DynamicLibrary _dylib = _open();
+              
+                static DynamicLibrary _open() {
+                  if (Platform.isLinux) return DynamicLibrary.open("libfutures.so");
+                  if (Platform.isMacOS) return DynamicLibrary.open("libfutures.dylib");
+                  if (Platform.isWindows) return DynamicLibrary.open("futures.dll");
+                  throw UnsupportedError("Unsupported platform: ${Platform.operatingSystem}");
+                }
+              
+                static final _UniffiLib instance = _UniffiLib._();
+
+                $(uniffi_function_definitions(self.ci))
+               
+            }
+
+
+
+
+
+
+
+
+
+            
+
+
+
+            
+
+
+
         }
     }
-}
+    }
 
 pub struct DartBindingGenerator;
 
