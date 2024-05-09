@@ -93,6 +93,10 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     fn get_enum(&self, name: &str) -> Option<&uniffi_bindgen::interface::Enum> {
         self.ci.get_enum_definition(name)
     }
+    
+    fn get_ci(&self) -> &ComponentInterface {
+        self.ci
+    }
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
@@ -111,11 +115,15 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
         // Render all the imports
         let imports: dart::Tokens = quote!();
 
-        let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
+        // let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
 
         let helpers_definitions = quote! {
             $(for (_, ty) in self.get_include_names().iter() => $(ty.as_renderable().render_type_helper(self)) )
         };
+
+        let function_definitions = quote!(
+            $(for fun in self.ci.function_definitions() => $(functions::generate_function(fun, self)))
+        );
 
         let types_helper_code = quote! {
             import "dart:async";

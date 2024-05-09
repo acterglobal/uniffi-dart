@@ -2,6 +2,7 @@ use super::{compounds, enums, primitives};
 use super::{objects, oracle::AsCodeType};
 use genco::{lang::dart, quote};
 use uniffi_bindgen::interface::{AsType, Enum, Object, Type};
+use uniffi_bindgen::ComponentInterface;
 
 /// This trait will be used by any type that generates dart code according to some logic,
 pub trait Renderer<T> {
@@ -10,6 +11,7 @@ pub trait Renderer<T> {
 
 // This trait contains helpful methods for rendering type helpers
 pub trait TypeHelperRenderer {
+    fn get_ci(&self) -> &ComponentInterface;
     // Gives context about weather a type's helper code has already been included
     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
     fn check(&self, name: &str) -> bool;
