@@ -78,35 +78,44 @@ macro_rules! impl_renderable_for_primitive {
                 // TODO: implement bytes ffi methods
                 quote! {
                     class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
+                        // some use-cases might require big endian byte order,
+                        // let's make it handy on all methods
                         @override
-                        LiftRetVal<int> read(Api api, Uint8List buf) {
-                            // final uint_list = buf.toIntList();
-                            // return uint_list.buffer.asByteData().get$canonical_name(1);
+                        LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
+                            final uint_list = buf.toIntList();
+                            return uint_list.buffer.asByteData().get$canonical_name(1, endianess);
                         }
 
                         @override
-                        RustBuffer lower(Api api, int value) {
-                            // final uint_list = Uint8List.fromList([value ? 1 : 0]);
-                            // final byteData = ByteData.sublistView(buf);
-                            // byteData.setInt16(0, value, Endian.little);
-                            // return buf;
+                        RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
+                            final uint_list = Uint8List.fromList([value ? 1 : 0]);
+                            final byteData = ByteData.sublistView(buf);
+                            byteData.setInt16(0, value, endianess);
+                            return buf;
                         }
 
+
                         @override
-                        int read(ByteBuffer buf) {
-                        //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                        //     // performance reasons
-                        //   throw UnimplementedError("Should probably implement read now");
+                        int read(ByteBuffer buf, {Endian endianess = Endian.little}) {
+                        final byteData = ByteData.sublistView(buf);
+                        return byteData.get$canonical_name(0,endianess);
                         }
 
                         @override
                         int allocationSize([T value]) {
-                        //   return $allocation_size; // 1 = 8bits//TODO: Add correct allocation size for bytes, change the arugment type
+                            // allocation size depends upon the length of the Uint8List
+                            // calculate it based on length of list
+                            if let Some(value) = value {
+                                return (value.len() + 1).to_i32();
+                            }
+                            // for buffer size 0, simply return it
+                            return 0;
                         }
 
                         @override
-                        void write(int value, ByteBuffer buf) {
-                            // throw UnimplementedError("Should probably implement read now");
+                        void write(int value, ByteBuffer buf, {Endian endianess = Endian.little}) {
+                            final byteData = ByteData.sublistView(buf);
+                            byteData.set$canonical_name(0, value, endianness: endianness);
                         }
                     }
                 }
