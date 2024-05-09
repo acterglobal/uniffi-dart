@@ -52,7 +52,6 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of a variable name.
-
     pub fn var_name(nm: &str) -> String {
         Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
@@ -60,6 +59,11 @@ impl DartCodeOracle {
     /// Get the idiomatic Dart rendering of an individual enum variant.
     pub fn enum_variant_name(nm: &str) -> String {
         Self::sanitize_identifier(&nm.to_lower_camel_case())
+    }
+
+    /// Get the idiomatic Dart rendering of an FFI callback function name
+    fn ffi_callback_name(nm: &str) -> String {
+        format!("Pointer<NativeFunction<Uniffi{}>>", nm.to_upper_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an exception name
@@ -86,18 +90,16 @@ impl DartCodeOracle {
             FfiType::Int8 |
             FfiType::Int16 |
             FfiType::Int32 |
+            FfiType::Handle |
             FfiType::Int64 => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
-            // FfiType::ForeignExecutorHandle |
-            // FfiType::FutureCallbackData |
+            FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            // FfiType::FutureCallback { return_type   } => {
-            //     quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
-            // }
+            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -117,16 +119,16 @@ impl DartCodeOracle {
             FfiType::Int64 => quote!(Int64),
             FfiType::Float32 => quote!(Float),
             FfiType::Float64 => quote!(Double),
+            FfiType::Handle => quote!(Uint64),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
-            // FfiType::ForeignExecutorHandle |
-            // FfiType::FutureCallbackData |
+            FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            // FfiType::FutureCallback { return_type   } => {
-            //     quote!(UniFfiFutureCallback$(Self::ffi_native_type_label(Some(return_type))))
-            // }
+            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
+        
+
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
