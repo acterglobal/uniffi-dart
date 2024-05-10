@@ -200,9 +200,9 @@ impl DartCodeOracle {
             | Type::UInt32
             | Type::UInt64
             | Type::Float32
-            | Type::Float64
-            | Type::Duration => inner,
+            | Type::Float64 => inner,
             Type::Boolean
+            | Type::Duration
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
@@ -236,9 +236,9 @@ impl DartCodeOracle {
             | Type::Int64
             | Type::UInt64
             | Type::Float32
-            | Type::Float64
-            | Type::Duration => inner,
+            | Type::Float64 => inner,
             Type::Boolean
+            | Type::Duration
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
