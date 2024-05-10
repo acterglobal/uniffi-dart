@@ -8,7 +8,7 @@ use uniffi_bindgen::{
     interface::{FfiType, Type},
     ComponentInterface,
 };
-
+use crate::gen::DartCodeOracle;
 use super::{enums, functions, objects, primitives, records};
 use super::{
     render::{AsRenderable, Renderer, TypeHelperRenderer},
@@ -396,7 +396,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             // $(helpers_definitions)
 
-            // $(types_definitions)
+            $(types_definitions)
 
 
 
@@ -482,7 +482,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 external Pointer<Uint8> data;
             
                 static RustBuffer alloc(int size) {
-                return rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_alloc(size));
+                    return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_alloc().name())(size, status));
                 }
             
                 // static RustBuffer from(Pointer<Uint8> bytes, int len) {
@@ -491,11 +491,11 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 // }
             
                 void free() {
-                rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_free(this));
+                    rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_free().name())(this, status));
                 }
             
                 RustBuffer reserve(int additionalCapacity) {
-                return rustCall((status) => _UniffiLib.instance.ffi_futures_rustbuffer_reserve(this, additionalCapacity));
+                return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_reserve().name())(this, additionalCapacity, status));
                 }
             
                 Uint8List asTypedList() {
@@ -570,8 +570,8 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             
             class FfiConverterString implements FfiConverter<String, RustBuffer> {
                 const FfiConverterString();
-            
-                String lift(RustBuffer value, [int offset = 4]) {
+                // TODO: Figure out why there's spooky behavior here, default should be four, will fix later
+                String lift(RustBuffer value, [int offset = 11]) {
                 try {
                     final data = value.asTypedList().buffer.asUint8List(offset);
                     return utf8.decode(data);

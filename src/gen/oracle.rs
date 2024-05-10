@@ -3,7 +3,8 @@ use genco::quote;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
 use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{AsType, FfiType, Type};
+use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiType, Type};
+use uniffi_bindgen::ComponentInterface;
 
 use crate::gen::primitives;
 
@@ -26,6 +27,7 @@ impl DartCodeOracle {
         panic!("unsupported type for error: {type_:?}")
     }
 
+  
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
     pub fn sanitize_identifier(id: &str) -> String {
         if Self::is_reserved_identifier(id) {
@@ -76,6 +78,46 @@ impl DartCodeOracle {
             Some(stripped) => format!("{stripped}Exception"),
         }
     }
+
+    pub fn find_lib_instance() -> dart::Tokens {
+        quote!(_UniffiLib.instance)
+    }
+
+    pub fn async_poll(
+        callable: impl Callable,
+        ci: &ComponentInterface,
+    ) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_poll(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
+
+    pub fn async_complete(
+        callable: impl Callable,
+        ci: &ComponentInterface,
+    ) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_complete(ci);
+        let call = quote!($(Self::find_lib_instance()).$ffi_func);
+        let call = match callable.return_type() {
+            Some(Type::External {
+                kind: ExternalKind::DataClass,
+                name,
+                ..
+            }) => {
+                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
+            }
+            _ => call,
+        };
+        call
+    }
+
+    pub fn async_free(
+        callable: impl Callable,
+        ci: &ComponentInterface,
+    ) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_free(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
+
 
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
     pub fn ffi_dart_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
@@ -216,7 +258,7 @@ impl DartCodeOracle {
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
-            | Type::Optional { .. } => quote!($(ty.as_codetype().lift())(api, $inner)),
+            | Type::Optional { .. } => quote!($(ty.as_codetype().lift())($inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
     }
@@ -251,7 +293,7 @@ impl DartCodeOracle {
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Optional { .. }
-            | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())(api, $inner)),
+            | Type::Sequence { .. } => quote!($(ty.as_codetype().lower())($inner)),
             //      => quote!(lowerSequence(api, value, lowerUint8, 1)), // TODO: Write try lower primitives, then check what a sequence actually looks like and replicate it
             _ => todo!("lower Type::{:?}", ty),
         }

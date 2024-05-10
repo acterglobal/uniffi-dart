@@ -65,7 +65,7 @@ macro_rules! impl_code_type_for_primitive {
                 }
 
                 fn ffi_converter_name(&self) -> String {
-                    format!("{}FfiConverter", self.canonical_name())
+                    format!("FfiConverter{}", self.canonical_name())
                 }
 
                 // The following must create an instance of the converter object
@@ -207,7 +207,7 @@ macro_rules! impl_renderable_for_primitive {
                     // if (type_helper.check($canonical_name)) {
                     //     return quote!()
                     // }
-                    class StringFfiConverter extends FfiConverter<String, RustBuffer> {
+                    class FfiConverterString extends FfiConverter<String, RustBuffer> {
                         @override
                         String lift(Api api, RustBuffer buf, [int offset = 0]) {
                             final uint_list = buf.toIntList().sublist(offset);
