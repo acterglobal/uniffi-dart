@@ -10,55 +10,55 @@ use std::{
 };
 
 
-// /// Non-blocking timer future.
-// pub struct TimerFuture {
-//     shared_state: Arc<Mutex<SharedState>>,
-// }
+/// Non-blocking timer future.
+pub struct TimerFuture {
+    shared_state: Arc<Mutex<SharedState>>,
+}
 
-// struct SharedState {
-//     completed: bool,
-//     waker: Option<Waker>,
-// }
+struct SharedState {
+    completed: bool,
+    waker: Option<Waker>,
+}
 
-// impl Future for TimerFuture {
-//     type Output = ();
+impl Future for TimerFuture {
+    type Output = ();
 
-//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-//         let mut shared_state = self.shared_state.lock().unwrap();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut shared_state = self.shared_state.lock().unwrap();
 
-//         if shared_state.completed {
-//             Poll::Ready(())
-//         } else {
-//             shared_state.waker = Some(cx.waker().clone());
-//             Poll::Pending
-//         }
-//     }
-// }
+        if shared_state.completed {
+            Poll::Ready(())
+        } else {
+            shared_state.waker = Some(cx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
 
-// impl TimerFuture {
-//     pub fn new(duration: Duration) -> Self {
-//         let shared_state = Arc::new(Mutex::new(SharedState {
-//             completed: false,
-//             waker: None,
-//         }));
+impl TimerFuture {
+    pub fn new(duration: Duration) -> Self {
+        let shared_state = Arc::new(Mutex::new(SharedState {
+            completed: false,
+            waker: None,
+        }));
 
-//         let thread_shared_state = shared_state.clone();
+        let thread_shared_state = shared_state.clone();
 
-//         // Let's mimic an event coming from somewhere else, like the system.
-//         thread::spawn(move || {
-//             thread::sleep(duration);
+        // Let's mimic an event coming from somewhere else, like the system.
+        thread::spawn(move || {
+            thread::sleep(duration);
 
-//             let mut shared_state: MutexGuard<_> = thread_shared_state.lock().unwrap();
-//             shared_state.completed = true;
+            let mut shared_state: MutexGuard<_> = thread_shared_state.lock().unwrap();
+            shared_state.completed = true;
 
-//             if let Some(waker) = shared_state.waker.take() {
-//                 waker.wake();
-//             }
-//         });
+            if let Some(waker) = shared_state.waker.take() {
+                waker.wake();
+            }
+        });
 
-//         Self { shared_state }
-//     }
-// }
+        Self { shared_state }
+    }
+}
 
 // /// Non-blocking timer future.
 // pub struct BrokenTimerFuture {
@@ -145,12 +145,12 @@ pub async fn void_function() {}
 //     format!("Hello, {who}!")
 // }
 
-// #[uniffi::export]
-// pub async fn sleep(ms: u16) -> bool {
-//     TimerFuture::new(Duration::from_millis(ms.into())).await;
+#[uniffi::export]
+pub async fn sleep(ms: u16) -> bool {
+    TimerFuture::new(Duration::from_millis(ms.into())).await;
 
-//     true
-// }
+    true
+}
 
 // Our error.
 // Our error.
