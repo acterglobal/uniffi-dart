@@ -144,6 +144,11 @@ impl<'a> DartWrapper<'a> {
                         dart_args.append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
                     }
     
+                    if fun.has_rust_call_status_arg() {
+                        native_args.append(quote!(Pointer<RustCallStatus>));
+                        dart_args.append(quote!(Pointer<RustCallStatus>));
+                    }
+
                     (native_args, dart_args)
                 };
             
@@ -212,7 +217,7 @@ impl<'a> DartWrapper<'a> {
 
 
 
-
+            $(functions_definitions)
 
 
 
