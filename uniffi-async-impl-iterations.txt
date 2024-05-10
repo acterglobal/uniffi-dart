@@ -1,0 +1,297 @@
+
+// class UniffiContinuationMap {
+//   final _map = <int, Completer<int>>{};
+//   int _nextId = 0;
+
+//   int insert(Completer<int> completer) {
+//     final id = _nextId++;
+//     _map[id] = completer;
+//     return id;
+//   }
+
+//   Completer<int> remove(int id) {
+//     final completer = _map.remove(id);
+//     if (completer == null) {
+//       throw UniffiInternalError("Invalid continuation ID: $id");
+//     }
+//     return completer;
+//   }
+// }
+
+// final _uniffiContinuationMap = UniffiContinuationMap();
+
+// typedef UniffiRustFutureContinuationCallback = Void Function(Uint64 userData, Int8 result);
+// final _uniffiRustFutureContinuationCallback = Pointer.fromFunction<UniffiRustFutureContinuationCallback>(_uniffiContinuationCallback);
+
+// void _uniffiContinuationCallback(int userData, int result) {
+//   final completer = _uniffiContinuationMap.remove(userData);
+//   completer.complete(result);
+// }
+
+// Future<T> uniffiRustCallAsync<T, F>(
+//   int Function() rustFutureFunc,
+//   void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+//   F Function(int, Pointer<RustCallStatus>) completeFunc,
+//   void Function(int) freeFunc,
+//   T Function(F) liftFunc, [
+//   UniffiRustCallStatusErrorHandler? errorHandler,
+// ]) async {
+//   final rustFuture = rustFutureFunc();
+//   try {
+//     int pollResult;
+//     do {
+//       pollResult = await Future<int>(() {
+//         final completer = Completer<int>();
+//         pollFunc(
+//           rustFuture,
+//           _uniffiRustFutureContinuationCallback,
+//           _uniffiContinuationMap.insert(completer),
+//         );
+//         return completer.future;
+//       });
+//     } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+
+//     final result = rustCallWithError(
+//       errorHandler ?? NullRustCallStatusErrorHandler(),
+//       (status) => completeFunc(rustFuture, status),
+//     );
+//     return liftFunc(result);
+//   } finally {
+//     freeFunc(rustFuture);
+//   }
+// }
+
+
+// class UniffiHandleMap<T> {
+//   final _map = <int, T>{};
+//   var _nextHandle = 0;
+
+//   int insert(T obj) {
+//     final handle = _nextHandle++;
+//     _map[handle] = obj;
+//     return handle;
+//   }
+
+//   T remove(int handle) {
+//     final obj = _map.remove(handle);
+//     if (obj == null) {
+//       throw Exception("Invalid handle: $handle");
+//     }
+//     return obj;
+//   }
+// }
+
+// final _uniffiContinuationMap = UniffiHandleMap<Completer<int>>();
+
+// // ReceivePort to receive messages from the native code
+// final _receivePort = ReceivePort();
+
+// // Global callback function invoked by the Rust future
+// void _uniffiContinuationCallback(int userData, int result) {
+//   print(userData);
+//   print(result);
+//   // Send a message to the Dart isolate with the userData
+//   _receivePort.sendPort.send(userData);
+// }
+
+// // Register the global callback function with the Rust future
+// typedef UniffiRustFutureContinuationCallback = Void Function(Int64, Int32);
+// final _uniffiContinuationCallbackPtr =
+//     Pointer.fromFunction<UniffiRustFutureContinuationCallback>(_uniffiContinuationCallback);
+
+
+// Future<T> uniffiRustCallAsync<T, F>(
+//   int Function() rustFutureFunc,
+//   void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+//   F Function(int, Pointer<RustCallStatus>) completeFunc,
+//   void Function(int) freeFunc,
+//   T Function(F) liftFunc, [
+//   UniffiRustCallStatusErrorHandler? errorHandler,
+// ]) async {
+//   final rustFuture = rustFutureFunc();
+//   try {
+//     int pollResult;
+//     do {
+//       final completer = Completer<int>();
+//       final handle = _uniffiContinuationMap.insert(completer);
+//       pollFunc(rustFuture, _uniffiContinuationCallbackPtr, handle);
+      
+//       // Wait for the message from the native code
+//       final userData = await _receivePort.first;
+      
+//       // Retrieve the Completer from the UniffiHandleMap based on the userData
+//       final rs_completer = _uniffiContinuationMap.remove(userData as int);
+      
+//       // Complete the Completer with the poll result
+//       pollResult = UNIFFI_RUST_FUTURE_POLL_READY;
+//       rs_completer.complete(pollResult);
+//     } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+
+//     final result = rustCallWithError(
+//       errorHandler ?? NullRustCallStatusErrorHandler(),
+//       (status) => completeFunc(rustFuture, status),
+//     );
+//     return liftFunc(result);
+//   } finally {
+//     freeFunc(rustFuture);
+//   }
+// }
+
+
+
+// class UniffiContinuationMap {
+//   final _map = <int, Completer<int>>{};
+//   int _nextId = 0;
+
+//   int insert(Completer<int> completer) {
+//     final id = _nextId++;
+//     _map[id] = completer;
+//     return id;
+//   }
+
+//   Completer<int> remove(int id) {
+//     final completer = _map.remove(id);
+//     if (completer == null) {
+//       throw UniffiInternalError("Invalid continuation ID: $id");
+//     }
+//     return completer;
+//   }
+// }
+
+// final _uniffiContinuationMap = UniffiContinuationMap();
+// SendPort? _dedicatedIsolateSendPort;
+
+// void _dedicatedIsolateMain(SendPort mainSendPort) {
+//   final receivePort = ReceivePort();
+//   mainSendPort.send(receivePort.sendPort);
+
+//   receivePort.listen((message) {
+//     final userData = message as int;
+//     final completer = _uniffiContinuationMap.remove(userData);
+//     completer.complete(UNIFFI_RUST_FUTURE_POLL_READY);
+//   });
+// }
+
+// Future<void> _setupDedicatedIsolate() async {
+//   final receivePort = ReceivePort();
+//   await Isolate.spawn(_dedicatedIsolateMain, receivePort.sendPort);
+//   _dedicatedIsolateSendPort = await receivePort.first as SendPort;
+// }
+
+// typedef UniffiRustFutureContinuationCallback = Void Function(Uint64 userData);
+// void _uniffiContinuationCallback(int userData) {
+//   _dedicatedIsolateSendPort?.send(userData);
+// }
+
+// final _uniffiRustFutureContinuationCallback = Pointer.fromFunction<UniffiRustFutureContinuationCallback>(_uniffiContinuationCallback);
+
+// Future<T> uniffiRustCallAsync<T, F>(
+//   int Function() rustFutureFunc,
+//   void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+//   F Function(int, Pointer<RustCallStatus>) completeFunc,
+//   void Function(int) freeFunc,
+//   T Function(F) liftFunc, [
+//   UniffiRustCallStatusErrorHandler? errorHandler,
+// ]) async {
+//   await _setupDedicatedIsolate();
+//   final rustFuture = rustFutureFunc();
+//   try {
+//     int pollResult;
+//     do {
+//       final completer = Completer<int>();
+//       pollFunc(
+//         rustFuture,
+//         _uniffiRustFutureContinuationCallback,
+//         _uniffiContinuationMap.insert(completer),
+//       );
+//       pollResult = await completer.future;
+//     } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+
+//     final result = rustCallWithError(
+//       errorHandler ?? NullRustCallStatusErrorHandler(),
+//       (status) => completeFunc(rustFuture, status),
+//     );
+//     return liftFunc(result);
+//   } finally {
+//     freeFunc(rustFuture);
+//   }
+// }
+
+
+
+// class UniffiContinuationMap {
+//   final _map = <int, Completer<int>>{};
+//   int _nextId = 0;
+
+//   int insert(Completer<int> completer) {
+//     final id = _nextId++;
+//     _map[id] = completer;
+//     return id;
+//   }
+
+//   Completer<int> remove(int id) {
+//     final completer = _map.remove(id);
+//     if (completer == null) {
+//       throw UniffiInternalError("Invalid continuation ID: $id");
+//     }
+//     return completer;
+//   }
+// }
+
+// final _uniffiContinuationMap = UniffiContinuationMap();
+// SendPort? _uniffiSendPort;
+// bool _isIsolateValid = true;
+
+// void _setupIsolateExitListener() {
+//   Isolate.current.addOnExitListener((_) {
+//     _isIsolateValid = false;
+//   });
+// }
+
+// typedef UniffiRustFutureContinuationCallback = Void Function(Uint64 userData, Int8 result);
+// final _uniffiRustFutureContinuationCallback = Pointer.fromFunction<UniffiRustFutureContinuationCallback>((int userData, int result) {
+//   if (_isIsolateValid) {
+//     _uniffiSendPort?.send([userData, result]);
+//   }
+// });
+
+// Future<T> uniffiRustCallAsync<T, F>(
+//   int Function() rustFutureFunc,
+//   void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+//   F Function(int, Pointer<RustCallStatus>) completeFunc,
+//   void Function(int) freeFunc,
+//   T Function(F) liftFunc, [
+//   UniffiRustCallStatusErrorHandler? errorHandler,
+// ]) async {
+//   _setupIsolateExitListener();
+//   final receivePort = ReceivePort();
+//   _uniffiSendPort = receivePort.sendPort;
+
+//   final rustFuture = rustFutureFunc();
+//   try {
+//     int pollResult;
+//     do {
+//       final completer = Completer<int>();
+//       pollFunc(
+//         rustFuture,
+//         _uniffiRustFutureContinuationCallback,
+//         _uniffiContinuationMap.insert(completer),
+//       );
+//       final message = await receivePort.first as List<int>;
+//       final userData = message[0];
+//       pollResult = message[1];
+//       final completer = _uniffiContinuationMap.remove(userData);
+//       completer.complete(pollResult);
+//     } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+
+//     final result = rustCallWithError(
+//       errorHandler ?? NullRustCallStatusErrorHandler(),
+//       (status) => completeFunc(rustFuture, status),
+//     );
+//     return liftFunc(result);
+//   } finally {
+//     freeFunc(rustFuture);
+//     receivePort.close();
+//     _uniffiSendPort = null;
+//   }
+// }
