@@ -159,7 +159,7 @@ impl<'a> DartWrapper<'a> {
                     _dylib.lookupFunction<
                         $native_return_type Function($(&native_args)),
                         $(&dart_return_type) Function($(&dart_args))
-                    >($(format!("\"{}\"", fun_name)))
+                    >($(format!("\"{fun_name}\"")))
                 };
 
                 definitions.append(quote! {
@@ -175,54 +175,7 @@ impl<'a> DartWrapper<'a> {
 
             $(type_helper_code) // Imports, Types and Type Helper
 
-            // class Api {
-            //     final Pointer<T> Function<T extends NativeType>(String symbolName)
-            //         _lookup;
-
-            //     Api(DynamicLibrary dynamicLibrary)
-            //         : _lookup = dynamicLibrary.lookup;
-
-            //     Api.fromLookup(
-            //         Pointer<T> Function<T extends NativeType>(String symbolName)
-            //             lookup)
-            //         : _lookup = lookup;
-
-            //     factory Api.loadStatic() {
-            //         return Api(DynamicLibrary.executable());
-            //     }
-
-            //     factory Api.loadDynamic(String name) {
-            //         return Api(DynamicLibrary.open(name));
-            //     }
-
-            //     factory Api.load() {
-            //         String? name;
-            //         if (Platform.isLinux) name = $(format!("\"lib{libname}.so\""));
-            //         if (Platform.isAndroid) name = $(format!("\"lib{libname}.so\""));
-            //         if (Platform.isMacOS) name = $(format!("\"lib{libname}.dylib\""));
-            //         if (Platform.isIOS) name = "";
-            //         if (Platform.isWindows) name = $(format!("\"{libname}.dll\""));
-            //         if (name == null) {
-            //             throw UnsupportedError("This platform is not supported.");
-            //         }
-            //         if (name == "") {
-            //             return Api.loadStatic();
-            //         } else {
-            //             return Api.loadDynamic(name);
-            //         }
-            //     }
-
-            //     $(functions_definitions)
-            // }
-
-
-
-
-
-
             $(functions_definitions)
-
-
 
             class _UniffiLib {
                 _UniffiLib._();
