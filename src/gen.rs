@@ -127,23 +127,26 @@ impl<'a> DartWrapper<'a> {
             for fun in ci.iter_ffi_function_definitions() {
                 let fun_name = fun.name();
                 let (native_return_type, dart_return_type) = match fun.return_type() {
-                    Some(return_type) => 
-                    (
+                    Some(return_type) => (
                         quote! { $(DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
-                        quote! { $(DartCodeOracle::ffi_dart_type_label(Some(&return_type))) }
+                        quote! { $(DartCodeOracle::ffi_dart_type_label(Some(&return_type))) },
                     ),
                     None => (quote! { Void }, quote! { void }),
                 };
-                
+
                 let (native_args, dart_args) = {
                     let mut native_args = quote!();
                     let mut dart_args = quote!();
-    
+
                     for arg in fun.arguments() {
-                        native_args.append(quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),));
-                        dart_args.append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
+                        native_args.append(
+                            quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
+                        );
+                        dart_args.append(
+                            quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),),
+                        );
                     }
-    
+
                     if fun.has_rust_call_status_arg() {
                         native_args.append(quote!(Pointer<RustCallStatus>));
                         dart_args.append(quote!(Pointer<RustCallStatus>));
@@ -151,14 +154,14 @@ impl<'a> DartWrapper<'a> {
 
                     (native_args, dart_args)
                 };
-            
+
                 let lookup_fn = quote! {
                     _dylib.lookupFunction<
                         $native_return_type Function($(&native_args)),
                         $(&dart_return_type) Function($(&dart_args))
                     >($(format!("\"{}\"", fun_name)))
                 };
-            
+
                 definitions.append(quote! {
                     late final $dart_return_type Function($dart_args) $fun_name = $lookup_fn;
                 });
@@ -225,14 +228,16 @@ impl<'a> DartWrapper<'a> {
                 _UniffiLib._();
 
                 static final DynamicLibrary _dylib = _open();
-              
+
                 static DynamicLibrary _open() {
-                  if (Platform.isLinux) return DynamicLibrary.open("libfutures.so");
-                  if (Platform.isMacOS) return DynamicLibrary.open("libfutures.dylib");
-                  if (Platform.isWindows) return DynamicLibrary.open("futures.dll");
+                  if (Platform.isAndroid) return DynamicLibrary.open($(format!("\"lib{libname}.so\"")));
+                  if (Platform.isIOS) return DynamicLibrary.executable();
+                  if (Platform.isLinux) return DynamicLibrary.open($(format!("\"lib{libname}.so\"")));
+                  if (Platform.isMacOS) return DynamicLibrary.open($(format!("\"lib{libname}.dylib\"")));
+                  if (Platform.isWindows) return DynamicLibrary.open($(format!("\"{libname}.dll\"")));
                   throw UnsupportedError("Unsupported platform: ${Platform.operatingSystem}");
                 }
-              
+
                 static final _UniffiLib instance = _UniffiLib._();
 
                 $(uniffi_function_definitions(self.ci))
@@ -246,7 +251,7 @@ impl<'a> DartWrapper<'a> {
                 }
 
                 static void _checkApiChecksums() {
-                    $(for (name, expected_checksum) in self.ci.iter_checksums() =>       
+                    $(for (name, expected_checksum) in self.ci.iter_checksums() =>
                         if (_UniffiLib.instance.$(name)() != $expected_checksum) {
                           throw UniffiInternalError("UniFFI API checksum mismatch");
                         }
@@ -257,7 +262,7 @@ impl<'a> DartWrapper<'a> {
             void initialize() {
                 _UniffiLib._open();
             }
-            
+
             void ensureInitialized() {
                 _UniffiLib._checkApiVersion();
                 _UniffiLib._checkApiChecksums();
@@ -271,17 +276,17 @@ impl<'a> DartWrapper<'a> {
 
 
 
-            
 
 
 
-            
+
+
 
 
 
         }
     }
-    }
+}
 
 pub struct DartBindingGenerator;
 
