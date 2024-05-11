@@ -13,9 +13,8 @@ void main() {
   ensureInitialized();
 
   test('greet', () async {
-      final result = await greet("Somebody");
-      expect(result, "Somebody");
-    
+    final result = await greet("Somebody");
+    expect(result, "Somebody");
   });
 
   test('always_ready', () async {
@@ -23,8 +22,8 @@ void main() {
       final result = await alwaysReady();
       expect(result, true);
     });
-    
-    expect(Duration(milliseconds: 10).compareTo(time) <= 0, true);
+
+    expect(time.inMilliseconds < 200, true);
   });
 
   // test('void', () async {
@@ -40,7 +39,7 @@ void main() {
     final time = await measureTime(() async {
       await sleep(200);
     });
-    
+
     expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
   });
 
@@ -63,7 +62,6 @@ void main() {
   //   });
   //   expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
   // });
-
 
   // test('with_tokio_runtime', () async {
   //   final time = await measureTime(() async {

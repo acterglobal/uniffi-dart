@@ -425,6 +425,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             }
 
             void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, RustCallStatus status) {
+
                 if (status.code == CALL_SUCCESS) {
                 return;
                 } else if (status.code == CALL_ERROR) {
@@ -444,17 +445,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 final status = calloc<RustCallStatus>();
                 try {
                 return callback(status);
-                } finally {
-                calloc.free(status);
-                }
-            }
-
-            T rustCallWithError<T>(UniffiRustCallStatusErrorHandler errorHandler, T Function(Pointer<RustCallStatus>) callback) {
-                final status = calloc<RustCallStatus>();
-                try {
-                final result = callback(status);
-                checkCallStatus(errorHandler, status.ref);
-                return result;
                 } finally {
                 calloc.free(status);
                 }
@@ -608,7 +598,20 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             const int UNIFFI_RUST_FUTURE_POLL_READY = 0;
             const int UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
 
-            typedef UniffiRustFutureContinuationCallback = Int8 Function(Int64, Pointer<Dart_CObject>);
+            typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
+
+            Map<int, SendPort> _ports = {};
+
+            void __asyncPoll(int port, int result) {
+                print("Whatever");
+                final sendPort = _ports[port];
+                if (sendPort == null) {
+                    print("Faulty send port for async poll: $port");
+                    return;
+                }
+                sendPort.send(result);
+
+            }
 
             Future<T> uniffiRustCallAsync<T, F>(
                 int Function() rustFutureFunc,
@@ -621,22 +624,24 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 final rustFuture = rustFutureFunc();
                 final completer = Completer<int>();
                 final rx = ReceivePort();
+                _ports[rx.sendPort.nativePort] = rx.sendPort;
                 void poll() {
                     pollFunc(
                         rustFuture,
-                        NativeApi.postCObject,
+                        Pointer.fromFunction<UniffiRustFutureContinuationCallback>(__asyncPoll),
                         rx.sendPort.nativePort,
                     );
                 }
 
                 rx.listen((dynamic res) {
-                    print("Something, $res");
+                    print("Something, ${res}");
                     final pollResult = res as int;
                     if (pollResult == UNIFFI_RUST_FUTURE_POLL_READY) {
                         completer.complete(pollResult);
                     } else {
                         poll();
                     }
+                    print("end of listen");
                 });
 
                 try {
@@ -644,11 +649,18 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     await completer.future;
                     rx.close();
 
-                    final result = rustCallWithError(
-                        errorHandler ?? NullRustCallStatusErrorHandler(),
-                        (status) => completeFunc(rustFuture, status),
-                    );
-                    return liftFunc(result);
+                    print("error is after");
+                    final status = calloc<RustCallStatus>();
+                    try {
+                        print("completer");
+                        final result = completeFunc(rustFuture, status);
+                        print("checking status");
+                        // checkCallStatus(errorHandler ?? NullRustCallStatusErrorHandler(), status.ref);
+                        print("lifting");
+                        return liftFunc(result);
+                    } finally {
+                        calloc.free(status);
+                    }
                 } finally {
                     freeFunc(rustFuture);
                 }
