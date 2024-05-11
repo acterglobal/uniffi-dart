@@ -58,24 +58,20 @@ use super::utils::{fn_name, var_name};
 //     }
 // }
 
-
-pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer,) -> dart::Tokens {
+pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     if func.takes_self() {} // TODO: Do something about this condition
     let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (
             ret.as_renderable().render_type(ret, type_helper),
-            quote!($(ret.as_codetype().lift()))
+            quote!($(ret.as_codetype().lift())),
         )
     } else {
-        (
-            quote!(void), 
-            quote!((_) {})
-        )
+        (quote!(void), quote!((_) {}))
     };
 
-    if  func.is_async() {
+    if func.is_async() {
         quote!(
             Future<$ret> $(DartCodeOracle::fn_name(func.name()))($args) {
                 return uniffiRustCallAsync(
@@ -87,8 +83,8 @@ pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer,)
                   $(DartCodeOracle::async_free(func, type_helper.get_ci())),
                   $lifter,
                 );
-              }
-              
+            }
+
         )
     } else {
         quote!(
@@ -96,7 +92,7 @@ pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer,)
                 return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
                     $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))), status)
                 )));
-              }
+            }
         )
     }
 }

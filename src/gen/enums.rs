@@ -2,8 +2,8 @@ use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Enum, Field, Type, Variant};
 
-use super::oracle::{DartCodeOracle, AsCodeType};
-use super::render::{Renderable, AsRenderable, TypeHelperRenderer};
+use super::oracle::{AsCodeType, DartCodeOracle};
+use super::render::{AsRenderable, Renderable, TypeHelperRenderer};
 
 use super::utils::{class_name, enum_variant_name, var_name};
 
@@ -110,7 +110,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 
             $(for (index, variant) in obj.variants().iter().enumerate()
                 => class $(DartCodeOracle::class_name(variant.name()))$cls_name extends $cls_name {
-                    // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
+                        // TODO: Replace render type with with shorter method, ideally provided by DartCodeOracle
                         $(for field in variant.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
 
                         $(DartCodeOracle::class_name(variant.name()))$cls_name($(for field in variant.fields() => this.$(var_name(field.name())),  ));
@@ -118,7 +118,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         $(generate_variant_factory(cls_name, variant))
 
                         $(generate_variant_lowerer(cls_name, index, variant))
-                    }
+                   }
             )
         }
         //TODO!: Generate the lowering code for each variant
