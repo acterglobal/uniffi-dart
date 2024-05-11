@@ -600,19 +600,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
 
-            Map<int, SendPort> _ports = {};
-
-            void __asyncPoll(int port, int result) {
-                print("Whatever");
-                final sendPort = _ports[port];
-                if (sendPort == null) {
-                    print("Faulty send port for async poll: $port");
-                    return;
-                }
-                sendPort.send(result);
-
-            }
-
             Future<T> uniffiRustCallAsync<T, F>(
                 int Function() rustFutureFunc,
                 void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
@@ -623,31 +610,29 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             ]) async {
                 final rustFuture = rustFutureFunc();
                 final completer = Completer<int>();
-                final rx = ReceivePort();
-                _ports[rx.sendPort.nativePort] = rx.sendPort;
+
+                late final NativeCallable<UniffiRustFutureContinuationCallback> callback;
+
                 void poll() {
                     pollFunc(
                         rustFuture,
-                        Pointer.fromFunction<UniffiRustFutureContinuationCallback>(__asyncPoll),
-                        rx.sendPort.nativePort,
+                        callback.nativeFunction,
+                        0,
                     );
                 }
-
-                rx.listen((dynamic res) {
-                    print("Something, ${res}");
-                    final pollResult = res as int;
+                void onResponse(int _idx, int pollResult) {
                     if (pollResult == UNIFFI_RUST_FUTURE_POLL_READY) {
                         completer.complete(pollResult);
                     } else {
                         poll();
                     }
-                    print("end of listen");
-                });
+                }
+                callback = NativeCallable<UniffiRustFutureContinuationCallback>.listener(onResponse);
 
                 try {
                     poll();
                     await completer.future;
-                    rx.close();
+                    callback.close();
 
                     print("error is after");
                     final status = calloc<RustCallStatus>();
