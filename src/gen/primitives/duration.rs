@@ -13,22 +13,23 @@ impl Renderable for DurationCodeType {
         quote! {
             class FfiConverterDuration {
                 static Duration lift(Api api, RustBuffer buf) {
-                    final seconds = buf.buffer.asByteData(buf.offsetInBytes).getInt64(0);
-                    final nanoseconds = buf.buffer.asByteData(buf.offsetInBytes).getInt64(8);
+                    final bufList = buf.asUint8List();
+                    final seconds = bufList.buffer.asByteData(bufList.offsetInBytes).getInt64(0);
+                    final nanoseconds = bufList.buffer.asByteData(bufList.offsetInBytes).getInt64(8);
                     return Duration(seconds: seconds, microseconds: nanoseconds ~/ 1000);
                 }
 
                 static RustBuffer lower(Api api, Duration value) {
                     final buf = Uint8List(16);
-                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(0, value.seconds);
-                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(8, value.microseconds * 1000);
+                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(0, value.inSeconds);
+                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(8, value.inMicroseconds * 1000);
                     return toRustBuffer(api, buf);
                 }
 
                 static LiftRetVal<Duration> read(Api api, Uint8List buf) {
                     final seconds = buf.buffer.asByteData(buf.offsetInBytes).getInt64(0);
-                    final microseconds = buf.buffer.asByteData(buf.offsetInBytes).getInt64(8);
-                    return LiftRetVal(Duration(seconds: seconds, microseconds: nanoseconds ~/ 1000), 16, 16);
+                    final nanoseconds = buf.buffer.asByteData(buf.offsetInBytes).getInt64(8);
+                    return LiftRetVal(Duration(seconds: seconds, microseconds: nanoseconds ~/ 1000), 16);
                 }
 
                 static int allocationSize([Duration value = const Duration()]) {
@@ -36,8 +37,8 @@ impl Renderable for DurationCodeType {
                 }
 
                 static int write(Api api, Duration value, Uint8List buf) {
-                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(0, value.seconds);
-                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(8, value.microseconds * 1000);
+                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(0, value.inSeconds);
+                    buf.buffer.asByteData(buf.offsetInBytes).setInt64(8, value.inMicroseconds * 1000);
                     return 16;
                 }
             }

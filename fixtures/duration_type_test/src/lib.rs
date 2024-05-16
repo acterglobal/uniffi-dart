@@ -7,13 +7,13 @@ pub fn add_duration(seconds: i64, nanos: i32) -> Duration {
 }
 
 #[uniffi::export]
-pub fn get_seconds(duration: Duration) -> i64 {
-    duration.as_secs() as i64
+pub fn get_seconds(duration: Duration) -> u64 {
+    duration.as_secs() as u64
 }
 
 #[uniffi::export]
-pub fn get_nanos(duration: Duration) -> i32 {
-    duration.as_nanos() as i32 % 1_000_000_000
+pub fn get_nanos(duration: Duration) -> u32 {
+    duration.as_nanos() as u32 % 1_000_000_000
 }
 
 // #[cfg(test)]
@@ -26,4 +26,5 @@ pub fn get_nanos(duration: Duration) -> i32 {
 //         assert_eq!(get_nanos(add_duration(1, 1)), 1);
 //     }
 // }
+
 uniffi::include_scaffolding!("api");
