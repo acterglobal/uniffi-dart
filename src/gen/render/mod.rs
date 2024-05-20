@@ -41,12 +41,12 @@ pub trait Renderable {
             | Type::Int64
             | Type::UInt16
             | Type::Int32
-            | Type::UInt64
-            | Type::Duration => quote!(int),
+            | Type::UInt64 => quote!(int),
             Type::Float32 | Type::Float64 => quote!(double),
             Type::String => quote!(String),
             Type::Object { name, .. } => quote!($name),
             Type::Boolean => quote!(bool),
+            Type::Duration => quote!(Duration),
             Type::Optional { inner_type } => quote!($(&self.render_type(inner_type, type_helper))?),
             Type::Sequence { inner_type } => {
                 quote!(List<$(&self.render_type(inner_type, type_helper))>)
