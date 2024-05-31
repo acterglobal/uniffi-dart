@@ -1,6 +1,7 @@
 
 use genco::prelude::*;
-use uniffi_bindgen::interface::{AsType, Callable, Function};
+use uniffi_bindgen::backend::Type;
+use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, Function};
 
 use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;

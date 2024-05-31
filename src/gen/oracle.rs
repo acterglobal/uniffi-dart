@@ -87,32 +87,6 @@ impl DartCodeOracle {
         quote!(api)
     }
 
-    pub fn async_poll(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_poll(ci);
-        quote!($(Self::find_lib_instance()).$ffi_func)
-    }
-
-    pub fn async_complete(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_complete(ci);
-        let call = quote!($(Self::find_lib_instance()).$ffi_func);
-        let call = match callable.return_type() {
-            Some(Type::External {
-                kind: ExternalKind::DataClass,
-                name: _,
-                ..
-            }) => {
-                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
-            }
-            _ => call,
-        };
-        call
-    }
-
-    pub fn async_free(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_free(ci);
-        quote!($(Self::find_lib_instance()).$ffi_func)
-    }
-
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
     pub fn ffi_dart_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
