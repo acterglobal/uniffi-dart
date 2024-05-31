@@ -83,9 +83,7 @@ pub trait Renderable {
                                           // AbiType::RefEnum(ty) => quote!(#(ty)),
         };
 
-        if type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
-            println!("{} Added", &ty.as_codetype().canonical_name());
-        }
+        type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty);
 
         type_name
     }

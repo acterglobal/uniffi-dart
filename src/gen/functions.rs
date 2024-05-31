@@ -1,5 +1,6 @@
 use genco::prelude::*;
-use uniffi_bindgen::interface::{AsType, Callable, FfiFunction, Function};
+use uniffi_bindgen::backend::Type;
+use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiFunction, Function};
 
 use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
@@ -64,6 +65,18 @@ fn generate_for_callable_async(
     } else {
         (quote!(void), quote!(return null;))
     };
+    let ci = type_helper.get_ci();
+
+    let async_complete = match fun.return_type() {
+        Some(Type::External {
+            kind: ExternalKind::DataClass,
+            name: _,
+            ..
+        }) => {
+            todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
+        }
+        _ => quote!($(DartCodeOracle::find_lib_instance()).$(fun.ffi_rust_future_complete(ci))),
+    };
     quote!(
         Future<$ret> $(fn_signature) {
             final api = $api;
@@ -72,9 +85,9 @@ fn generate_for_callable_async(
                 $(with_self)
                 $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
               ),
-              $(DartCodeOracle::async_poll(fun, type_helper.get_ci())),
-              $(DartCodeOracle::async_complete(fun, type_helper.get_ci())),
-              $(DartCodeOracle::async_free(fun, type_helper.get_ci())),
+              $(DartCodeOracle::find_lib_instance()).$(fun.ffi_rust_future_poll(ci)),
+              $(async_complete),
+              $(DartCodeOracle::find_lib_instance()).$(fun.ffi_rust_future_free(ci)),
               (status) {
                 $body
               }

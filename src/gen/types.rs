@@ -6,7 +6,7 @@ use std::{
 use genco::prelude::*;
 use uniffi_bindgen::{interface::Type, ComponentInterface};
 
-use super::{enums, functions, objects, primitives, records};
+use super::{enums, functions, objects, records};
 use super::{
     render::{AsRenderable, Renderer, TypeHelperRenderer},
     Config,
@@ -295,8 +295,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
-            $(primitives::generate_wrapper_lifters())
-            $(primitives::generate_wrapper_lowerers())
 
             class ForeignBytes extends Struct {
                 @Int32()

@@ -157,6 +157,7 @@ impl<'a> DartWrapper<'a> {
 
             definitions.append(quote! {
                 late final $dart_return_type Function($dart_args) $fun_name = $lookup_fn;
+
             });
         }
 
