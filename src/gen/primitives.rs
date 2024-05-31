@@ -7,8 +7,10 @@ use uniffi_bindgen::interface::{Radix, Type};
 #[macro_use]
 mod macros;
 mod boolean;
+mod duration;
 mod string;
 pub use boolean::BooleanCodeType;
+pub use duration::DurationCodeType;
 pub use string::StringCodeType;
 
 fn render_literal(literal: &Literal) -> String {
@@ -22,7 +24,8 @@ fn render_literal(literal: &Literal) -> String {
             | Type::UInt32
             | Type::UInt64
             | Type::Float32
-            | Type::Float64 => num_str,
+            | Type::Float64
+            | Type::Duration => num_str,
             _ => panic!("Unexpected literal: {} is not a number", num_str),
         }
     }
@@ -47,7 +50,6 @@ fn render_literal(literal: &Literal) -> String {
             },
         ),
         Literal::Float(string, type_) => typed_number(type_, string.clone()),
-
         _ => unreachable!("Literal"),
     }
 }
@@ -142,6 +144,7 @@ pub fn generate_wrapper_lowerers() -> dart::Tokens {
             res.setAll(length.length, lowered);
             return res;
         }
+
 
         Uint8List lowerSequence<T, V>(Api api, List<T> input, Uint8List Function(Api, V) lowerer, int element_byte_size) {
           int capacity = input.length * element_byte_size;

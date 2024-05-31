@@ -202,6 +202,7 @@ impl DartCodeOracle {
             | Type::Float32
             | Type::Float64 => inner,
             Type::Boolean
+            | Type::Duration
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
@@ -237,6 +238,7 @@ impl DartCodeOracle {
             | Type::Float32
             | Type::Float64 => inner,
             Type::Boolean
+            | Type::Duration
             | Type::String
             | Type::Object { .. }
             | Type::Enum { .. }
@@ -336,6 +338,7 @@ impl<T: AsType> AsCodeType for T {
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
+            Type::Duration => Box::new(primitives::DurationCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional { inner_type } => Box::new(compounds::OptionalCodeType::new(
                 self.as_type(),

@@ -365,6 +365,7 @@ pub fn generate_type(ty: &Type) -> dart::Tokens {
         | Type::Int64
         | Type::UInt16
         | Type::Int32
+        | Type::Duration
         | Type::UInt64 => quote!(int),
         Type::Float32 | Type::Float64 => quote!(double),
         Type::String => quote!(String),
