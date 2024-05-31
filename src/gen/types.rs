@@ -4,10 +4,7 @@ use std::{
 };
 
 use genco::prelude::*;
-use uniffi_bindgen::{
-    interface::{FfiType, Type},
-    ComponentInterface,
-};
+use uniffi_bindgen::{interface::Type, ComponentInterface};
 
 use super::{enums, functions, objects, oracle::AsCodeType, primitives, records};
 use crate::gen::DartCodeOracle;
@@ -15,6 +12,7 @@ use super::{
     render::{AsRenderable, Renderer, TypeHelperRenderer},
     Config,
 };
+use crate::gen::DartCodeOracle;
 
 type FunctionDefinition = dart::Tokens;
 
@@ -137,7 +135,7 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
-    // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
+    // TODO: Implement a two pass system where the first pass will render the main code, and the second pass will render the helper code
     // this is so the generator knows what helper code to include.
 
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
@@ -453,33 +451,37 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 const UniffiInternalError(this.errorCode, this.panicMessage);
 
                 static UniffiInternalError panicked(String message) {
-                return UniffiInternalError(rustPanic, message);
+                    return UniffiInternalError(rustPanic, message);
+                }
+
+                static UniffiInternalError unexpectedCall() {
+                    return UniffiInternalError(unexpectedRustCallError, null);
                 }
 
                 @override
                 String toString() {
-                switch (errorCode) {
-                    case bufferOverflow:
-                    return "UniFfi::BufferOverflow";
-                    case incompleteData:
-                    return "UniFfi::IncompleteData";
-                    case unexpectedOptionalTag:
-                    return "UniFfi::UnexpectedOptionalTag";
-                    case unexpectedEnumCase:
-                    return "UniFfi::UnexpectedEnumCase";
-                    case unexpectedNullPointer:
-                    return "UniFfi::UnexpectedNullPointer";
-                    case unexpectedRustCallStatusCode:
-                    return "UniFfi::UnexpectedRustCallStatusCode";
-                    case unexpectedRustCallError:
-                    return "UniFfi::UnexpectedRustCallError";
-                    case unexpectedStaleHandle:
-                    return "UniFfi::UnexpectedStaleHandle";
-                    case rustPanic:
-                    return "UniFfi::rustPanic: $$panicMessage";
-                    default:
-                    return "UniFfi::UnknownError: $$errorCode";
-                }
+                    switch (errorCode) {
+                        case bufferOverflow:
+                            return "UniFfi::BufferOverflow";
+                        case incompleteData:
+                            return "UniFfi::IncompleteData";
+                        case unexpectedOptionalTag:
+                            return "UniFfi::UnexpectedOptionalTag";
+                        case unexpectedEnumCase:
+                            return "UniFfi::UnexpectedEnumCase";
+                        case unexpectedNullPointer:
+                            return "UniFfi::UnexpectedNullPointer";
+                        case unexpectedRustCallStatusCode:
+                            return "UniFfi::UnexpectedRustCallStatusCode";
+                        case unexpectedRustCallError:
+                            return "UniFfi::UnexpectedRustCallError";
+                        case unexpectedStaleHandle:
+                            return "UniFfi::UnexpectedStaleHandle";
+                        case rustPanic:
+                            return "UniFfi::rustPanic: $$panicMessage";
+                        default:
+                            return "UniFfi::UnknownError: $$errorCode";
+                        }
                 }
             }
 
