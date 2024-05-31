@@ -82,14 +82,14 @@ macro_rules! impl_renderable_for_primitive {
                         @override
                         LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
                             ByteData byteData = ByteData.sublistView(buf);
-                            int value = byteData.getInt32(0, endianess);
+                            int value = byteData.getUint32(0, endianess);
                             return LiftRetVal(value);
                         }
 
                         @override
                         RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
                             ByteData byteData = ByteData(4);
-                            byteData.setInt32(0, value, endianess);
+                            byteData.setUint32(0, value, endianess);
                             return RustBuffer(byteData.buffer.asUint8List());
                         }
 
@@ -97,7 +97,7 @@ macro_rules! impl_renderable_for_primitive {
                         @override
                         int read(ByteBuffer buf, {Endian endianess = Endian.little}) {
                             ByteData byteData = ByteData.view(buf);
-                            return byteData.getInt32(0, endianess);
+                            return byteData.getUint32(0, endianess);
                         }
 
                         @override
@@ -109,7 +109,7 @@ macro_rules! impl_renderable_for_primitive {
                         @override
                         void write(int value, ByteBuffer buf, {Endian endianess = Endian.little}) {
                             ByteData byteData = ByteData.view(buf);
-                            byteData.setInt32(0, value, endianess);
+                            byteData.setUint32(0, value, endianess);
                         }
                     }
                 }

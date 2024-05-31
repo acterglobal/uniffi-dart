@@ -47,6 +47,7 @@ pub trait Renderable {
             Type::Object { name, .. } => quote!($name),
             Type::Boolean => quote!(bool),
             Type::Duration => quote!(Duration),
+            Type::Bytes => quote!(Uint8List),
             Type::Optional { inner_type } => quote!($(&self.render_type(inner_type, type_helper))?),
             Type::Sequence { inner_type } => {
                 quote!(List<$(&self.render_type(inner_type, type_helper))>)
