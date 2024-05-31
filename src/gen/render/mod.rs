@@ -109,6 +109,7 @@ impl<T: AsType> AsRenderable for T {
             Type::Float32 => Box::new(primitives::Float32CodeType),
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
+            Type::Bytes => Box::new(primitives::BytesCodeType),
             Type::String => Box::new(primitives::StringCodeType),
             Type::Duration => Box::new(primitives::DurationCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
@@ -125,7 +126,7 @@ impl<T: AsType> AsRenderable for T {
                 Box::new(records::RecordCodeType::new(name, module_path))
             }
 
-            _ => todo!("Renderable for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
+            _ => todo!("Renderable for Type::{:?}", self.as_type()), //
 
                                                                      // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
 

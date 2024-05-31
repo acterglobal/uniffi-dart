@@ -75,47 +75,41 @@ macro_rules! impl_renderable_for_primitive {
                 if (type_helper.check($canonical_name)) {
                     return quote!(); // Return an empty string to avoid code duplication
                 }
-                // TODO: implement bytes ffi methods
                 quote! {
                     class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         // some use-cases might require big endian byte order,
                         // let's make it handy on all methods
                         @override
                         LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
-                            final uint_list = buf.toIntList();
-                            return uint_list.buffer.asByteData().get$canonical_name(1, endianess);
+                            ByteData byteData = ByteData.sublistView(buf);
+                            int value = byteData.getInt32(0, endianess);
+                            return LiftRetVal(value);
                         }
 
                         @override
                         RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
-                            final uint_list = Uint8List.fromList([value ? 1 : 0]);
-                            final byteData = ByteData.sublistView(buf);
-                            byteData.setInt16(0, value, endianess);
-                            return buf;
+                            ByteData byteData = ByteData(4);
+                            byteData.setInt32(0, value, endianess);
+                            return RustBuffer(byteData.buffer.asUint8List());
                         }
 
 
                         @override
                         int read(ByteBuffer buf, {Endian endianess = Endian.little}) {
-                        final byteData = ByteData.sublistView(buf);
-                        return byteData.get$canonical_name(0,endianess);
+                            ByteData byteData = ByteData.view(buf);
+                            return byteData.getInt32(0, endianess);
                         }
 
                         @override
                         int allocationSize([T value]) {
-                            // allocation size depends upon the length of the Uint8List
-                            // calculate it based on length of list
-                            if let Some(value) = value {
-                                return (value.len() + 1).to_i32();
-                            }
-                            // for buffer size 0, simply return it
-                            return 0;
+                            // for 32-bit integers
+                            return 4;
                         }
 
                         @override
                         void write(int value, ByteBuffer buf, {Endian endianess = Endian.little}) {
-                            final byteData = ByteData.sublistView(buf);
-                            byteData.set$canonical_name(0, value, endianness: endianness);
+                            ByteData byteData = ByteData.view(buf);
+                            byteData.setInt32(0, value, endianess);
                         }
                     }
                 }
