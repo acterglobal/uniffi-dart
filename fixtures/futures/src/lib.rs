@@ -9,7 +9,6 @@ use std::{
     time::Duration,
 };
 
-
 /// Non-blocking timer future.
 pub struct TimerFuture {
     shared_state: Arc<Mutex<SharedState>>,
