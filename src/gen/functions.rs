@@ -5,7 +5,6 @@ use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use super::render::TypeHelperRenderer;
-use super::types::{generate_ffi_dart_type, generate_ffi_type};
 use super::utils::{fn_name, var_name};
 
 #[allow(unused_variables)]
@@ -18,42 +17,59 @@ pub fn generate_function(
     let fn_name = fn_name(fun.name());
     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
     let ff_name = ffi.name();
-    let inner = quote! {
-    rustCall(api, (res) =>
-        _$(&fn_name)(
-            $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
-        res)
-    )
-    };
 
-    let (ret, body) = if let Some(ret) = fun.return_type() {
-        (
-            ret.as_renderable().render_type(ret, type_helper),
-            quote! {
-                return $(DartCodeOracle::type_lift_fn(ret, inner));
-            },
+    if fun.is_async() {
+        let (ret, body) = if let Some(ret) = fun.return_type() {
+            (
+                ret.as_renderable().render_type(ret, type_helper),
+                quote! {
+                    return $(DartCodeOracle::type_lift_fn(ret, quote!(res)));
+                },
+            )
+        } else {
+            (quote!(void), quote!(return null;))
+        };
+        quote!(
+            Future<$ret> $(DartCodeOracle::fn_name(fun.name()))($args) {
+                final api = $api;
+                return uniffiRustCallAsync(
+                  () => $(DartCodeOracle::find_lib_instance()).$(fun.ffi_func().name())(
+                    $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                  ),
+                  $(DartCodeOracle::async_poll(fun, type_helper.get_ci())),
+                  $(DartCodeOracle::async_complete(fun, type_helper.get_ci())),
+                  $(DartCodeOracle::async_free(fun, type_helper.get_ci())),
+                  (res) {
+                    final api = $api;
+                    $body
+                  }
+                );
+            }
         )
     } else {
-        (quote!(void), quote!($inner;))
-    };
+        let inner = quote! {
+            rustCall(api, (res) =>
+                $(DartCodeOracle::find_lib_instance()).$(fun.ffi_func().name())(
+                    $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                res)
+            )
+        };
 
-    quote! {
-        late final _$(&fn_name)Ptr = _lookup<
-        NativeFunction<
-            $(generate_ffi_type(ffi.return_type())) Function(
-                $(for arg in &ffi.arguments() => $(generate_ffi_type(Some(&arg.type_()))),)
-                Pointer<RustCallStatus>
-        )>>($(format!("\"{ff_name}\"")));
-
-        late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-        $(generate_ffi_dart_type(ffi.return_type())) Function(
-            $(for arg in &ffi.arguments() => $(generate_ffi_dart_type(Some(&arg.type_()))),)
-            Pointer<RustCallStatus>
-        )>();
-
-        $ret $fn_name ($args) {
-            final api = $api;
-            $body
+        let (ret, body) = if let Some(ret) = fun.return_type() {
+            (
+                ret.as_renderable().render_type(ret, type_helper),
+                quote! {
+                    return $(DartCodeOracle::type_lift_fn(ret, inner));
+                },
+            )
+        } else {
+            (quote!(void), quote!(return;))
+        };
+        quote! {
+                $ret $fn_name ($args) {
+                    final api = $api;
+                    $body
+                }
         }
     }
 }

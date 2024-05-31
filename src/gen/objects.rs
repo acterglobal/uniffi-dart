@@ -7,7 +7,6 @@ use crate::gen::render::AsRenderable;
 
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-use super::types::{generate_ffi_dart_type, generate_ffi_type};
 use super::utils::{class_name, fn_name, var_name};
 
 #[derive(Debug)]
@@ -72,21 +71,12 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
                 return $(cls_name)._(api, ptr);
             }
 
-            Pointer<Void> uniffiClonePointer() {
-                final _uniffiClonePointerPtr = _api._lookup<
-                    NativeFunction<
-                        Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_clone().name())));
-                final _uniffiClonePointer = _uniffiClonePointerPtr.asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>();
-                return rustCall(_api, (res) => _uniffiClonePointer(_ptr, res));
+            Pointer<Void> uniffiClonePointer(Api, api) {
+                return rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(obj.ffi_object_clone().name())(_ptr, status));
             }
 
-            void drop() {
-                final _freePtr = _api._lookup<
-                    NativeFunction<
-                        Void Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_free().name())));
-                final _free = _freePtr.asFunction<void Function(Pointer<Void>, Pointer<RustCallStatus>)>();
-
-                rustCall(_api, (res) => _free(_ptr, res));
+            void drop(Api api) {
+                rustCall(api, (status) => $(DartCodeOracle::find_lib_instance())..$(obj.ffi_object_free().name())(_ptr, status));
             }
 
             $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
@@ -122,19 +112,6 @@ pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> da
     };
 
     quote! {
-        late final _$(&fn_name)Ptr = _api._lookup<
-        NativeFunction<
-            $(generate_ffi_type(ffi.return_type())) Function(
-                $(for arg in &ffi.arguments() => $(generate_ffi_type(Some(&arg.type_()))),)
-                Pointer<RustCallStatus>
-        )>>($(format!("\"{ff_name}\"")));
-
-        late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-        $(generate_ffi_dart_type(ffi.return_type())) Function(
-            $(for arg in &ffi.arguments() => $(generate_ffi_dart_type(Some(&arg.type_()))),)
-            Pointer<RustCallStatus>
-        )>();
-
         $ret $fn_name ($args) {
             final api = _api;
             $body

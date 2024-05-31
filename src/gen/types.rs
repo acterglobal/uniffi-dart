@@ -4,16 +4,14 @@ use std::{
 };
 
 use genco::prelude::*;
-use uniffi_bindgen::{
-    interface::{FfiType, Type},
-    ComponentInterface,
-};
+use uniffi_bindgen::{interface::Type, ComponentInterface};
 
 use super::{enums, functions, objects, primitives, records};
 use super::{
     render::{AsRenderable, Renderer, TypeHelperRenderer},
     Config,
 };
+use crate::gen::DartCodeOracle;
 
 type FunctionDefinition = dart::Tokens;
 
@@ -97,10 +95,14 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     fn get_record(&self, name: &str) -> Option<&uniffi_bindgen::interface::Record> {
         self.ci.get_record_definition(name)
     }
+
+    fn get_ci(&self) -> &ComponentInterface {
+        self.ci
+    }
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
-    // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
+    // TODO: Implement a two pass system where the first pass will render the main code, and the second pass will render the helper code
     // this is so the generator knows what helper code to include.
 
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
@@ -115,7 +117,9 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
         // Render all the imports
         let imports: dart::Tokens = quote!();
 
-        let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
+        let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(
+            functions::generate_function("this", fun, self)
+        )));
 
         let helpers_definitions = quote! {
             $(for (_, ty) in self.get_include_names().iter() => $(ty.as_renderable().render_type_helper(self)) )
@@ -148,33 +152,37 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 const UniffiInternalError(this.errorCode, this.panicMessage);
 
                 static UniffiInternalError panicked(String message) {
-                return UniffiInternalError(rustPanic, message);
+                    return UniffiInternalError(rustPanic, message);
+                }
+
+                static UniffiInternalError unexpectedCall() {
+                    return UniffiInternalError(unexpectedRustCallError, null);
                 }
 
                 @override
                 String toString() {
-                switch (errorCode) {
-                    case bufferOverflow:
-                    return "UniFfi::BufferOverflow";
-                    case incompleteData:
-                    return "UniFfi::IncompleteData";
-                    case unexpectedOptionalTag:
-                    return "UniFfi::UnexpectedOptionalTag";
-                    case unexpectedEnumCase:
-                    return "UniFfi::UnexpectedEnumCase";
-                    case unexpectedNullPointer:
-                    return "UniFfi::UnexpectedNullPointer";
-                    case unexpectedRustCallStatusCode:
-                    return "UniFfi::UnexpectedRustCallStatusCode";
-                    case unexpectedRustCallError:
-                    return "UniFfi::UnexpectedRustCallError";
-                    case unexpectedStaleHandle:
-                    return "UniFfi::UnexpectedStaleHandle";
-                    case rustPanic:
-                    return "UniFfi::rustPanic: $$panicMessage";
-                    default:
-                    return "UniFfi::UnknownError: $$errorCode";
-                }
+                    switch (errorCode) {
+                        case bufferOverflow:
+                            return "UniFfi::BufferOverflow";
+                        case incompleteData:
+                            return "UniFfi::IncompleteData";
+                        case unexpectedOptionalTag:
+                            return "UniFfi::UnexpectedOptionalTag";
+                        case unexpectedEnumCase:
+                            return "UniFfi::UnexpectedEnumCase";
+                        case unexpectedNullPointer:
+                            return "UniFfi::UnexpectedNullPointer";
+                        case unexpectedRustCallStatusCode:
+                            return "UniFfi::UnexpectedRustCallStatusCode";
+                        case unexpectedRustCallError:
+                            return "UniFfi::UnexpectedRustCallError";
+                        case unexpectedStaleHandle:
+                            return "UniFfi::UnexpectedStaleHandle";
+                        case rustPanic:
+                            return "UniFfi::rustPanic: $$panicMessage";
+                        default:
+                            return "UniFfi::UnknownError: $$errorCode";
+                        }
                 }
             }
 
@@ -209,25 +217,30 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             T rustCall<T>(Api api, T Function(Pointer<RustCallStatus>) callback) {
                 var callStatus = RustCallStatus.allocate();
                 final returnValue = callback(callStatus);
+                final callStatusCheck = checkCallStatus(callStatus);
+                return returnValue;
+            }
 
+            void checkCallStatus(Pointer<RustCallStatus> callStatus) {
                 switch (callStatus.ref.code) {
-                case CALL_SUCCESS:
-                    calloc.free(callStatus);
-                    return returnValue;
-                case CALL_ERROR:
-                    throw callStatus.ref.errorBuf;
-                case CALL_PANIC:
-                    if (callStatus.ref.errorBuf.len > 0) {
-                        final message = utf8.decoder.convert(callStatus.ref.errorBuf.asUint8List());
+                    case CALL_SUCCESS:
                         calloc.free(callStatus);
-                        throw UniffiInternalError.panicked(message);
-                    } else {
+                        break;
+                    case CALL_ERROR:
                         calloc.free(callStatus);
-                        throw UniffiInternalError.panicked("Rust panic");
+                        throw UniffiInternalError.unexpectedCall();
+                    case CALL_PANIC:
+                        if (callStatus.ref.errorBuf.len > 0) {
+                            final message = utf8.decoder.convert(callStatus.ref.errorBuf.asUint8List());
+                            calloc.free(callStatus);
+                            throw UniffiInternalError.panicked(message);
+                        } else {
+                            calloc.free(callStatus);
+                            throw UniffiInternalError.panicked("Rust panic");
+                        }
+                    default:
+                        throw UniffiInternalError(callStatus.ref.code, null);
                     }
-                default:
-                    throw UniffiInternalError(callStatus.ref.code, null);
-                }
             }
 
             class RustBuffer extends Struct {
@@ -240,29 +253,16 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 external Pointer<Uint8> data;
 
                 static RustBuffer fromBytes(Api api, ForeignBytes bytes) {
-                    final _fromBytesPtr = api._lookup<
-                    NativeFunction<
-                        RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_from_bytes().name())));
-                    final _fromBytes =
-                    _fromBytesPtr.asFunction<RustBuffer Function(ForeignBytes, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => _fromBytes(bytes, res));
+                    return rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_from_bytes().name())(bytes, status));
                 }
 
-                // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
+                // Needed so that the foreign language bindingsfunction_definitions can create buffers in which to pass complex data types across the FFI in the future
                 static RustBuffer allocate(Api api, int size) {
-                    final _allocatePtr = api._lookup<
-                        NativeFunction<
-                            RustBuffer Function(Int64, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_alloc().name())));
-                    final _allocate = _allocatePtr.asFunction<RustBuffer Function(int, Pointer<RustCallStatus>)>();
-                    return rustCall(api, (res) => _allocate(size, res));
+                    return rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_alloc().name())(size, status));
                 }
 
-                void deallocate(Api api) {
-                    final _freePtr = api._lookup<
-                    NativeFunction<
-                        Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
-                    final _free = _freePtr.asFunction<void Function(RustBuffer, Pointer<RustCallStatus>)>();
-                    rustCall(api, (res) => _free(this, res));
+                void free(Api api, ) {
+                    rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_free().name())(this, status));
                 }
 
                 Uint8List asUint8List() {
@@ -303,56 +303,64 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
             $(types_definitions)
 
+            const int UNIFFI_RUST_FUTURE_POLL_READY = 0;
+            const int UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
+
+            typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
+
+            Future<T> uniffiRustCallAsync<T, F>(
+                int Function() rustFutureFunc,
+                void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
+                F Function(int, Pointer<RustCallStatus>) completeFunc,
+                void Function(int) freeFunc,
+                T Function(F) liftFunc,
+            ) async {
+                final rustFuture = rustFutureFunc();
+                final completer = Completer<int>();
+
+                late final NativeCallable<UniffiRustFutureContinuationCallback> callback;
+
+                void poll() {
+                    pollFunc(
+                        rustFuture,
+                        callback.nativeFunction,
+                        0,
+                    );
+                }
+                void onResponse(int _idx, int pollResult) {
+                    if (pollResult == UNIFFI_RUST_FUTURE_POLL_READY) {
+                        completer.complete(pollResult);
+                    } else {
+                        poll();
+                    }
+                }
+                callback = NativeCallable<UniffiRustFutureContinuationCallback>.listener(onResponse);
+
+                try {
+                    poll();
+                    await completer.future;
+                    callback.close();
+
+                    print("error is after");
+                    final status = calloc<RustCallStatus>();
+                    try {
+                        print("completer");
+                        final result = completeFunc(rustFuture, status);
+                        print("checking status");
+                        // checkCallStatus(errorHandler ?? NullRustCallStatusErrorHandler(), status.ref);
+                        print("lifting");
+                        return liftFunc(result);
+                    } finally {
+                        calloc.free(status);
+                    }
+                } finally {
+                    freeFunc(rustFuture);
+                }
+            }
+
         };
 
         (types_helper_code, function_definitions)
-    }
-}
-
-pub fn generate_ffi_type(ret: Option<&FfiType>) -> dart::Tokens {
-    let Some(ret_type) = ret else {
-        return quote!(Void);
-    };
-    match *ret_type {
-        FfiType::UInt8 => quote!(Uint8),
-        FfiType::UInt16 => quote!(Uint16),
-        FfiType::UInt32 => quote!(Uint32),
-        FfiType::UInt64 => quote!(Uint64),
-        FfiType::Int8 => quote!(Int8),
-        FfiType::Int16 => quote!(Int16),
-        FfiType::Int32 => quote!(Int32),
-        FfiType::Int64 => quote!(Int64),
-        FfiType::Float32 => quote!(Float),
-        FfiType::Float64 => quote!(Double),
-        FfiType::RustBuffer(ref inner) => match inner {
-            Some(i) => quote!($i),
-            _ => quote!(RustBuffer),
-        },
-        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-        _ => todo!("FfiType::{:?}", ret_type),
-    }
-}
-
-pub fn generate_ffi_dart_type(ret: Option<&FfiType>) -> dart::Tokens {
-    let Some(ret_type) = ret else {
-        return quote!(void);
-    };
-    match *ret_type {
-        FfiType::UInt8 => quote!(int),
-        FfiType::UInt16 => quote!(int),
-        FfiType::UInt32 => quote!(int),
-        FfiType::UInt64 => quote!(int),
-        FfiType::Int8 => quote!(int),
-        FfiType::Int16 => quote!(int),
-        FfiType::Int32 => quote!(int),
-        FfiType::Int64 => quote!(int),
-        FfiType::Float32 | FfiType::Float64 => quote!(double),
-        FfiType::RustBuffer(ref inner) => match inner {
-            Some(i) => quote!($i),
-            _ => quote!(RustBuffer),
-        },
-        FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-        _ => todo!("FfiType::{:?}", ret_type),
     }
 }
 

@@ -7,6 +7,7 @@ use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
 // use uniffi_bindgen::MergeWith;
+use crate::gen::oracle::DartCodeOracle;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
 use self::render::Renderer;
@@ -99,7 +100,7 @@ impl BindingsConfig for Config {
 
 pub struct DartWrapper<'a> {
     config: &'a Config,
-    // ci: &'a ComponentInterface,
+    ci: &'a ComponentInterface,
     type_renderer: TypeHelpersRenderer<'a>,
 }
 
@@ -107,10 +108,59 @@ impl<'a> DartWrapper<'a> {
     pub fn new(ci: &'a ComponentInterface, config: &'a Config) -> Self {
         let type_renderer = TypeHelpersRenderer::new(config, ci);
         DartWrapper {
-            // ci,
+            ci,
             config,
             type_renderer,
         }
+    }
+
+    fn uniffi_function_definitions(&self) -> dart::Tokens {
+        let ci = self.ci;
+        let mut definitions = quote!();
+
+        for fun in ci.iter_ffi_function_definitions() {
+            let fun_name = fun.name();
+            let (native_return_type, dart_return_type) = match fun.return_type() {
+                Some(return_type) => (
+                    quote! { $(DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
+                    quote! { $(DartCodeOracle::ffi_type_label(Some(&return_type))) },
+                ),
+                None => (quote! { Void }, quote! { void }),
+            };
+
+            let (native_args, dart_args) = {
+                let mut native_args = quote!();
+                let mut dart_args = quote!();
+
+                for arg in fun.arguments() {
+                    native_args.append(
+                        quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
+                    );
+                    dart_args
+                        .append(quote!($(DartCodeOracle::ffi_type_label(Some(&arg.type_()))),));
+                }
+
+                if fun.has_rust_call_status_arg() {
+                    native_args.append(quote!(Pointer<RustCallStatus>));
+                    dart_args.append(quote!(Pointer<RustCallStatus>));
+                }
+
+                (native_args, dart_args)
+            };
+
+            let lookup_fn = quote! {
+                _dylib.lookupFunction<
+                    $native_return_type Function($(&native_args)),
+                    $(&dart_return_type) Function($(&dart_args))
+                >($(format!("\"{fun_name}\"")))
+            };
+
+            definitions.append(quote! {
+                late final $dart_return_type Function($dart_args) $fun_name = $lookup_fn;
+            });
+        }
+
+        definitions
     }
 
     fn generate(&self) -> dart::Tokens {
@@ -118,6 +168,7 @@ impl<'a> DartWrapper<'a> {
         let libname = self.config.cdylib_name();
 
         let (type_helper_code, functions_definitions) = &self.type_renderer.render();
+        let uniffi_functions = self.uniffi_function_definitions();
 
         quote! {
             library $package_name;
@@ -125,16 +176,9 @@ impl<'a> DartWrapper<'a> {
             $(type_helper_code) // Imports, Types and Type Helper
 
             class Api {
-                final Pointer<T> Function<T extends NativeType>(String symbolName)
-                    _lookup;
+                final DynamicLibrary _dylib;
 
-                Api(DynamicLibrary dynamicLibrary)
-                    : _lookup = dynamicLibrary.lookup;
-
-                Api.fromLookup(
-                    Pointer<T> Function<T extends NativeType>(String symbolName)
-                        lookup)
-                    : _lookup = lookup;
+                Api(DynamicLibrary this._dylib);
 
                 factory Api.loadStatic() {
                     return Api(DynamicLibrary.executable());
@@ -160,6 +204,8 @@ impl<'a> DartWrapper<'a> {
                         return Api.loadDynamic(name);
                     }
                 }
+
+                $(uniffi_functions)
 
                 $(functions_definitions)
             }
