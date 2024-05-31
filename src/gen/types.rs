@@ -117,9 +117,11 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
         // Render all the imports
         let imports: dart::Tokens = quote!();
 
-        let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(
-            functions::generate_function("this", fun, self)
-        )));
+        let function_definitions = quote!($(
+            for fun in self.ci.function_definitions() => $(
+                functions::generate_function("this", fun, self)
+            ))
+        );
 
         let helpers_definitions = quote! {
             $(for (_, ty) in self.get_include_names().iter() => $(ty.as_renderable().render_type_helper(self)) )
@@ -207,17 +209,17 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 external RustBuffer errorBuf;
 
                 static Pointer<RustCallStatus> allocate({int count = 1}) =>
-                calloc<RustCallStatus>(count * sizeOf<RustCallStatus>()).cast();
+                    calloc<RustCallStatus>(count * sizeOf<RustCallStatus>()).cast();
             }
 
             T noop<T>(T t) {
                 return t;
             }
 
-            T rustCall<T>(Api api, T Function(Pointer<RustCallStatus>) callback) {
+            T rustCall<T>(T Function(Pointer<RustCallStatus>) callback) {
                 var callStatus = RustCallStatus.allocate();
                 final returnValue = callback(callStatus);
-                final callStatusCheck = checkCallStatus(callStatus);
+                checkCallStatus(callStatus);
                 return returnValue;
             }
 
@@ -253,17 +255,22 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 external Pointer<Uint8> data;
 
                 static RustBuffer fromBytes(Api api, ForeignBytes bytes) {
-                    return rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_from_bytes().name())(bytes, status));
+                    return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_from_bytes().name())(bytes, status));
                 }
 
-                // Needed so that the foreign language bindingsfunction_definitions can create buffers in which to pass complex data types across the FFI in the future
+                // Needed so that the foreign language bindings can create buffers in which to pass complex data types across the FFI in the future
                 static RustBuffer allocate(Api api, int size) {
-                    return rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_alloc().name())(size, status));
+                    return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_alloc().name())(size, status));
                 }
 
-                void free(Api api, ) {
-                    rustCall(api, (status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_free().name())(this, status));
+                RustBuffer reserve(Api api, int additionalCapacity) {
+                    return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_reserve().name())(this, additionalCapacity, status));
                 }
+
+                void free(Api api) {
+                    rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_free().name())(this, status));
+                }
+
 
                 Uint8List asUint8List() {
                     return data.cast<Uint8>().asTypedList(len);
@@ -341,18 +348,10 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     await completer.future;
                     callback.close();
 
-                    print("error is after");
                     final status = calloc<RustCallStatus>();
-                    try {
-                        print("completer");
-                        final result = completeFunc(rustFuture, status);
-                        print("checking status");
-                        // checkCallStatus(errorHandler ?? NullRustCallStatusErrorHandler(), status.ref);
-                        print("lifting");
-                        return liftFunc(result);
-                    } finally {
-                        calloc.free(status);
-                    }
+                    final result = completeFunc(rustFuture, status);
+                    checkCallStatus(status);
+                    return liftFunc(result);
                 } finally {
                     freeFunc(rustFuture);
                 }
