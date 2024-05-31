@@ -1,13 +1,14 @@
 
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{AsType, Method, Object};
+use uniffi_bindgen::interface::{Method, Object};
 
 use crate::gen::oracle::{DartCodeOracle, AsCodeType};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-use super::utils::{class_name, fn_name, var_name};
+use super::functions::generate_for_callable;
+use super::utils::{class_name, fn_name};
 
 #[derive(Debug)]
 pub struct ObjectCodeType {
@@ -76,7 +77,9 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
                 rustCall((status) => $(DartCodeOracle::find_lib_instance())..$(obj.ffi_object_free().name())(_ptr, status));
             }
 
-            $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
+            $(for mt in &obj.methods() => $(
+                generate_method(mt, type_helper))
+            )
         }
     }
 }

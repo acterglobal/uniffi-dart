@@ -577,6 +577,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
                 }
 
+
                 Uint8List asUint8List() {
                     return data.cast<Uint8>().asTypedList(len);
                 }

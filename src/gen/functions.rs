@@ -6,7 +6,7 @@ use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use super::oracle::AsCodeType;
-use super::render::{ TypeHelperRenderer};
+use super::render::TypeHelperRenderer;
 
 // #[allow(unused_variables)]
 // pub fn generate_function(
