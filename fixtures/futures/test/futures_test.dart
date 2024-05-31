@@ -27,14 +27,14 @@ void main() {
     expect(time.inMilliseconds < 200, true);
   });
 
-  // test('void', () async {
-  //   final time = await measureTime(() async {
-  //     await voidFunction();
-  //     //expect(result, null);
-  //   });
-  //   // Less than or equal to time
-  //   expect(time.compareTo(Duration(milliseconds: 4)) <= 0, true);
-  // });
+  test('void', () async {
+    final time = await measureTime(() async {
+      await api.voidFunction();
+      //expect(result, null);
+    });
+    // Less than or equal to time
+    expect(time.compareTo(Duration(milliseconds: 4)) <= 0, true);
+  });
 
   test('sleep', () async {
     final time = await measureTime(() async {
@@ -44,36 +44,41 @@ void main() {
     expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
   });
 
-  // test('sequential_future', () async {
-  //   final time = await measureTime(() async {
-  //     final resultAlice = await api.sayAfter(Duration(milliseconds: 100), 'Alice');
-  //     final resultBob = await api.sayAfter(Duration(milliseconds: 200), 'Bob');
-  //     expect(resultAlice, 'Hello, Alice!');
-  //     expect(resultBob, 'Hello, Bob!');
-  //   });
-  //   expect(time.inMilliseconds > 300 && time.inMilliseconds < 400, true);
-  // });
+  test('sequential_future', () async {
+    final time = await measureTime(() async {
+      final resultAlice = await api.sayAfter(
+          Duration(milliseconds: 100).inMilliseconds, 'Alice');
+      final resultBob =
+          await api.sayAfter(Duration(milliseconds: 200).inMilliseconds, 'Bob');
+      expect(resultAlice, 'Hello, Alice!');
+      expect(resultBob, 'Hello, Bob!');
+    });
+    expect(time.inMilliseconds > 300 && time.inMilliseconds < 400, true);
+  });
 
   // test('concurrent_future', () async {
   //   final time = await measureTime(() async {
-  //     final resultAlice = await api.sayAfter(Duration(milliseconds: 100), 'Alice');
-  //     final resultBob = await api.sayAfter(Duration(milliseconds: 200), 'Bob');
+  //     final resultAlice = await api.sayAfter(
+  //         Duration(milliseconds: 100).inMilliseconds, 'Alice');
+  //     final resultBob =
+  //         await api.sayAfter(Duration(milliseconds: 200).inMilliseconds, 'Bob');
   //     expect(resultAlice, 'Hello, Alice!');
   //     expect(resultBob, 'Hello, Bob!');
   //   });
   //   expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
   // });
 
-  // test('with_tokio_runtime', () async {
-  //   final time = await measureTime(() async {
-  //     final resultAlice = await api.sayAfterWithTokio(Duration(milliseconds: 200), 'Alice');
-  //     expect(resultAlice, 'Hello, Alice (with Tokio)!');
-  //   });
-  //   expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
-  // });
+  test('with_tokio_runtime', () async {
+    final time = await measureTime(() async {
+      final resultAlice = await api.sayAfterWithTokio(
+          Duration(milliseconds: 200).inMilliseconds, 'Alice');
+      expect(resultAlice, 'Hello, Alice (with Tokio)!');
+    });
+    expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
+  });
 
   // test('fallible_function_and_method', () async {
-  //   final time1 = await measureTime(() {
+  //   final time1 = await measureTime(() async {
   //     try {
   //       api.fallibleMe(false);
   //       expect(true, true);
@@ -84,7 +89,7 @@ void main() {
   //   print('fallible function (with result): ${time1.inMilliseconds}ms');
   //   expect(time1.compareTo(Duration(milliseconds: 100)), -1);
 
-  //   final time2 = await measureTime(() {
+  //   final time2 = await measureTime(() async {
   //     try {
   //       api.fallibleMe(true);
   //       expect(false, true); // should never be reached
@@ -96,15 +101,15 @@ void main() {
   //   expect(time2.compareTo(Duration(milliseconds: 100)), -1);
   // });
 
-  // test('record', () async {
-  //   final time = await measureTime(() {
-  //     final result = api.newMyRecord('foo', 42);
-  //     expect(result.a, 'foo');
-  //     expect(result.b, 42);
-  //   });
-  //   print('record: ${time.inMilliseconds}ms');
-  //   expect(time.compareTo(Duration(milliseconds: 100)), -1);
-  // });
+  test('record', () async {
+    final time = await measureTime(() async {
+      final result = await api.newMyRecord('foo', 42);
+      expect(result.a, 'foo');
+      expect(result.b, 42);
+    });
+    print('record: ${time.inMilliseconds}ms');
+    expect(time.compareTo(Duration(milliseconds: 100)), -1);
+  });
 
   // test('broken_sleep', () async {
   //   final time = await measureTime(() async {
