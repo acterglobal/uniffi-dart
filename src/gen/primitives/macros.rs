@@ -76,40 +76,34 @@ macro_rules! impl_renderable_for_primitive {
                     return quote!(); // Return an empty string to avoid code duplication
                 }
                 quote! {
-                    class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
+                    class FfiConverterBytes {
                         // some use-cases might require big endian byte order,
                         // let's make it handy on all methods
-                        @override
-                        LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
-                            ByteData byteData = ByteData.sublistView(buf);
-                            int value = byteData.getUint32(0, endianess);
-                            return LiftRetVal(value);
+
+                        static Uin8List lift(Api api, RustBuffer buf, {Endian endianess = Endian.little}) {
+                            return FfiConverterBytes.read(api, buf.asUint8List()).value;
                         }
 
-                        @override
-                        RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
-                            ByteData byteData = ByteData(4);
-                            byteData.setUint32(0, value, endianess);
-                            return RustBuffer(byteData.buffer.asUint8List());
+                        static RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
+                            final byteData = Uin8List.fromList([value ? 1 : 0]);
+                            FfiConverterBytes.write(api, value, byteData);
+                            return toRustBuffer(api, byteData);
+                        }
+
+                        static LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
+                            final byteData = buf.buffer.asByteData(buf.offsetInBytes, 1);
+                            int value = byteData.getUint16(0, endianess);
+                            return LiftRetVal(value, 1);
+                        }
+
+                        static int allocationSize([Uint8List value = []]) {
+                            return value;
                         }
 
 
-                        @override
-                        int read(ByteBuffer buf, {Endian endianess = Endian.little}) {
-                            ByteData byteData = ByteData.view(buf);
-                            return byteData.getUint32(0, endianess);
-                        }
-
-                        @override
-                        int allocationSize([T value]) {
-                            // for 32-bit integers
-                            return 4;
-                        }
-
-                        @override
-                        void write(int value, ByteBuffer buf, {Endian endianess = Endian.little}) {
-                            ByteData byteData = ByteData.view(buf);
-                            byteData.setUint32(0, value, endianess);
+                        static int write(Api api, int value, Uint8List buf, {Endian endianess = Endian.little}) {
+                            final byteData = buf.buffer.asByteData(buf.offsetInBytes, 1);
+                            byteData.setUint16(0, value, endianess);
                         }
                     }
                 }

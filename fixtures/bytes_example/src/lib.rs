@@ -1,6 +1,11 @@
 use uniffi;
 
 #[uniffi::export]
+pub fn make_byte_array() -> Vec<u8> {
+    vec![1, 2, 3, 4, 5]
+}
+
+#[uniffi::export]
 pub fn make_large_byte_array(size: u32) -> Vec<u8> {
     (0..size as u8).collect()
 }
