@@ -478,9 +478,9 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                         case unexpectedStaleHandle:
                             return "UniFfi::UnexpectedStaleHandle";
                         case rustPanic:
-                            return "UniFfi::rustPanic: $$panicMessage";
+                            return "UniFfi::rustPanic: $panicMessage";
                         default:
-                            return "UniFfi::UnknownError: $$errorCode";
+                            return "UniFfi::UnknownError: $errorCode";
                         }
                 }
             }
