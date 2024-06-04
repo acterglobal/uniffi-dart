@@ -72,7 +72,10 @@ pub fn run_test(fixture: &str, udl_path: &str, config_path: Option<&str>) -> Res
     let status = command.spawn()?.wait()?;
     if !status.success() {
         println!("FAILED");
-        thread::sleep(Duration::from_secs(120));
+        if std::env::var("CI").is_err() {
+            // skip in CI environment
+            thread::sleep(Duration::from_secs(120));
+        }
         bail!("running `dart` to run test script failed ({:?})", command);
     }
     Ok(())

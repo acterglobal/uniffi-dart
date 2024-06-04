@@ -62,6 +62,14 @@ impl DartCodeOracle {
         Self::sanitize_identifier(&nm.to_lower_camel_case())
     }
 
+    /// Get the idiomatic Dart rendering of an FFI callback function name
+    fn ffi_callback_name(nm: &str) -> String {
+        format!(
+            "Pointer<NativeFunction<Uniffi{}>>",
+            nm.to_upper_camel_case()
+        )
+    }
+
     /// Get the idiomatic Dart rendering of an exception name
     // TODO: Refactor to be more idomatic to the way dart handles errors
     pub fn error_name(nm: &str) -> String {
@@ -73,12 +81,16 @@ impl DartCodeOracle {
         }
     }
 
+    pub fn find_lib_instance() -> dart::Tokens {
+        quote!(api)
+    }
+
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
     pub fn ffi_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
             return quote!(void);
         };
-        match *ret_type {
+        match ret_type {
             FfiType::UInt8
             | FfiType::UInt16
             | FfiType::UInt32
@@ -86,13 +98,16 @@ impl DartCodeOracle {
             | FfiType::Int8
             | FfiType::Int16
             | FfiType::Int32
-            | FfiType::Int64 => quote!(int),
+            | FfiType::Int64
+            | FfiType::Handle => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+            FfiType::ForeignBytes => quote!(ForeignBytes),
+            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -102,7 +117,7 @@ impl DartCodeOracle {
         let Some(ret_type) = ffi_type else {
             return quote!(Void);
         };
-        match *ret_type {
+        match ret_type {
             FfiType::UInt8 => quote!(Uint8),
             FfiType::UInt16 => quote!(Uint16),
             FfiType::UInt32 => quote!(Uint32),
@@ -113,11 +128,14 @@ impl DartCodeOracle {
             FfiType::Int64 => quote!(Int64),
             FfiType::Float32 => quote!(Float),
             FfiType::Float64 => quote!(Double),
+            FfiType::Handle => quote!(Uint64),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
+            FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }

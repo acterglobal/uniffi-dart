@@ -2,6 +2,7 @@ use super::{compounds, enums, primitives, records};
 use super::{objects, oracle::AsCodeType};
 use genco::{lang::dart, quote};
 use uniffi_bindgen::interface::{AsType, Enum, Object, Record, Type};
+use uniffi_bindgen::ComponentInterface;
 
 /// This trait will be used by any type that generates dart code according to some logic,
 pub trait Renderer<T> {
@@ -21,6 +22,7 @@ pub trait TypeHelperRenderer {
     fn get_object(&self, name: &str) -> Option<&Object>;
     fn get_enum(&self, name: &str) -> Option<&Enum>;
     fn get_record(&self, name: &str) -> Option<&Record>;
+    fn get_ci(&self) -> &ComponentInterface;
 }
 /// This trait is used by types that should be generated. The idea is to pass any struct that implements
 /// this type to another struct that generates much larger portions of according to some internal logic code
@@ -81,9 +83,7 @@ pub trait Renderable {
                                           // AbiType::RefEnum(ty) => quote!(#(ty)),
         };
 
-        if type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
-            println!("{} Added", &ty.as_codetype().canonical_name());
-        }
+        type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty);
 
         type_name
     }

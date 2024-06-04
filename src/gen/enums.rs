@@ -80,7 +80,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
 
                 static RustBuffer lower(Api api, $cls_name input) {
-                    return toRustBuffer(api, createUint8ListFromInt(input.index + 1)); // So enums aren't zero indexed?
+                    return intToRustBuffer(api, input.index + 1);  // So enums aren't zero indexed?
                 }
             }
         }

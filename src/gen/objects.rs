@@ -1,14 +1,13 @@
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{AsType, Method, Object};
+use uniffi_bindgen::interface::{Method, Object};
 
 use crate::gen::oracle::DartCodeOracle;
-use crate::gen::render::AsRenderable;
 
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-use super::types::{generate_ffi_dart_type, generate_ffi_type};
-use super::utils::{class_name, fn_name, var_name};
+use super::functions::generate_for_callable;
+use super::utils::{class_name, fn_name};
 
 #[derive(Debug)]
 pub struct ObjectCodeType {
@@ -64,8 +63,6 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
             final Api _api;
             final Pointer<Void> _ptr;
 
-
-
             $(cls_name)._(this._api, this._ptr);
 
             factory $(cls_name).lift(Api api, Pointer<Void> ptr) {
@@ -73,71 +70,26 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
             }
 
             Pointer<Void> uniffiClonePointer() {
-                final _uniffiClonePointerPtr = _api._lookup<
-                    NativeFunction<
-                        Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_clone().name())));
-                final _uniffiClonePointer = _uniffiClonePointerPtr.asFunction<Pointer<Void> Function(Pointer<Void>, Pointer<RustCallStatus>)>();
-                return rustCall(_api, (res) => _uniffiClonePointer(_ptr, res));
+                return rustCall((status) => _api.$(obj.ffi_object_clone().name())(_ptr, status));
             }
 
             void drop() {
-                final _freePtr = _api._lookup<
-                    NativeFunction<
-                        Void Function(Pointer<Void>, Pointer<RustCallStatus>)>>($(format!("\"{}\"", obj.ffi_object_free().name())));
-                final _free = _freePtr.asFunction<void Function(Pointer<Void>, Pointer<RustCallStatus>)>();
-
-                rustCall(_api, (res) => _free(_ptr, res));
+                rustCall((status) => _api.$(obj.ffi_object_free().name())(_ptr, status));
             }
 
-            $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
+            $(for mt in &obj.methods() => $(
+                generate_method(mt, type_helper))
+            )
         }
     }
 }
 
-#[allow(unused_variables)]
 pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    let api = "_api";
-    let ffi = fun.ffi_func();
-    let fn_name = fn_name(fun.name());
-    let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
-    let ff_name = ffi.name();
-    let inner = quote! {
-    rustCall(api, (res) =>
-        _$(&fn_name)(
-            uniffiClonePointer(),
-            $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
-        res)
+    generate_for_callable(
+        "_api",
+        type_helper,
+        fun,
+        fn_name(fun.name()),
+        fun.ffi_func(),
     )
-    };
-
-    let (ret, body) = if let Some(ret) = fun.return_type() {
-        (
-            ret.as_renderable().render_type(ret, type_helper),
-            quote! {
-                return $(DartCodeOracle::type_lift_fn(ret, inner));
-            },
-        )
-    } else {
-        (quote!(void), quote!($inner;))
-    };
-
-    quote! {
-        late final _$(&fn_name)Ptr = _api._lookup<
-        NativeFunction<
-            $(generate_ffi_type(ffi.return_type())) Function(
-                $(for arg in &ffi.arguments() => $(generate_ffi_type(Some(&arg.type_()))),)
-                Pointer<RustCallStatus>
-        )>>($(format!("\"{ff_name}\"")));
-
-        late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-        $(generate_ffi_dart_type(ffi.return_type())) Function(
-            $(for arg in &ffi.arguments() => $(generate_ffi_dart_type(Some(&arg.type_()))),)
-            Pointer<RustCallStatus>
-        )>();
-
-        $ret $fn_name ($args) {
-            final api = _api;
-            $body
-        }
-    }
 }
