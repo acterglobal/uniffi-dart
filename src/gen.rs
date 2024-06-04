@@ -122,8 +122,8 @@ impl<'a> DartWrapper<'a> {
             let fun_name = fun.name();
             let (native_return_type, dart_return_type) = match fun.return_type() {
                 Some(return_type) => (
-                    quote! { $(DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
-                    quote! { $(DartCodeOracle::ffi_type_label(Some(&return_type))) },
+                    quote! { $(DartCodeOracle::ffi_native_type_label(Some(return_type))) },
+                    quote! { $(DartCodeOracle::ffi_type_label(Some(return_type))) },
                 ),
                 None => (quote! { Void }, quote! { void }),
             };
