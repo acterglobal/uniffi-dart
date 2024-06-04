@@ -75,38 +75,35 @@ macro_rules! impl_renderable_for_primitive {
                 if (type_helper.check($canonical_name)) {
                     return quote!(); // Return an empty string to avoid code duplication
                 }
-                // TODO: implement bytes ffi methods
                 quote! {
-                    class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
-                        @override
-                        LiftRetVal<int> read(Api api, Uint8List buf) {
-                            // final uint_list = buf.toIntList();
-                            // return uint_list.buffer.asByteData().get$canonical_name(1);
+                    class FfiConverterBytes {
+                        // some use-cases might require big endian byte order,
+                        // let's make it handy on all methods
+
+                        static Uin8List lift(Api api, RustBuffer buf, {Endian endianess = Endian.little}) {
+                            return FfiConverterBytes.read(api, buf.asUint8List()).value;
                         }
 
-                        @override
-                        RustBuffer lower(Api api, int value) {
-                            // final uint_list = Uint8List.fromList([value ? 1 : 0]);
-                            // final byteData = ByteData.sublistView(buf);
-                            // byteData.setInt16(0, value, Endian.little);
-                            // return buf;
+                        static RustBuffer lower(Api api, int value, {Endian endianess = Endian.little}) {
+                            final byteData = Uin8List.fromList([value ? 1 : 0]);
+                            FfiConverterBytes.write(api, value, byteData);
+                            return toRustBuffer(api, byteData);
                         }
 
-                        @override
-                        int read(ByteBuffer buf) {
-                        //     // So here's the deal, we have two choices, could use Uint8List or ByteBuffer, leaving this for later
-                        //     // performance reasons
-                        //   throw UnimplementedError("Should probably implement read now");
+                        static LiftRetVal<int> read(Api api, Uint8List buf, {Endian endianess = Endian.little}) {
+                            final byteData = buf.buffer.asByteData(buf.offsetInBytes, 1);
+                            int value = byteData.getUint16(0, endianess);
+                            return LiftRetVal(value, 1);
                         }
 
-                        @override
-                        int allocationSize([T value]) {
-                        //   return $allocation_size; // 1 = 8bits//TODO: Add correct allocation size for bytes, change the arugment type
+                        static int allocationSize([Uint8List value = []]) {
+                            return value;
                         }
 
-                        @override
-                        void write(int value, ByteBuffer buf) {
-                            // throw UnimplementedError("Should probably implement read now");
+
+                        static int write(Api api, int value, Uint8List buf, {Endian endianess = Endian.little}) {
+                            final byteData = buf.buffer.asByteData(buf.offsetInBytes, 1);
+                            byteData.setUint16(0, value, endianess);
                         }
                     }
                 }
