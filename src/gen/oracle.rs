@@ -3,8 +3,7 @@ use genco::quote;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
 use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiType, Type};
-use uniffi_bindgen::ComponentInterface;
+use uniffi_bindgen::interface::{AsType, FfiType, Type};
 
 use crate::gen::primitives;
 

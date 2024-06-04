@@ -295,6 +295,28 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(api, bytes.ref);
             }
 
+            RustBuffer intToRustBuffer(Api api, int value) {
+                int length = value.bitLength ~/ 8 + 1;
+
+                // Ensure the length is either 4 or 8
+                if (length != 4 && length != 8) {
+                    length = (value < 0x100000000) ? 4 : 8;
+                }
+
+
+                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
+                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
+
+                for (int i = length - 1; i >= 0; i--) {
+                    pointerList[i] = value & 0xFF;
+                    value >>= 8;
+                }
+                final bytes = calloc<ForeignBytes>();
+                bytes.ref.len = length;
+                bytes.ref.data = frameData;
+                return RustBuffer.fromBytes(api, bytes.ref);
+            }
+
 
             class ForeignBytes extends Struct {
                 @Int32()
