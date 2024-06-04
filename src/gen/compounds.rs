@@ -81,7 +81,7 @@ macro_rules! impl_renderable_for_compound {
 
                             static RustBuffer lower(Api api, $type_label value) {
                                 if (value == null) {
-                                    return intToRustBuffer(api, 0);
+                                    return toRustBuffer(api, Uint8List.fromList([0]));
                                 }
 
                                 final length = $cl_name.allocationSize(value);
