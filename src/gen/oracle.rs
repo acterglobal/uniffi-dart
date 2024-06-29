@@ -379,6 +379,7 @@ impl<T: AsType> AsCodeType for T {
             Type::Float64 => Box::new(primitives::Float64CodeType),
             Type::Boolean => Box::new(primitives::BooleanCodeType),
             Type::String => Box::new(primitives::StringCodeType),
+            Type::Duration => Box::new(primitives::DurationCodeType),
             Type::Object { name, .. } => Box::new(objects::ObjectCodeType::new(name)),
             Type::Optional { inner_type } => Box::new(compounds::OptionalCodeType::new(
                 self.as_type(),
@@ -389,6 +390,9 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
+            Type::Record { name, module_path } => {
+                Box::new(records::RecordCodeType::new(name, module_path))
+            }
             _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
                                                                   // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
