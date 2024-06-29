@@ -51,6 +51,7 @@ impl<'a> TypeHelpersRenderer<'a> {
     }}
 
 impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
+    // Checks if the type imports for each type have already been added
     fn include_once_check(&self, name: &str, ty: &Type) -> bool {
         let mut map = self.include_once_names.borrow_mut();
         let found = map.insert(name.to_string(), ty.clone()).is_some();
@@ -136,7 +137,11 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
+    // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
+    // this is so the generator knows what helper code to include.
+
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
+        // Render all the types and their helpers
         let types_definitions = quote! {
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec, self)))
 
@@ -144,6 +149,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj, self)))
         };
 
+        // Render all the imports
         let imports: dart::Tokens = quote!();
 
         // let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
@@ -508,25 +514,9 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             }
 
             T rustCall<T>(T Function(Pointer<RustCallStatus>) callback) {
-                var callStatus = RustCallStatus.allocate();
+                final status = calloc<RustCallStatus>();
                 try {
-                    final returnValue = callback(callStatus);
-
-                    switch (callStatus.ref.code) {
-                    case CALL_SUCCESS:
-                        return returnValue;
-                    case CALL_ERROR:
-                        throw callStatus.ref.errorBuf;
-                    case CALL_PANIC:
-                        if (callStatus.ref.errorBuf.len > 0) {
-                            final message = utf8.decode(callStatus.ref.errorBuf.asUint8List());
-                            throw UniffiInternalError.panicked(message);
-                        } else {
-                            throw UniffiInternalError.panicked("Rust panic");
-                        }
-                    default:
-                        throw UniffiInternalError(callStatus.ref.code, null);
-                    }
+                return callback(status);
                 } finally {
                 calloc.free(status);
                 }
@@ -585,17 +575,23 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
                 }
 
-                Uint8List asUint8List() {
-                    return data.cast<Uint8>().asTypedList(len);
+                RustBuffer reserve(int additionalCapacity) {
+                return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_reserve().name())(this, additionalCapacity, status));
+                }
+
+                Uint8List asTypedList() {
+                final dataList = data.asTypedList(len);
+                final byteData = ByteData.sublistView(dataList);
+                return Uint8List.view(byteData.buffer);
                 }
             }
 
             RustBuffer toRustBuffer(Uint8List data) {
                 final length = data.length;
 
-                final Pointer<Uint8> frameData = calloc<Uint8>(length);
-                final pointerList = frameData.asTypedList(length);
-                pointerList.setAll(0, data);
+                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
+                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
+                pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
 
                 final bytes = calloc<ForeignBytes>();
                 bytes.ref.len = length;
@@ -725,6 +721,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     freeFunc(rustFuture);
                 }
             }
+
         };
 
         (types_helper_code, function_definitions)
