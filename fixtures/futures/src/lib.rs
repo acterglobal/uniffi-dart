@@ -1,63 +1,64 @@
-// use uniffi;
+use uniffi;
 
-//  use std::{
-//     future::Future,
-//     pin::Pin,
-//     sync::{Arc, Mutex, MutexGuard},
-//     task::{Context, Poll, Waker},
-//     thread,
-//     time::Duration,
-// };
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex, MutexGuard},
+    task::{Context, Poll, Waker},
+    thread,
+    time::Duration,
+};
 
-// /// Non-blocking timer future.
-// pub struct TimerFuture {
-//     shared_state: Arc<Mutex<SharedState>>,
-// }
 
-// struct SharedState {
-//     completed: bool,
-//     waker: Option<Waker>,
-// }
+/// Non-blocking timer future.
+pub struct TimerFuture {
+    shared_state: Arc<Mutex<SharedState>>,
+}
 
-// impl Future for TimerFuture {
-//     type Output = ();
+struct SharedState {
+    completed: bool,
+    waker: Option<Waker>,
+}
 
-//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-//         let mut shared_state = self.shared_state.lock().unwrap();
+impl Future for TimerFuture {
+    type Output = ();
 
-//         if shared_state.completed {
-//             Poll::Ready(())
-//         } else {
-//             shared_state.waker = Some(cx.waker().clone());
-//             Poll::Pending
-//         }
-//     }
-// }
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut shared_state = self.shared_state.lock().unwrap();
 
-// impl TimerFuture {
-//     pub fn new(duration: Duration) -> Self {
-//         let shared_state = Arc::new(Mutex::new(SharedState {
-//             completed: false,
-//             waker: None,
-//         }));
+        if shared_state.completed {
+            Poll::Ready(())
+        } else {
+            shared_state.waker = Some(cx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
 
-//         let thread_shared_state = shared_state.clone();
+impl TimerFuture {
+    pub fn new(duration: Duration) -> Self {
+        let shared_state = Arc::new(Mutex::new(SharedState {
+            completed: false,
+            waker: None,
+        }));
 
-//         // Let's mimic an event coming from somewhere else, like the system.
-//         thread::spawn(move || {
-//             thread::sleep(duration);
+        let thread_shared_state = shared_state.clone();
 
-//             let mut shared_state: MutexGuard<_> = thread_shared_state.lock().unwrap();
-//             shared_state.completed = true;
+        // Let's mimic an event coming from somewhere else, like the system.
+        thread::spawn(move || {
+            thread::sleep(duration);
 
-//             if let Some(waker) = shared_state.waker.take() {
-//                 waker.wake();
-//             }
-//         });
+            let mut shared_state: MutexGuard<_> = thread_shared_state.lock().unwrap();
+            shared_state.completed = true;
 
-//         Self { shared_state }
-//     }
-// }
+            if let Some(waker) = shared_state.waker.take() {
+                waker.wake();
+            }
+        });
+
+        Self { shared_state }
+    }
+}
 
 // /// Non-blocking timer future.
 // pub struct BrokenTimerFuture {
@@ -117,18 +118,18 @@
 //     }
 // }
 
-// #[uniffi::export]
-// pub fn greet(who: String) -> String {
-//     format!("Hello, {who}")
-// }
+#[uniffi::export]
+pub fn greet(who: String) -> String {
+    format!("Hello, {who}")
+}
 
-// #[uniffi::export]
-// pub async fn always_ready() -> bool {
-//     true
-// }
+#[uniffi::export]
+pub async fn always_ready() -> bool {
+    true
+}
 
-// #[uniffi::export]
-// pub async fn void_function() {}
+#[uniffi::export]
+pub async fn void_function() {}
 
 // #[uniffi::export]
 // pub async fn say() -> String {
@@ -144,20 +145,22 @@
 //     format!("Hello, {who}!")
 // }
 
-// #[uniffi::export]
-// pub async fn sleep(ms: u16) -> bool {
-//     TimerFuture::new(Duration::from_millis(ms.into())).await;
+#[uniffi::export]
+pub async fn sleep(ms: u16) -> bool {
+    TimerFuture::new(Duration::from_millis(ms.into())).await;
 
-//     true
-// }
+    true
+}
 
-// // Our error.
+// Our error.
+// Our error.
 // #[derive(uniffi::Error, Debug)]
 // pub enum MyError {
 //     Foo,
 // }
 
-// // An async function that can throw.
+// An async function that can throw.
+// An async function that can throw.
 // #[uniffi::export]
 // pub async fn fallible_me(do_fail: bool) -> Result<u8, MyError> {
 //     if do_fail {
@@ -167,12 +170,11 @@
 //     }
 // }
 
-// #[uniffi::export(async_runtime = "tokio")]
-// pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
-//     tokio::time::sleep(Duration::from_millis(ms.into())).await;
-
-//     format!("Hello, {who} (with Tokio)!")
-// }
+#[uniffi::export(async_runtime = "tokio")]
+pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
+    tokio::time::sleep(Duration::from_millis(ms.into())).await;
+    format!("Hello, {who} (with Tokio)!")
+}
 
 // #[derive(uniffi::Record)]
 // pub struct MyRecord {
@@ -193,5 +195,5 @@
 //     )
 //     .await;
 // }
-
-// uniffi::include_scaffolding!("api");
+ 
+uniffi::include_scaffolding!("api");
