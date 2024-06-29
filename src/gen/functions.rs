@@ -6,8 +6,7 @@ use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
 
 use super::oracle::AsCodeType;
-use super::render::{Renderable, TypeHelperRenderer};
-use super::utils::{fn_name, var_name};
+use super::render::{ TypeHelperRenderer};
 
 // #[allow(unused_variables)]
 // pub fn generate_function(
@@ -61,7 +60,7 @@ use super::utils::{fn_name, var_name};
 
 pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     if func.takes_self() {} // TODO: Do something about this condition
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (
@@ -77,7 +76,7 @@ pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) 
             Future<$ret> $(DartCodeOracle::fn_name(func.name()))($args) {
                 return uniffiRustCallAsync(
                   () => $(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
                   ),
                   $(DartCodeOracle::async_poll(func, type_helper.get_ci())),
                   $(DartCodeOracle::async_complete(func, type_helper.get_ci())),
@@ -91,7 +90,7 @@ pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) 
         quote!(
             $ret $(DartCodeOracle::fn_name(func.name()))($args) {
                 return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),) status
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
                 )));
             }
         )
