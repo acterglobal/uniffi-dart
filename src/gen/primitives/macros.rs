@@ -23,19 +23,19 @@ macro_rules! impl_code_type_for_primitive {
 
                 // The following must create an instance of the converter object
                 fn lower(&self) -> String {
-                    format!("{}().lower", self.ffi_converter_name())
+                    format!("{}.lower", self.ffi_converter_name())
                 }
 
                 fn write(&self) -> String {
-                    format!("{}().write", self.ffi_converter_name())
+                    format!("{}.write", self.ffi_converter_name())
                 }
 
                 fn lift(&self) -> String {
-                    format!("{}().lift", self.ffi_converter_name())
+                    format!("{}.lift", self.ffi_converter_name())
                 }
 
                 fn read(&self) -> String {
-                    format!("{}().read", self.ffi_converter_name())
+                    format!("{}.read", self.ffi_converter_name())
                 }
             }
         }
