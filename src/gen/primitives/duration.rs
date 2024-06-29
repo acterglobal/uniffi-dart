@@ -6,7 +6,7 @@ use crate::gen::{
 use super::paste;
 use genco::lang::dart;
 
-impl_code_type_for_primitive!(DurationCodeType, "duration", "Duration");
+impl_code_type_for_primitive!(DurationCodeType, "Duration", "Duration");
 
 impl Renderable for DurationCodeType {
     fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
@@ -17,8 +17,8 @@ impl Renderable for DurationCodeType {
                 }
 
                 static RustBuffer lower(Api api, Duration value) {
-                    final buf = Uint8List(12);
-                    FfiConverterDuration.write(api, value, buf);
+                    final buf = Uint8List(allocationSize(value));
+                    write(api, value, buf);
                     return toRustBuffer(api, buf);
                 }
 
@@ -37,12 +37,11 @@ impl Renderable for DurationCodeType {
                     final bytes = buf.buffer.asByteData(buf.offsetInBytes, 12);
                     bytes.setUint64(0, value.inSeconds);
                     final ms = (value.inMicroseconds - (value.inSeconds * 1000000)) * 1000;
-                    if (ms > 0) {
-                        bytes.setUint32(8, ms.toInt());
-                    }
+                    bytes.setUint32(8, ms.toInt());
                     return 12;
                 }
             }
         }
     }
 }
+
