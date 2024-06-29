@@ -64,7 +64,7 @@ macro_rules! impl_renderable_for_primitive {
                         // static $type_signature lift($type_signature value) {
                         //     return $cl_name.read(buf.asUint8List()).value;
                         // }
-                        //! According to generated funtion signatures, we won't need to convert number types
+                        // According to generated funtion signatures, we won't need to convert number types
                         static $type_signature lift($type_signature value) => value;
 
 
