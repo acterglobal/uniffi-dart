@@ -187,7 +187,7 @@ macro_rules! impl_renderable_for_primitive {
                     class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
                         int lift(RustBuffer buf, [int offset = 0]) {
-                            // final uint_list = buf.toIntList();
+                            // final uint_list = buf.asUint8List();
                             // return uint_list.buffer.asByteData().get$canonical_name(1);
                         }
 

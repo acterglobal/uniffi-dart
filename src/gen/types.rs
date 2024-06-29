@@ -250,7 +250,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             //         throw callStatus.ref.errorBuf;
             //     case CALL_PANIC:
             //         if (callStatus.ref.errorBuf.len > 0) {
-            //             final message = liftString(callStatus.ref.errorBuf.toIntList());
+            //             final message = liftString(callStatus.ref.errorBuf.asUint8List());
             //             calloc.free(callStatus);
             //             throw UniffiInternalError.panicked(message);
             //         } else {
@@ -289,7 +289,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             //         return rustCall((res) => _allocate(size, res));
             //     }
 
-            //     void deallocate(Api api) {
+            //     void deallocate() {
             //         final _freePtr = api._lookup<
             //         NativeFunction<
             //             Void Function(RustBuffer, Pointer<RustCallStatus>)>>($(format!("\"{}\"", self.ci.ffi_rustbuffer_free().name())));
@@ -297,7 +297,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             //         rustCall((res) => _free(this, res));
             //     }
 
-            //     Uint8List toIntList() {
+            //     Uint8List asUint8List() {
             //         final buf = Uint8List(len);
             //         final precast = data.cast<Uint8>();
             //         for (int i = 0; i < len; i++) {
@@ -575,13 +575,8 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
                 }
 
-                Uint8List toIntList() {
-                    final buf = Uint8List(len);
-                    final precast = data.cast<Uint8>();
-                    for (int i = 0; i < len; i++) {
-                        buf[i] = precast.elementAt(i).value;
-                    }
-                    return buf;
+                Uint8List asUint8List() {
+                    return data.cast<Uint8>().asTypedList(len);
                 }
             }
 
