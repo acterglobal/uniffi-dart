@@ -64,7 +64,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
             }
 
             class $ffi_converter_name {
-                static $cls_name lift(Api api, RustBuffer buffer) {
+                static $cls_name lift( RustBuffer buffer) {
                     final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
                     switch(index) {
                         $(for (index, variant) in obj.variants().iter().enumerate() =>
@@ -76,7 +76,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     }
                 }
 
-                static RustBuffer lower(Api api, $cls_name input) {
+                static RustBuffer lower( $cls_name input) {
                     return toRustBuffer(api, createUint8ListFromInt(input.index + 1));
                 }
             }
@@ -94,7 +94,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 
                     $(class_name(obj.name()))$cls_name._($(for field in obj.fields() => this.$(var_name(field.name())), ));
 
-                    static LiftRetVal<$(class_name(obj.name()))$cls_name> read(Api api, Uint8List buf) {
+                    static LiftRetVal<$(class_name(obj.name()))$cls_name> read( Uint8List buf) {
                         int new_offset = buf.offsetInBytes;
 
                         $(for f in obj.fields() =>
@@ -120,7 +120,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     }
 
                     @override
-                    int write(Api api, Uint8List buf) {
+                    int write( Uint8List buf) {
                         buf.buffer.asByteData(buf.offsetInBytes).setInt32(0, $(index + 1)); // write index into first position;
                         int new_offset = buf.offsetInBytes + 4;
 
@@ -138,15 +138,15 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
             abstract class $cls_name {
                 RustBuffer lower(Api api);
                 int allocationSize();
-                int write(Api api, Uint8List buf);
+                int write( Uint8List buf);
             }
 
             class $ffi_converter_name {
-                static $cls_name lift(Api api, RustBuffer buffer) {
+                static $cls_name lift( RustBuffer buffer) {
                     return $ffi_converter_name.read(api, buffer.asUint8List()).value;
                 }
 
-                static LiftRetVal<$cls_name> read(Api api, Uint8List buf) {
+                static LiftRetVal<$cls_name> read( Uint8List buf) {
                     final index = buf.buffer.asByteData(buf.offsetInBytes).getInt32(0);
                     final subview = Uint8List.view(buf.buffer, buf.offsetInBytes + 4);
                     switch(index) {
@@ -158,7 +158,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     }
                 }
 
-                static RustBuffer lower(Api api, $cls_name value) {
+                static RustBuffer lower( $cls_name value) {
                     return value.lower(api);
                 }
 
@@ -166,7 +166,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     return value.allocationSize();
                 }
 
-                static int write(Api api, $cls_name value, Uint8List buf) {
+                static int write( $cls_name value, Uint8List buf) {
                     return value.write(api, buf);
                 }
             }

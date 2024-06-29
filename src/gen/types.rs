@@ -321,7 +321,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             // // TODO: Make all the types use me!
             // abstract class FfiConverter<T, V> {
             //     T lift(V value, [int offset]);
-            //     V lower(Api api,T value);
+            //     V lower(T value);
             //     T read(ByteBuffer buf);
             //     int size([T value]);
             //     void write(T value, ByteBuffer buf);

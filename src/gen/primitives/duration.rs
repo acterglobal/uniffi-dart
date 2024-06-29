@@ -12,17 +12,17 @@ impl Renderable for DurationCodeType {
     fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         quote! {
             class FfiConverterDuration {
-                static Duration lift(Api api, RustBuffer buf) {
+                static Duration lift( RustBuffer buf) {
                     return FfiConverterDuration.read(api, buf.asUint8List()).value;
                 }
 
-                static RustBuffer lower(Api api, Duration value) {
+                static RustBuffer lower( Duration value) {
                     final buf = Uint8List(allocationSize(value));
                     write(api, value, buf);
                     return toRustBuffer(api, buf);
                 }
 
-                static LiftRetVal<Duration> read(Api api, Uint8List buf) {
+                static LiftRetVal<Duration> read( Uint8List buf) {
                     final bytes = buf.buffer.asByteData(buf.offsetInBytes, 12);
                     final seconds = bytes.getUint64(0);
                     final micros = (bytes.getUint32(8) ~/ 1000);
@@ -33,7 +33,7 @@ impl Renderable for DurationCodeType {
                     return 12;
                 }
 
-                static int write(Api api, Duration value, Uint8List buf) {
+                static int write( Duration value, Uint8List buf) {
                     final bytes = buf.buffer.asByteData(buf.offsetInBytes, 12);
                     bytes.setUint64(0, value.inSeconds);
                     final ms = (value.inMicroseconds - (value.inSeconds * 1000000)) * 1000;
