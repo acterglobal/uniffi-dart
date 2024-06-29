@@ -61,14 +61,14 @@ macro_rules! impl_renderable_for_compound {
                         class $cl_name {
 
                             static $type_label lift( RustBuffer buf) {
-                                return $cl_name.read(api, buf.asUint8List()).value;
+                                return $cl_name.read(buf.asUint8List()).value;
                             }
 
                             static LiftRetVal<$type_label> read( Uint8List buf) {
                                 if (ByteData.view(buf.buffer, buf.offsetInBytes).getInt8(0) == 0){
                                     return LiftRetVal(null, 1);
                                 }
-                                return $inner_cl_converter_name.read(api, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)).copyWithOffset(1);
+                                return $inner_cl_converter_name.read(Uint8List.view(buf.buffer, buf.offsetInBytes + 1)).copyWithOffset(1);
                             }
 
 
@@ -81,7 +81,7 @@ macro_rules! impl_renderable_for_compound {
 
                             static RustBuffer lower( $type_label value) {
                                 if (value == null) {
-                                    return toRustBuffer(api, Uint8List.fromList([0]));
+                                    return toRustBuffer(Uint8List.fromList([0]));
                                 }
 
                                 final length = $cl_name.allocationSize(value);
@@ -89,12 +89,12 @@ macro_rules! impl_renderable_for_compound {
                                 final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
                                 final buf = frameData.asTypedList(length); // Create a list that uses our pointer to copy in the data.
 
-                                $cl_name.write(api, value, buf);
+                                $cl_name.write(value, buf);
 
                                 final bytes = calloc<ForeignBytes>();
                                 bytes.ref.len = length;
                                 bytes.ref.data = frameData;
-                                return RustBuffer.fromBytes(api, bytes.ref);
+                                return RustBuffer.fromBytes(bytes.ref);
                             }
 
                             static int write( $type_label value, Uint8List buf) {
@@ -105,7 +105,7 @@ macro_rules! impl_renderable_for_compound {
                                 // we have a value
                                 buf[0] = 1;
 
-                                return $inner_cl_converter_name.write(api, value, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)) + 1;
+                                return $inner_cl_converter_name.write(value, Uint8List.view(buf.buffer, buf.offsetInBytes + 1)) + 1;
                             }
                         }
                     }
@@ -137,7 +137,7 @@ macro_rules! impl_renderable_for_compound {
                         class $cl_name {
 
                             static $type_label lift( RustBuffer buf) {
-                                return $cl_name.read(api, buf.asUint8List()).value;
+                                return $cl_name.read(buf.asUint8List()).value;
                             }
 
                             static LiftRetVal<$type_label> read( Uint8List buf) {
@@ -145,7 +145,7 @@ macro_rules! impl_renderable_for_compound {
                                 final length = buf.buffer.asByteData(buf.offsetInBytes).getInt32(0);
                                 int offset = buf.offsetInBytes + 4;
                                 for (var i = 0; i < length; i++) {
-                                    final ret = $inner_cl_converter_name.read(api, Uint8List.view(buf.buffer, offset));
+                                    final ret = $inner_cl_converter_name.read(Uint8List.view(buf.buffer, offset));
                                     offset += ret.bytesRead;
                                     res.add(ret.value);
                                 }
@@ -156,7 +156,7 @@ macro_rules! impl_renderable_for_compound {
                                 buf.buffer.asByteData(buf.offsetInBytes).setInt32(0, value.length);
                                 int offset = buf.offsetInBytes + 4;
                                 for (var i = 0; i < value.length; i++) {
-                                    offset += $inner_cl_converter_name.write(api, value[i], Uint8List.view(buf.buffer, offset));
+                                    offset += $inner_cl_converter_name.write(value[i], Uint8List.view(buf.buffer, offset));
                                 }
                                 return offset - buf.offsetInBytes;
                             }
@@ -166,8 +166,8 @@ macro_rules! impl_renderable_for_compound {
 
                             static RustBuffer lower( $type_label value) {
                                 final buf = Uint8List(allocationSize(value));
-                                write(api, value, buf);
-                                return toRustBuffer(api, buf);
+                                write(value, buf);
+                                return toRustBuffer(buf);
                             }
                         }
                     }

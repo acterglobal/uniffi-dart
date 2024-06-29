@@ -235,7 +235,7 @@ impl DartCodeOracle {
         match ty {
             Type::Object { .. } => inner,
             Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
-                quote!(toRustBuffer(api, $inner))
+                quote!(toRustBuffer($inner))
             }
             _ => inner,
         }
@@ -259,7 +259,7 @@ impl DartCodeOracle {
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Record { .. }
-            | Type::Optional { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lift(api, $inner)),
+            | Type::Optional { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lift($inner)),
             _ => todo!("lift Type::{:?}", ty),
         }
     }
@@ -283,7 +283,7 @@ impl DartCodeOracle {
             | Type::Enum { .. }
             | Type::Optional { .. }
             | Type::Record { .. }
-            | Type::Sequence { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lower(api, $inner)),
+            | Type::Sequence { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lower($inner)),
             _ => todo!("lower Type::{:?}", ty),
         }
     }

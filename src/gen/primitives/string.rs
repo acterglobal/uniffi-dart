@@ -25,7 +25,7 @@ impl Renderable for StringCodeType {
                 }
 
                 static RustBuffer lower( String value) {
-                    return toRustBuffer(api, Utf8Encoder().convert(value));
+                    return toRustBuffer(Utf8Encoder().convert(value));
                 }
 
                 static LiftRetVal<String> read( Uint8List buf) {

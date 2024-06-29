@@ -23,11 +23,11 @@ impl Renderable for BooleanCodeType {
                 }
 
                 static LiftRetVal<bool> read( Uint8List buf) {
-                    return LiftRetVal(FfiConverterBool.lift(api, buf.first), 1);
+                    return LiftRetVal(FfiConverterBool.lift(buf.first), 1);
                 }
 
                 static RustBuffer lowerIntoRustBuffer( bool value) {
-                    return toRustBuffer(api, Uint8List.fromList([FfiConverterBool.lower(api, value)]));
+                    return toRustBuffer(Uint8List.fromList([FfiConverterBool.lower(value)]));
                 }
 
                 static int allocationSize([bool value = false]) {

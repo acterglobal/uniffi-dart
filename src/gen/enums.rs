@@ -77,7 +77,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
 
                 static RustBuffer lower( $cls_name input) {
-                    return toRustBuffer(api, createUint8ListFromInt(input.index + 1));
+                    return toRustBuffer(createUint8ListFromInt(input.index + 1));
                 }
             }
         }
@@ -110,8 +110,8 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     @override
                     RustBuffer lower(Api api) {
                         final buf = Uint8List(allocationSize());
-                        write(api, buf);
-                        return toRustBuffer(api, buf);
+                        write(buf);
+                        return toRustBuffer(buf);
                     }
 
                     @override
@@ -125,7 +125,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         int new_offset = buf.offsetInBytes + 4;
 
                         $(for f in obj.fields() =>
-                        new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(api, $(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
+                        new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write($(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
                         )
 
                         return new_offset - buf.offsetInBytes;
@@ -143,7 +143,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 
             class $ffi_converter_name {
                 static $cls_name lift( RustBuffer buffer) {
-                    return $ffi_converter_name.read(api, buffer.asUint8List()).value;
+                    return $ffi_converter_name.read(buffer.asUint8List()).value;
                 }
 
                 static LiftRetVal<$cls_name> read( Uint8List buf) {
@@ -152,7 +152,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     switch(index) {
                         $(for (index, variant) in obj.variants().iter().enumerate() =>
                         case $(index + 1):
-                            return $(variant.name())$cls_name.read(api, subview);
+                            return $(variant.name())$cls_name.read(subview);
                         )
                         default:  throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
                     }
@@ -167,7 +167,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
 
                 static int write( $cls_name value, Uint8List buf) {
-                    return value.write(api, buf);
+                    return value.write(buf);
                 }
             }
 

@@ -13,13 +13,13 @@ impl Renderable for DurationCodeType {
         quote! {
             class FfiConverterDuration {
                 static Duration lift( RustBuffer buf) {
-                    return FfiConverterDuration.read(api, buf.asUint8List()).value;
+                    return FfiConverterDuration.read(buf.asUint8List()).value;
                 }
 
                 static RustBuffer lower( Duration value) {
                     final buf = Uint8List(allocationSize(value));
-                    write(api, value, buf);
-                    return toRustBuffer(api, buf);
+                    write(value, buf);
+                    return toRustBuffer(buf);
                 }
 
                 static LiftRetVal<Duration> read( Uint8List buf) {

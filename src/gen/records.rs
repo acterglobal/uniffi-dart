@@ -59,14 +59,14 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
 
         class $ffi_conv_name {
             static $cls_name lift( RustBuffer buf) {
-                return $ffi_conv_name.read(api, buf.asUint8List()).value;
+                return $ffi_conv_name.read(buf.asUint8List()).value;
             }
 
             static LiftRetVal<$cls_name> read( Uint8List buf) {
                 int new_offset = 0;
 
                 $(for f in obj.fields() =>
-                    final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(api, Uint8List.view(buf.buffer, new_offset));
+                    final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(Uint8List.view(buf.buffer, new_offset));
                     final $(var_name(f.name())) = $(var_name(f.name()))_lifted.value;
                     new_offset += $(var_name(f.name()))_lifted.bytesRead;
                 )
@@ -78,15 +78,15 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
             static RustBuffer lower( $cls_name value) {
                 final total_length = $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize(value.$(var_name(f.name()))) + ) 0;
                 final buf = Uint8List(total_length);
-                $ffi_conv_name.write(api, value, buf);
-                return toRustBuffer(api, buf);
+                $ffi_conv_name.write(value, buf);
+                return toRustBuffer(buf);
             }
 
             static int write( $cls_name value, Uint8List buf) {
                 int new_offset = buf.offsetInBytes;
 
                 $(for f in obj.fields() =>
-                new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(api, value.$(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
+                new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(value.$(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
                 )
                 return new_offset - buf.offsetInBytes;
             }
