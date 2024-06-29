@@ -63,6 +63,8 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
                 return $(cls_name)._(ptr);
             }
 
+            // TODO: Bring back object lowering from main
+
             Pointer<Void> uniffiClonePointer() {
                 return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(obj.ffi_object_clone().name())(_ptr, status));
             }
