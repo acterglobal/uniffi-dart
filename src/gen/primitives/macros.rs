@@ -142,4 +142,3 @@ macro_rules! impl_renderable_for_primitive {
         }
     };
 }
-
