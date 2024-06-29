@@ -504,7 +504,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 throw errorHandler.lift(status.errorBuf);
                 } else if (status.code == CALL_UNEXPECTED_ERROR) {
                 if (status.errorBuf.len > 0) {
-                    throw UniffiInternalError.panicked(FfiConverterString().lift(status.errorBuf));
+                    throw UniffiInternalError.panicked(FfiConverterString.lift(status.errorBuf));
                 } else {
                     throw UniffiInternalError.panicked("Rust panic");
                 }
@@ -614,6 +614,16 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
                 void free() {
                 calloc.free(data);
+                }
+            }
+
+            class LiftRetVal<T> {
+                final T value;
+                final int bytesRead;
+                const LiftRetVal(this.value, this.bytesRead);
+
+                LiftRetVal<T> copyWithOffset(int offset) {
+                    return LiftRetVal(value, bytesRead + offset);
                 }
             }
 
