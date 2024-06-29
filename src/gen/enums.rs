@@ -98,7 +98,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         int new_offset = buf.offsetInBytes;
 
                         $(for f in obj.fields() =>
-                            final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(api,Uint8List.view(buf.buffer, new_offset));
+                            final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(Uint8List.view(buf.buffer, new_offset));
                             final $(var_name(f.name())) = $(var_name(f.name()))_lifted.value;
                             new_offset += $(var_name(f.name()))_lifted.bytesRead;
                         )
@@ -108,7 +108,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     }
 
                     @override
-                    RustBuffer lower(Api api) {
+                    RustBuffer lower() {
                         final buf = Uint8List(allocationSize());
                         write(buf);
                         return toRustBuffer(buf);
@@ -136,7 +136,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 
         quote! {
             abstract class $cls_name {
-                RustBuffer lower(Api api);
+                RustBuffer lower();
                 int allocationSize();
                 int write( Uint8List buf);
             }
@@ -159,7 +159,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 }
 
                 static RustBuffer lower( $cls_name value) {
-                    return value.lower(api);
+                    return value.lower();
                 }
 
                 static int allocationSize($cls_name value) {
