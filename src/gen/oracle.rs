@@ -251,7 +251,23 @@ impl<T: AsType> AsCodeType for T {
             Type::Record { name, module_path } => {
                 Box::new(records::RecordCodeType::new(name, module_path))
             }
-            _ => todo!("As Type for Type::{:?}", self.as_type()),
+            _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
+
+                                                                  // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
+                                                                  // Type::Duration => Box::new(miscellany::DurationCodeType),
+
+                                                                  // ,
+                                                                  // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
+                                                                  // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
+                                                                  // Type::CallbackInterface(id) => {
+                                                                  //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
+                                                                  // }
+                                                                  // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
+                                                                  // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
+                                                                  // ,
+                                                                  // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
+                                                                  // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
+                                                                  // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
         }
     }
 }
