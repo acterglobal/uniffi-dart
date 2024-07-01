@@ -32,7 +32,6 @@ void main() {
       //expect(result, null);
     });
     // Less than or equal to time
-    print(time.inMilliseconds);
     expect(time.inMilliseconds <= 10, true);
   });
 
@@ -85,7 +84,6 @@ void main() {
         expect(false, true); // should never be reached
       }
     });
-    print('fallible function (with result): ${time1.inMilliseconds}ms');
     expect(time1.inMilliseconds <= 100, true);
 
     final time2 = await measureTime(() async {
@@ -96,7 +94,6 @@ void main() {
         expect(true, true);
       }
     });
-    print('fallible function (with exception): ${time2.inMilliseconds}ms');
     expect(time2.inMilliseconds <= 100, true);
   });
 

@@ -699,14 +699,14 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     await completer.future;
                     callback.close();
 
-                    print("error is after");
+                  
                     final status = calloc<RustCallStatus>();
                     try {
-                        print("completer");
+                       
                         final result = completeFunc(rustFuture, status);
-                        print("checking status");
+                      
                         // checkCallStatus(errorHandler ?? NullRustCallStatusErrorHandler(), status.ref);
-                        print("lifting");
+                       
                         return liftFunc(result);
                     } finally {
                         calloc.free(status);
