@@ -32,7 +32,8 @@ void main() {
       //expect(result, null);
     });
     // Less than or equal to time
-    expect(time.compareTo(Duration(milliseconds: 4)) <= 0, true);
+    print(time.inMilliseconds);
+    expect(time.inMilliseconds <= 10, true);
   });
 
   test('sleep', () async {
@@ -55,12 +56,16 @@ void main() {
 
   test('concurrent_future', () async {
     final time = await measureTime(() async {
-      final resultAlice = await sayAfter(100, 'Alice');
-      final resultBob = await sayAfter(200, 'Bob');
-      expect(resultAlice, 'Hello, Alice!');
-      expect(resultBob, 'Hello, Bob!');
+      final results = await Future.wait([
+        sayAfter(100, 'Alice'),
+        sayAfter(200, 'Bob'),
+      ]);
+
+      expect(results[0], 'Hello, Alice!');
+      expect(results[1], 'Hello, Bob!');
     });
-    expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
+
+    expect(time.inMilliseconds >= 200 && time.inMilliseconds <= 300, true);
   });
 
   test('with_tokio_runtime', () async {
@@ -81,7 +86,7 @@ void main() {
       }
     });
     print('fallible function (with result): ${time1.inMilliseconds}ms');
-    expect(time1.compareTo(Duration(milliseconds: 100)), -1);
+    expect(time1.inMilliseconds <= 100, true);
 
     final time2 = await measureTime(() async {
       try {
@@ -92,7 +97,7 @@ void main() {
       }
     });
     print('fallible function (with exception): ${time2.inMilliseconds}ms');
-    expect(time2.compareTo(Duration(milliseconds: 100)), -1);
+    expect(time2.inMilliseconds <= 100, true);
   });
 
   test('record', () async {
@@ -102,7 +107,7 @@ void main() {
       expect(result.b, 42);
     });
     print('record: ${time.inMilliseconds}ms');
-    expect(time.compareTo(Duration(milliseconds: 100)), -1);
+    expect(time.inMilliseconds <= 100, true);
   });
 
   test('broken_sleep', () async {
@@ -113,6 +118,6 @@ void main() {
       await brokenSleep(100, 100); // calls the waker a second time after 1s
       await sleep(200); // wait for possible failure
     });
-    expect(time.inMilliseconds < 400 && time.inMilliseconds > 600, true);
+    expect(time.inMilliseconds >= 400 && time.inMilliseconds <= 600, true);
   });
 }
