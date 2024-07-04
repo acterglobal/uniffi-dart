@@ -508,9 +508,25 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             }
 
             T rustCall<T>(T Function(Pointer<RustCallStatus>) callback) {
-                final status = calloc<RustCallStatus>();
+                var callStatus = RustCallStatus.allocate();
                 try {
-                return callback(status);
+                    final returnValue = callback(callStatus);
+
+                    switch (callStatus.ref.code) {
+                    case CALL_SUCCESS:
+                        return returnValue;
+                    case CALL_ERROR:
+                        throw callStatus.ref.errorBuf;
+                    case CALL_PANIC:
+                        if (callStatus.ref.errorBuf.len > 0) {
+                            final message = utf8.decode(callStatus.ref.errorBuf.asUint8List());
+                            throw UniffiInternalError.panicked(message);
+                        } else {
+                            throw UniffiInternalError.panicked("Rust panic");
+                        }
+                    default:
+                        throw UniffiInternalError(callStatus.ref.code, null);
+                    }
                 } finally {
                 calloc.free(status);
                 }
