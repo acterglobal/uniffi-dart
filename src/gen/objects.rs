@@ -1,13 +1,12 @@
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{Method, Object};
+use uniffi_bindgen::interface::{AsType, Method, Object};
 
 use crate::gen::oracle::DartCodeOracle;
+use crate::gen::render::{AsRenderable, Renderable, TypeHelperRenderer};
+use crate::gen::oracle::AsCodeType;
 
-use crate::gen::render::{Renderable, TypeHelperRenderer};
-
-use super::functions::generate_for_callable;
-use super::utils::{class_name, fn_name};
+use super::utils::{class_name, fn_name, var_name};
 
 #[derive(Debug)]
 pub struct ObjectCodeType {
@@ -39,11 +38,6 @@ impl CodeType for ObjectCodeType {
 }
 
 impl Renderable for ObjectCodeType {
-    // Semantically, it may make sense to render object here, but we don't have enough information. So we render it with help from type_helper
-    fn render(&self) -> dart::Tokens {
-        quote!()
-    }
-
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
             quote!()
@@ -55,41 +49,68 @@ impl Renderable for ObjectCodeType {
     }
 }
 
-// Let's refactor this later
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     let cls_name = &class_name(obj.name());
     quote! {
         class $cls_name {
-            final Api _api;
             final Pointer<Void> _ptr;
 
-            $(cls_name)._(this._api, this._ptr);
+            $(cls_name)._(this._ptr);
 
-            factory $(cls_name).lift(Api api, Pointer<Void> ptr) {
-                return $(cls_name)._(api, ptr);
+            factory $(cls_name).lift(Pointer<Void> ptr) {
+                return $(cls_name)._(ptr);
             }
 
             Pointer<Void> uniffiClonePointer() {
-                return rustCall((status) => _api.$(obj.ffi_object_clone().name())(_ptr, status));
+                return rustCall((status) => _UniffiLib.instance.$(obj.ffi_object_clone().name())(_ptr, status));
             }
 
             void drop() {
-                rustCall((status) => _api.$(obj.ffi_object_free().name())(_ptr, status));
+                rustCall((status) => _UniffiLib.instance.$(obj.ffi_object_free().name())(_ptr, status));
             }
 
-            $(for mt in &obj.methods() => $(
-                generate_method(mt, type_helper))
-            )
+            $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
         }
     }
 }
 
-pub fn generate_method(fun: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    generate_for_callable(
-        "_api",
-        type_helper,
-        fun,
-        fn_name(fun.name()),
-        fun.ffi_func(),
-    )
+pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    if func.takes_self_by_arc() {} // TODO: Do something about this condition
+    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+
+    let (ret, lifter) = if let Some(ret) = func.return_type() {
+        (
+            ret.as_renderable().render_type(ret, type_helper),
+            quote!($(ret.as_codetype().lift())),
+        )
+    } else {
+        (quote!(void), quote!((_) {}))
+    };
+
+    if func.is_async() {
+        quote!(
+            Future<$ret> $(DartCodeOracle::fn_name(func.name()))($args) {
+                return uniffiRustCallAsync(
+                  () => _UniffiLib.instance.$(func.ffi_func().name())(
+                    uniffiClonePointer(),
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                  ),
+                  $(DartCodeOracle::async_poll(func, type_helper.get_ci())),
+                  $(DartCodeOracle::async_complete(func, type_helper.get_ci())),
+                  $(DartCodeOracle::async_free(func, type_helper.get_ci())),
+                  $lifter,
+                );
+            }
+        )
+    } else {
+        quote!(
+            $ret $(DartCodeOracle::fn_name(func.name()))($args) {
+                return rustCall((status) => $lifter(_UniffiLib.instance.$(func.ffi_func().name())(
+                    uniffiClonePointer(),
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),) status
+                )));
+            }
+        )
+    }
 }
+
