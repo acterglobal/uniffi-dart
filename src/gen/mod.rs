@@ -134,7 +134,7 @@ impl<'a> DartWrapper<'a> {
                 };
 
                 let lookup_fn = quote! {
-                    _dylib.lookupFunction
+                    _dylib.lookupFunction<
                         $native_return_type Function($(&native_args)),
                         $(&dart_return_type) Function($(&dart_args))
                     >($(format!("\"{fun_name}\"")))

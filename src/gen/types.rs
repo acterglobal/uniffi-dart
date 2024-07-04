@@ -238,7 +238,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                         throw callStatus.ref.errorBuf;
                     case CALL_PANIC:
                         if (callStatus.ref.errorBuf.len > 0) {
-                            final message = utf8.decode(callStatus.ref.errorBuf.asTypedList());
+                            final message = utf8.decode(callStatus.ref.errorBuf.asUint8List());
                             throw UniffiInternalError.panicked(message);
                         } else {
                             throw UniffiInternalError.panicked("Rust panic");
