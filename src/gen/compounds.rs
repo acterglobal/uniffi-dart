@@ -182,3 +182,4 @@ impl_code_type_for_compound!(SequenceCodeType, "List<{}>", "Sequence{}");
 
 impl_renderable_for_compound!(OptionalCodeType, "{}?", "FfiConverterOptional{}");
 impl_renderable_for_compound!(SequenceCodeType, "FfiConverterSequence{}");
+

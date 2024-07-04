@@ -44,7 +44,6 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
-
     pub fn class_name(nm: &str) -> String {
         Self::sanitize_identifier(&nm.to_upper_camel_case())
     }
@@ -66,16 +65,11 @@ impl DartCodeOracle {
 
     /// Get the idiomatic Dart rendering of an FFI callback function name
     fn ffi_callback_name(nm: &str) -> String {
-        format!(
-            "Pointer<NativeFunction<Uniffi{}>>",
-            nm.to_upper_camel_case()
-        )
+        format!("Pointer<NativeFunction<Uniffi{}>>", nm.to_upper_camel_case())
     }
 
     /// Get the idiomatic Dart rendering of an exception name
-    // TODO: Refactor to be more idomatic to the way dart handles errors
     pub fn error_name(nm: &str) -> String {
-        // errors are a class in Dart.
         let name = Self::class_name(nm);
         match name.strip_suffix("Error") {
             None => name,
@@ -84,7 +78,7 @@ impl DartCodeOracle {
     }
 
     pub fn find_lib_instance() -> dart::Tokens {
-        quote!(api)
+        quote!(_UniffiLib.instance)
     }
 
     // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
@@ -93,15 +87,15 @@ impl DartCodeOracle {
             return quote!(void);
         };
         match ret_type {
-            FfiType::UInt8
-            | FfiType::UInt16
-            | FfiType::UInt32
-            | FfiType::UInt64
-            | FfiType::Int8
-            | FfiType::Int16
-            | FfiType::Int32
-            | FfiType::Int64
-            | FfiType::Handle => quote!(int),
+            FfiType::UInt8 |
+            FfiType::UInt16 |
+            FfiType::UInt32 |
+            FfiType::UInt64 |
+            FfiType::Int8 |
+            FfiType::Int16 |
+            FfiType::Int32 |
+            FfiType::Handle |
+            FfiType::Int64 => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
@@ -109,8 +103,7 @@ impl DartCodeOracle {
             },
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::ForeignBytes => quote!(ForeignBytes),
-            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -140,59 +133,10 @@ impl DartCodeOracle {
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
-
-    // This function is equivalent to type_lable in code type
-    // pub fn generate_type(ty: &Type) -> dart::Tokens {
-    //     match ty {
-    //         Type::UInt8
-    //         | Type::UInt32
-    //         | Type::Int8
-    //         | Type::Int16
-    //         | Type::Int64
-    //         | Type::UInt16
-    //         | Type::Int32
-    //         | Type::UInt64 => quote!(int),
-    //         Type::Float32 | Type::Float64 => quote!(double),
-    //         Type::String => quote!(String),
-    //         Type::Object{name, ..} => quote!($name),
-    //         Type::Boolean => quote!(bool),
-    //         Type::Optional( inner_type) => quote!($(generate_type(inner_type))?),
-    //         Type::Sequence ( inner_type ) => quote!(List<$(generate_type(inner_type))>),
-    //         Type::Enum ( name,..  ) => quote!($name),
-    //         // Type::Record { name,..  } => quote!($name),
-    //         _ => todo!("Type::{:?}", ty)
-    //         // AbiType::Num(ty) => Self::generate_wrapped_num_type(*ty),
-    //         // AbiType::Isize | AbiType::Usize => quote!(int),
-    //         // AbiType::Bool => quote!(bool),
-    //         // AbiType::RefStr | AbiType::String => quote!(String),
-    //         // AbiType::RefSlice(ty) | AbiType::Vec(ty) => {
-    //         //     quote!(List<#(Self::generate_wrapped_num_type(*ty))>)
-    //         // }
-    //         // AbiType::Option(ty) => quote!(#(Self::generate_type(ty))?),
-    //         // AbiType::Result(ty) => Self::generate_type(ty),
-    //         // AbiType::Tuple(tuple) => match tuple.len() {
-    //         //     0 => quote!(void),
-    //         //     1 => Self::generate_type(&tuple[0]),
-    //         //     _ => quote!(List<dynamic>),
-    //         // },
-    //         // AbiType::RefObject(ty) | AbiType::Object(ty) => quote!(#ty),
-    //         // AbiType::RefIter(ty) | AbiType::Iter(ty) => quote!(Iter<#(Self::generate_type(ty))>),
-    //         // AbiType::RefFuture(ty) | AbiType::Future(ty) => {
-    //         //     quote!(Future<#(Self::generate_type(ty))>)
-    //         // }
-    //         // AbiType::RefStream(ty) | AbiType::Stream(ty) => {
-    //         //     quote!(Stream<#(Self::generate_type(ty))>)
-    //         // }
-    //         // AbiType::Buffer(ty) => quote!(#(ffi_buffer_name_for(*ty))),
-    //         // AbiType::List(ty) => quote!(#(format!("FfiList{}", ty))),
-    //         // AbiType::RefEnum(ty) => quote!(#(ty)),
-    //     }
-    // }
-    // TODO: implement error_ffi_converter, future_callback handler, future continuation type, allocation size handler
 
     pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
@@ -265,70 +209,13 @@ impl DartCodeOracle {
 
 // https://dart.dev/guides/language/language-tour#keywords
 pub static RESERVED_IDENTIFIERS: [&str; 63] = [
-    // This list may need to be updated as the Dart language evolves.
-    "abstract",
-    "as",
-    "assert",
-    "async",
-    "await",
-    "break",
-    "case",
-    "catch",
-    "class",
-    "const",
-    "continue",
-    "covariant",
-    "default",
-    "deferred",
-    "do",
-    "dynamic",
-    "else",
-    "enum",
-    "export",
-    "extends",
-    "extension",
-    "external",
-    "factory",
-    "false",
-    "final",
-    "finally",
-    "for",
-    "Function",
-    "get",
-    "hide",
-    "if",
-    "implements",
-    "import",
-    "in",
-    "interface",
-    "is",
-    "late",
-    "library",
-    "mixin",
-    "new",
-    "null",
-    "on",
-    "operator",
-    "part",
-    "required",
-    "rethrow",
-    "return",
-    "set",
-    "show",
-    "static",
-    "super",
-    "switch",
-    "sync",
-    "this",
-    "throw",
-    "true",
-    "try",
-    "typedef",
-    "var",
-    "void",
-    "while",
-    "with",
-    "yield",
+    "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const",
+    "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export",
+    "extends", "extension", "external", "factory", "false", "final", "finally", "for", "Function",
+    "get", "hide", "if", "implements", "import", "in", "interface", "is", "late", "library",
+    "mixin", "new", "null", "on", "operator", "part", "required", "rethrow", "return", "set",
+    "show", "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef",
+    "var", "void", "while", "with", "yield",
 ];
 
 pub trait AsCodeType {
@@ -364,23 +251,8 @@ impl<T: AsType> AsCodeType for T {
             Type::Record { name, module_path } => {
                 Box::new(records::RecordCodeType::new(name, module_path))
             }
-            _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
-
-                                                                  // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
-                                                                  // Type::Duration => Box::new(miscellany::DurationCodeType),
-
-                                                                  // ,
-                                                                  // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
-                                                                  // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
-                                                                  // Type::CallbackInterface(id) => {
-                                                                  //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
-                                                                  // }
-                                                                  // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
-                                                                  // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
-                                                                  // ,
-                                                                  // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
-                                                                  // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
-                                                                  // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
+            _ => todo!("As Type for Type::{:?}", self.as_type()),
         }
     }
 }
+

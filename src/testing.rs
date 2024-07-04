@@ -57,8 +57,6 @@ pub fn run_test(fixture: &str, udl_path: &str, config_path: Option<&str>) -> Res
         Some(&out_dir),
         Some(&test_helper.cdylib_path()?),
     )?;
-    //     // let generated_sources =
-    //     //     GeneratedSources::new(&test_helper.cdylib_path()?, &out_dir, &test_helper)?;
     for file in glob::glob(&format!("**/*.dart"))?.filter_map(Result::ok) {
         copy(
             &file,
@@ -84,3 +82,4 @@ pub fn run_test(fixture: &str, udl_path: &str, config_path: Option<&str>) -> Res
 pub fn get_compile_sources() -> Result<Vec<CompileSource>> {
     todo!("Not implemented")
 }
+

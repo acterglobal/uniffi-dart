@@ -16,7 +16,6 @@ impl CodeType for StringCodeType {
 
 impl Renderable for StringCodeType {
     fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-        // This method can be expanded to generate type helper methods if needed.
         quote! {
             class FfiConverterString {
                 static String lift( RustBuffer buf) {
@@ -34,8 +33,7 @@ impl Renderable for StringCodeType {
                 }
 
                 static int allocationSize([String value = ""]) {
-                    // FIXME: doing this twice for every string is bad
-                    return utf8.encoder.convert(value).length + 4; // Four additional bytes for the length data
+                    return utf8.encoder.convert(value).length + 4;
                 }
 
                 static int write( String value, Uint8List buf) {
@@ -49,3 +47,4 @@ impl Renderable for StringCodeType {
         }
     }
 }
+
