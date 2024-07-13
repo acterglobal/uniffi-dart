@@ -9,9 +9,6 @@ use serde::{Deserialize, Serialize};
 // use uniffi_bindgen::MergeWith;
 use crate::gen::oracle::DartCodeOracle;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
-
-use crate::gen::oracle::DartCodeOracle;
-
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 
@@ -125,7 +122,7 @@ impl<'a> DartWrapper<'a> {
             let (native_return_type, dart_return_type) = match fun.return_type() {
                 Some(return_type) => (
                     quote! { $(DartCodeOracle::ffi_native_type_label(Some(return_type))) },
-                    quote! { $(DartCodeOracle::ffi_type_label(Some(return_type))) },
+                    quote! { $(DartCodeOracle::ffi_dart_type_label(Some(return_type))) },
                 ),
                 None => (quote! { Void }, quote! { void }),
             };
@@ -139,7 +136,7 @@ impl<'a> DartWrapper<'a> {
                         quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
                     );
                     dart_args
-                        .append(quote!($(DartCodeOracle::ffi_type_label(Some(&arg.type_()))),));
+                        .append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
                 }
 
                 if fun.has_rust_call_status_arg() {

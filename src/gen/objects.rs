@@ -7,9 +7,6 @@ use crate::gen::oracle::{DartCodeOracle, AsCodeType};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-use super::functions::generate_for_callable;
-use super::utils::{class_name, fn_name};
-
 #[derive(Debug)]
 pub struct ObjectCodeType {
     id: String,
@@ -58,7 +55,7 @@ impl Renderable for ObjectCodeType {
 
 // Let's refactor this later
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    let cls_name = &class_name(obj.name());
+    let cls_name = &DartCodeOracle::class_name(obj.name());
     quote! {
         class $cls_name {
             final Pointer<Void> _ptr;
@@ -132,7 +129,7 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
     // }
 
     if func.takes_self_by_arc() {} // TODO: Do something about this condition
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (
@@ -149,7 +146,7 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
                 return uniffiRustCallAsync(
                   () => $(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
                     uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
                   ),
                   $(DartCodeOracle::async_poll(func, type_helper.get_ci())),
                   $(DartCodeOracle::async_complete(func, type_helper.get_ci())),
@@ -164,7 +161,7 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
             $ret $(DartCodeOracle::fn_name(func.name()))($args) {
                 return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
                     uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),) status
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
                 )));
             }
         )

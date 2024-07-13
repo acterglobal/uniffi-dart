@@ -564,7 +564,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_reserve().name())(this, additionalCapacity, status));
                 }
 
-                Uint8List asTypedList() {
+                Uint8List asUint8List() {
                 final dataList = data.asTypedList(len);
                 final byteData = ByteData.sublistView(dataList);
                 return Uint8List.view(byteData.buffer);
@@ -573,16 +573,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 @override
                 String toString() {
                 return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
-                }
-
-                RustBuffer reserve(int additionalCapacity) {
-                return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(self.ci.ffi_rustbuffer_reserve().name())(this, additionalCapacity, status));
-                }
-
-                Uint8List asTypedList() {
-                final dataList = data.asTypedList(len);
-                final byteData = ByteData.sublistView(dataList);
-                return Uint8List.view(byteData.buffer);
                 }
             }
 

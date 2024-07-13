@@ -5,8 +5,6 @@ use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use uniffi_bindgen::backend::CodeType;
 use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiType, Type};
 use uniffi_bindgen::ComponentInterface;
-use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiType, Type};
-use uniffi_bindgen::ComponentInterface;
 
 use crate::gen::primitives;
 
@@ -113,7 +111,6 @@ impl DartCodeOracle {
             return quote!(Void)
         };
         match ret_type {
-        match ret_type {
             FfiType::UInt8 => quote!(Uint8),
             FfiType::UInt16 => quote!(Uint16),
             FfiType::UInt32 => quote!(Uint32),
@@ -125,12 +122,10 @@ impl DartCodeOracle {
             FfiType::Float32 => quote!(Float),
             FfiType::Float64 => quote!(Double),
             FfiType::Handle => quote!(Uint64),
-            FfiType::Handle => quote!(Uint64),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
                 _ => quote!(RustBuffer),
             },
-            FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
             FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
@@ -203,7 +198,31 @@ impl DartCodeOracle {
         }
     }
 
-    // ... (rest of the file remains the same)
+    pub fn async_poll(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_poll(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
+
+    pub fn async_complete(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_complete(ci);
+        let call = quote!($(Self::find_lib_instance()).$ffi_func);
+        let call = match callable.return_type() {
+            Some(Type::External {
+                kind: ExternalKind::DataClass,
+                name: _,
+                ..
+            }) => {
+                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
+            }
+            _ => call,
+        };
+        call
+    }
+
+    pub fn async_free(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_free(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
 }
 
 
