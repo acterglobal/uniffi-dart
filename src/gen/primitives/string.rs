@@ -33,7 +33,7 @@ impl Renderable for StringCodeType {
                 }
 
                 static int allocationSize([String value = ""]) {
-                    return utf8.encoder.convert(value).length + 4;
+                    return utf8.encoder.convert(value).length + 4; // Four additional bytes for the length data
                 }
 
                 static int write( String value, Uint8List buf) {
