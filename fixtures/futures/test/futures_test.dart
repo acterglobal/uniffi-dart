@@ -103,6 +103,7 @@ void main() {
       expect(result.a, 'foo');
       expect(result.b, 42);
     });
+    // Heads-up: Sometimes this test will fail if for whatever reason, something on the host system pauses the execution of the async funtions.
     print('record: ${time.inMilliseconds}ms');
     expect(time.inMilliseconds <= 100, true);
   });
