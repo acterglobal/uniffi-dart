@@ -51,6 +51,7 @@ impl<'a> TypeHelpersRenderer<'a> {
     }}
 
 impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
+    // Checks if the type imports for each type have already been added
     fn include_once_check(&self, name: &str, ty: &Type) -> bool {
         let mut map = self.include_once_names.borrow_mut();
         let found = map.insert(name.to_string(), ty.clone()).is_some();
@@ -136,7 +137,11 @@ impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
 }
 
 impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
+    // TODO: Implimient a two pass system where the first pass will render the main code, and the second pass will render the helper code
+    // this is so the generator knows what helper code to include.
+
     fn render(&self) -> (dart::Tokens, dart::Tokens) {
+        // Render all the types and their helpers
         let types_definitions = quote! {
             $( for rec in self.ci.record_definitions() => $(records::generate_record(rec, self)))
 
@@ -144,6 +149,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             $( for obj in self.ci.object_definitions() => $(objects::generate_object(obj, self)))
         };
 
+        // Render all the imports
         let imports: dart::Tokens = quote!();
 
         // let function_definitions = quote!($( for fun in self.ci.function_definitions() => $(functions::generate_function("this", fun, self))));
@@ -573,9 +579,9 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             RustBuffer toRustBuffer(Uint8List data) {
                 final length = data.length;
 
-                final Pointer<Uint8> frameData = calloc<Uint8>(length);
-                final pointerList = frameData.asTypedList(length);
-                pointerList.setAll(0, data);
+                final Pointer<Uint8> frameData = calloc<Uint8>(length); // Allocate a pointer large enough.
+                final pointerList = frameData.asTypedList(length); // Create a list that uses our pointer and copy in the data.
+                pointerList.setAll(0, data); // FIXME: can we remove this memcopy somehow?
 
                 final bytes = calloc<ForeignBytes>();
                 bytes.ref.len = length;
@@ -648,10 +654,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return uint8List;
             }
 
-                LiftRetVal<T> copyWithOffset(int offset) {
-                    return LiftRetVal(value, bytesRead + offset);
-                }
-            }
+            $(helpers_definitions)
 
             const int UNIFFI_RUST_FUTURE_POLL_READY = 0;
             const int UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
@@ -709,57 +712,6 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 }
             }
 
-            $(helpers_definitions)
-
-            const int UNIFFI_RUST_FUTURE_POLL_READY = 0;
-            const int UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
-
-            typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
-
-            Future<T> uniffiRustCallAsync<T, F>(
-                int Function() rustFutureFunc,
-                void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
-                F Function(int, Pointer<RustCallStatus>) completeFunc,
-                void Function(int) freeFunc,
-                T Function(F) liftFunc
-            ) async {
-                final rustFuture = rustFutureFunc();
-                final completer = Completer<int>();
-
-                late final NativeCallable<UniffiRustFutureContinuationCallback> callback;
-
-                void poll() {
-                    pollFunc(
-                        rustFuture,
-                        callback.nativeFunction,
-                        0,
-                    );
-                }
-                void onResponse(int _idx, int pollResult) {
-                    if (pollResult == UNIFFI_RUST_FUTURE_POLL_READY) {
-                        completer.complete(pollResult);
-                    } else {
-                        poll();
-                    }
-                }
-                callback = NativeCallable<UniffiRustFutureContinuationCallback>.listener(onResponse);
-
-                try {
-                    poll();
-                    await completer.future;
-                    callback.close();
-
-                    final status = calloc<RustCallStatus>();
-                    try {
-                        final result = completeFunc(rustFuture, status);
-                        return liftFunc(result);
-                    } finally {
-                        calloc.free(status);
-                    }
-                } finally {
-                    freeFunc(rustFuture);
-                }
-            }
         };
 
         (types_helper_code, function_definitions)

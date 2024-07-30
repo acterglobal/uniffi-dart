@@ -148,4 +148,3 @@ pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) 
         )
     }
 }
-

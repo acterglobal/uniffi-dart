@@ -37,6 +37,11 @@ impl CodeType for ObjectCodeType {
 }
 
 impl Renderable for ObjectCodeType {
+    // Semantically, it may make sense to render object here, but we don't have enough information. So we render it with help from type_helper
+    fn render(&self) -> dart::Tokens {
+        quote!()
+    }
+
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
             quote!()
@@ -48,6 +53,7 @@ impl Renderable for ObjectCodeType {
     }
 }
 
+// Let's refactor this later
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     let cls_name = &DartCodeOracle::class_name(obj.name());
     quote! {
