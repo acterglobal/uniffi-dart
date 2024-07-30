@@ -58,11 +58,11 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
         }
 
         class $ffi_conv_name {
-            static $cls_name lift(RustBuffer buf) {
+            static $cls_name lift( RustBuffer buf) {
                 return $ffi_conv_name.read(buf.asUint8List()).value;
             }
 
-            static LiftRetVal<$cls_name> read(Uint8List buf) {
+            static LiftRetVal<$cls_name> read( Uint8List buf) {
                 int new_offset = 0;
 
                 $(for f in obj.fields() =>
@@ -75,14 +75,14 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
                 ), new_offset);
             }
 
-            static RustBuffer lower($cls_name value) {
+            static RustBuffer lower( $cls_name value) {
                 final total_length = $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize(value.$(var_name(f.name()))) + ) 0;
                 final buf = Uint8List(total_length);
-                $ffi_conv_name.write(value, buf);
+                write(value, buf);
                 return toRustBuffer(buf);
             }
 
-            static int write($cls_name value, Uint8List buf) {
+            static int write( $cls_name value, Uint8List buf) {
                 int new_offset = buf.offsetInBytes;
 
                 $(for f in obj.fields() =>

@@ -1,12 +1,11 @@
+
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Method, Object};
 
-use crate::gen::oracle::DartCodeOracle;
-use crate::gen::render::{AsRenderable, Renderable, TypeHelperRenderer};
-use crate::gen::oracle::AsCodeType;
-
-use super::utils::{class_name, fn_name, var_name};
+use crate::gen::oracle::{DartCodeOracle, AsCodeType};
+use crate::gen::render::AsRenderable;
+use crate::gen::render::{Renderable, TypeHelperRenderer};
 
 #[derive(Debug)]
 pub struct ObjectCodeType {
@@ -50,7 +49,7 @@ impl Renderable for ObjectCodeType {
 }
 
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    let cls_name = &class_name(obj.name());
+    let cls_name = &DartCodeOracle::class_name(obj.name());
     quote! {
         class $cls_name {
             final Pointer<Void> _ptr;
@@ -61,12 +60,14 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
                 return $(cls_name)._(ptr);
             }
 
+            // TODO: Bring back object lowering from main
+
             Pointer<Void> uniffiClonePointer() {
-                return rustCall((status) => _UniffiLib.instance.$(obj.ffi_object_clone().name())(_ptr, status));
+                return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(obj.ffi_object_clone().name())(_ptr, status));
             }
 
             void drop() {
-                rustCall((status) => _UniffiLib.instance.$(obj.ffi_object_free().name())(_ptr, status));
+                rustCall((status) => $(DartCodeOracle::find_lib_instance())..$(obj.ffi_object_free().name())(_ptr, status));
             }
 
             $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
@@ -74,9 +75,55 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
     }
 }
 
-pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+#[allow(unused_variables)]
+pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {  
+    // let api = "_api";
+    // let ffi = fun.ffi_func();
+    // let fn_name = fn_name(fun.name());
+    // let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+    // let ff_name = ffi.name();
+    // let inner = quote! {
+    // rustCall((status) =>
+    //     _$(&fn_name)(
+    //         uniffiClonePointer(),
+    //         $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+    //         status)
+    // )
+    // };
+
+    // let (ret, body) = if let Some(ret) = fun.return_type() {
+    //     (
+    //         ret.as_renderable().render_type(ret, type_helper),
+    //         quote! {
+    //             return $(DartCodeOracle::type_lift_fn(ret, inner));
+    //         },
+    //     )
+    // } else {
+    //     (quote!(void), quote!($inner;))
+    // };
+
+    // quote! {
+    //     late final _$(&fn_name)Ptr = _api._lookup<
+    //     NativeFunction<
+    //         $(DartCodeOracle::ffi_native_type_label(ffi.return_type())) Function(
+    //             $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),)
+    //             Pointer<RustCallStatus>
+    //     )>>($(format!("\"{ff_name}\"")));
+
+    //     late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
+    //     $(DartCodeOracle::ffi_dart_type_label(ffi.return_type())) Function(
+    //         $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),)
+    //         Pointer<RustCallStatus>
+    //     )>();
+
+    //     $ret $fn_name ($args) {
+    //         final api = _api;
+    //         $body
+    //     }
+    // }
+
     if func.takes_self_by_arc() {} // TODO: Do something about this condition
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
         (
@@ -91,9 +138,9 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
         quote!(
             Future<$ret> $(DartCodeOracle::fn_name(func.name()))($args) {
                 return uniffiRustCallAsync(
-                  () => _UniffiLib.instance.$(func.ffi_func().name())(
+                  () => $(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
                     uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
                   ),
                   $(DartCodeOracle::async_poll(func, type_helper.get_ci())),
                   $(DartCodeOracle::async_complete(func, type_helper.get_ci())),
@@ -101,16 +148,16 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
                   $lifter,
                 );
             }
+
         )
     } else {
         quote!(
             $ret $(DartCodeOracle::fn_name(func.name()))($args) {
-                return rustCall((status) => $lifter(_UniffiLib.instance.$(func.ffi_func().name())(
+                return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
                     uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),) status
+                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
                 )));
             }
         )
     }
 }
-

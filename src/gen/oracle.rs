@@ -26,6 +26,7 @@ impl DartCodeOracle {
         panic!("unsupported type for error: {type_:?}")
     }
 
+  
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
     pub fn sanitize_identifier(id: &str) -> String {
         if Self::is_reserved_identifier(id) {
@@ -78,41 +79,7 @@ impl DartCodeOracle {
         quote!(_UniffiLib.instance)
     }
 
-    pub fn async_poll(
-        callable: impl Callable,
-        ci: &ComponentInterface,
-    ) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_poll(ci);
-        quote!($(Self::find_lib_instance()).$ffi_func)
-    }
-
-    pub fn async_complete(
-        callable: impl Callable,
-        ci: &ComponentInterface,
-    ) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_complete(ci);
-        let call = quote!($(Self::find_lib_instance()).$ffi_func);
-        let call = match callable.return_type() {
-            Some(Type::External {
-                kind: ExternalKind::DataClass,
-                name,
-                ..
-            }) => {
-                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
-            }
-            _ => call,
-        };
-        call
-    }
-
-    pub fn async_free(
-        callable: impl Callable,
-        ci: &ComponentInterface,
-    ) -> dart::Tokens {
-        let ffi_func = callable.ffi_rust_future_free(ci);
-        quote!($(Self::find_lib_instance()).$ffi_func)
-    }
-
+    // TODO: Replace instances of `generate_ffi_dart_type` with ffi_type_label
     pub fn ffi_dart_type_label(ffi_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_type else {
             return quote!(void);
@@ -138,7 +105,7 @@ impl DartCodeOracle {
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
-
+    
     pub fn ffi_native_type_label(ffi_ret_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_ret_type else {
             return quote!(Void)
@@ -230,8 +197,36 @@ impl DartCodeOracle {
             _ => todo!("lower Type::{:?}", ty),
         }
     }
+
+    pub fn async_poll(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_poll(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
+
+    pub fn async_complete(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_complete(ci);
+        let call = quote!($(Self::find_lib_instance()).$ffi_func);
+        let call = match callable.return_type() {
+            Some(Type::External {
+                kind: ExternalKind::DataClass,
+                name: _,
+                ..
+            }) => {
+                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
+            }
+            _ => call,
+        };
+        call
+    }
+
+    pub fn async_free(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
+        let ffi_func = callable.ffi_rust_future_free(ci);
+        quote!($(Self::find_lib_instance()).$ffi_func)
+    }
 }
 
+
+// https://dart.dev/guides/language/language-tour#keywords
 pub static RESERVED_IDENTIFIERS: [&str; 63] = [
     "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const",
     "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export",

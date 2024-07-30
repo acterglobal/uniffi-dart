@@ -6,8 +6,9 @@ use camino::Utf8Path;
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
+// use uniffi_bindgen::MergeWith;
+use crate::gen::oracle::DartCodeOracle;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
-
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 
@@ -29,6 +30,25 @@ pub struct Config {
     #[serde(default)]
     external_packages: HashMap<String, String>,
 }
+
+// impl MergeWith for Config {
+//     fn merge_with(&self, other: &Self) -> Self {
+//         let package_name = if other.package_name.is_some() {
+//             other.package_name.clone()
+//         } else {
+//             self.package_name.clone()
+//         };
+//         let cdylib_name = if other.cdylib_name.is_some() {
+//             other.cdylib_name.clone()
+//         } else {
+//             self.cdylib_name.clone()
+//         };
+//         Self {
+//             package_name,
+//             cdylib_name,
+//         }
+//     }
+// }
 
 impl From<&ComponentInterface> for Config {
     fn from(ci: &ComponentInterface) -> Self {
@@ -93,11 +113,62 @@ impl<'a> DartWrapper<'a> {
         }
     }
 
+    fn uniffi_function_definitions(&self) -> dart::Tokens {
+        let ci = self.ci;
+        let mut definitions = quote!();
+
+        for fun in ci.iter_ffi_function_definitions() {
+            let fun_name = fun.name();
+            let (native_return_type, dart_return_type) = match fun.return_type() {
+                Some(return_type) => (
+                    quote! { $(DartCodeOracle::ffi_native_type_label(Some(return_type))) },
+                    quote! { $(DartCodeOracle::ffi_dart_type_label(Some(return_type))) },
+                ),
+                None => (quote! { Void }, quote! { void }),
+            };
+
+            let (native_args, dart_args) = {
+                let mut native_args = quote!();
+                let mut dart_args = quote!();
+
+                for arg in fun.arguments() {
+                    native_args.append(
+                        quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
+                    );
+                    dart_args
+                        .append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
+                }
+
+                if fun.has_rust_call_status_arg() {
+                    native_args.append(quote!(Pointer<RustCallStatus>));
+                    dart_args.append(quote!(Pointer<RustCallStatus>));
+                }
+
+                (native_args, dart_args)
+            };
+
+            let lookup_fn = quote! {
+                _dylib.lookupFunction<
+                    $native_return_type Function($(&native_args)),
+                    $(&dart_return_type) Function($(&dart_args))
+                >($(format!("\"{fun_name}\"")))
+            };
+
+            definitions.append(quote! {
+                late final $dart_return_type Function($dart_args) $fun_name = $lookup_fn;
+
+            });
+        }
+
+        definitions
+    }
+
     fn generate(&self) -> dart::Tokens {
         let package_name = self.config.package_name();
         let libname = self.config.cdylib_name();
 
         let (type_helper_code, functions_definitions) = &self.type_renderer.render();
+        let uniffi_functions = self.uniffi_function_definitions();
 
         fn uniffi_function_definitions(ci: &ComponentInterface) -> dart::Tokens {
             let mut definitions = quote!();
@@ -106,8 +177,8 @@ impl<'a> DartWrapper<'a> {
                 let fun_name = fun.name();
                 let (native_return_type, dart_return_type) = match fun.return_type() {
                     Some(return_type) => (
-                        quote! { $(oracle::DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
-                        quote! { $(oracle::DartCodeOracle::ffi_dart_type_label(Some(&return_type))) },
+                        quote! { $(DartCodeOracle::ffi_native_type_label(Some(&return_type))) },
+                        quote! { $(DartCodeOracle::ffi_dart_type_label(Some(&return_type))) },
                     ),
                     None => (quote! { Void }, quote! { void }),
                 };
@@ -118,10 +189,10 @@ impl<'a> DartWrapper<'a> {
 
                     for arg in fun.arguments() {
                         native_args.append(
-                            quote!($(oracle::DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
+                            quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
                         );
                         dart_args.append(
-                            quote!($(oracle::DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),),
+                            quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),),
                         );
                     }
 
@@ -252,4 +323,3 @@ pub fn generate_dart_bindings(
         true,
     )
 }
-

@@ -59,7 +59,7 @@ impl TimerFuture {
     }
 }
 
-// /// Non-blocking timer future.
+/// Non-blocking timer future.
 pub struct BrokenTimerFuture {
     shared_state: Arc<Mutex<SharedState>>,
 }
@@ -152,21 +152,21 @@ pub async fn sleep(ms: u16) -> bool {
 }
 
 // Our error.
-// #[derive(uniffi::Error, Debug)]
-// pub enum MyError {
-//     Foo,
-// }
+#[derive(thiserror::Error, uniffi::Error, Debug)]
+pub enum MyError {
+    #[error("Foo")]
+    Foo,
+}
 
-// // An async function that can throw.
-// // An async function that can throw.
-// #[uniffi::export]
-// pub async fn fallible_me(do_fail: bool) -> Result<u8, MyError> {
-//     if do_fail {
-//         Err(MyError::Foo)
-//     } else {
-//         Ok(42)
-//     }
-// }
+// An async function that can throw.
+#[uniffi::export]
+pub async fn fallible_me(do_fail: bool) -> Result<u8, MyError> {
+    if do_fail {
+        Err(MyError::Foo)
+    } else {
+        Ok(42)
+    }
+}
 
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
@@ -174,7 +174,7 @@ pub async fn say_after_with_tokio(ms: u16, who: String) -> String {
     format!("Hello, {who} (with Tokio)!")
 }
 
-#[derive(uniffi::Record, Clone)]
+#[derive(uniffi::Record)]
 pub struct MyRecord {
     pub a: String,
     pub b: u32,
@@ -193,5 +193,5 @@ pub async fn broken_sleep(ms: u16, fail_after: u16) {
     )
     .await;
 }
-
+ 
 uniffi::include_scaffolding!("api");
