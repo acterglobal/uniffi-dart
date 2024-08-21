@@ -104,7 +104,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         )
                         return LiftRetVal($(class_name(obj.name()))$cls_name._(
                             $(for f in obj.fields() => $(var_name(f.name())),)
-                        ), new_offset - buf.offsetInBytes);
+                        ), new_offset);
                     }
 
                     @override
@@ -128,7 +128,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write($(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
                         )
 
-                        return new_offset - buf.offsetInBytes;
+                        return new_offset;
                     }
                 }
             });

@@ -88,7 +88,7 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
                 $(for f in obj.fields() =>
                 new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write(value.$(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
                 )
-                return new_offset - buf.offsetInBytes;
+                return new_offset;
             }
 
             static int allocationSize($cls_name value) {
