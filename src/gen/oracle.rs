@@ -8,7 +8,7 @@ use uniffi_bindgen::ComponentInterface;
 
 use crate::gen::primitives;
 
-use super::render::{AsRenderable, Renderable};
+// use super::render::{AsRenderable, Renderable};
 use super::{compounds, enums, objects, records};
 
 pub struct DartCodeOracle;
@@ -18,13 +18,13 @@ impl DartCodeOracle {
         type_.clone().as_type().as_codetype()
     }
 
-    pub fn find_renderable(type_: &Type) -> Box<dyn Renderable> {
-        type_.clone().as_type().as_renderable()
-    }
+    // pub fn find_renderable(type_: &Type) -> Box<dyn Renderable> {
+    //     type_.clone().as_type().as_renderable()
+    // }
 
-    pub fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
-        panic!("unsupported type for error: {type_:?}")
-    }
+    // pub fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
+    //     panic!("unsupported type for error: {type_:?}")
+    // }
 
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
     pub fn sanitize_identifier(id: &str) -> String {
@@ -69,13 +69,13 @@ impl DartCodeOracle {
     }
 
     /// Get the idiomatic Dart rendering of an exception name
-    pub fn error_name(nm: &str) -> String {
-        let name = Self::class_name(nm);
-        match name.strip_suffix("Error") {
-            None => name,
-            Some(stripped) => format!("{stripped}Exception"),
-        }
-    }
+    // pub fn error_name(nm: &str) -> String {
+    //     let name = Self::class_name(nm);
+    //     match name.strip_suffix("Error") {
+    //         None => name,
+    //         Some(stripped) => format!("{stripped}Exception"),
+    //     }
+    // }
 
     pub fn find_lib_instance() -> dart::Tokens {
         quote!(_UniffiLib.instance)
@@ -135,48 +135,48 @@ impl DartCodeOracle {
         }
     }
 
-    pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-        match ty {
-            Type::Object { .. } => inner,
-            Type::String | Type::Optional { .. } => quote!($(inner).asUint8List()),
-            _ => inner,
-        }
-    }
+    // pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    //     match ty {
+    //         Type::Object { .. } => inner,
+    //         Type::String | Type::Optional { .. } => quote!($(inner).asUint8List()),
+    //         _ => inner,
+    //     }
+    // }
 
-    pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-        match ty {
-            Type::Object { .. } => inner,
-            Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
-                quote!(toRustBuffer($inner))
-            }
-            _ => inner,
-        }
-    }
+    // pub fn convert_to_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    //     match ty {
+    //         Type::Object { .. } => inner,
+    //         Type::String | Type::Optional { .. } | Type::Enum { .. } | Type::Sequence { .. } => {
+    //             quote!(toRustBuffer($inner))
+    //         }
+    //         _ => inner,
+    //     }
+    // }
 
-    pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
-        match ty {
-            Type::Int8
-            | Type::UInt8
-            | Type::Int16
-            | Type::UInt16
-            | Type::Int32
-            | Type::Int64
-            | Type::UInt32
-            | Type::UInt64
-            | Type::Float32
-            | Type::Float64 => inner,
-            Type::Boolean
-            | Type::Duration
-            | Type::String
-            | Type::Object { .. }
-            | Type::Enum { .. }
-            | Type::Record { .. }
-            | Type::Optional { .. } => {
-                quote!($(ty.as_codetype().ffi_converter_name()).lift($inner))
-            }
-            _ => todo!("lift Type::{:?}", ty),
-        }
-    }
+    // pub fn type_lift_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
+    //     match ty {
+    //         Type::Int8
+    //         | Type::UInt8
+    //         | Type::Int16
+    //         | Type::UInt16
+    //         | Type::Int32
+    //         | Type::Int64
+    //         | Type::UInt32
+    //         | Type::UInt64
+    //         | Type::Float32
+    //         | Type::Float64 => inner,
+    //         Type::Boolean
+    //         | Type::Duration
+    //         | Type::String
+    //         | Type::Object { .. }
+    //         | Type::Enum { .. }
+    //         | Type::Record { .. }
+    //         | Type::Optional { .. } => {
+    //             quote!($(ty.as_codetype().ffi_converter_name()).lift($inner))
+    //         }
+    //         _ => todo!("lift Type::{:?}", ty),
+    //     }
+    // }
 
     pub fn type_lower_fn(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
         match ty {
@@ -212,7 +212,7 @@ impl DartCodeOracle {
     pub fn async_complete(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
         let ffi_func = callable.ffi_rust_future_complete(ci);
         let call = quote!($(Self::find_lib_instance()).$ffi_func);
-        let call = match callable.return_type() {
+        match callable.return_type() {
             Some(Type::External {
                 kind: ExternalKind::DataClass,
                 name: _,
@@ -221,8 +221,7 @@ impl DartCodeOracle {
                 todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
             }
             _ => call,
-        };
-        call
+        }
     }
 
     pub fn async_free(callable: impl Callable, ci: &ComponentInterface) -> dart::Tokens {
@@ -328,8 +327,8 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record { name, module_path } => {
-                Box::new(records::RecordCodeType::new(name, module_path))
+            Type::Record { name, module_path: _ } => {
+                Box::new(records::RecordCodeType::new(name))
             }
             _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 

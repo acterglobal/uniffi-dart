@@ -12,19 +12,19 @@ pub trait TypeHelperRenderer {
     fn get_ci(&self) -> &ComponentInterface;
     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
     fn check(&self, name: &str) -> bool;
-    fn add_import(&self, name: &str) -> bool;
-    fn add_import_as(&self, name: &str, as_name: &str) -> bool;
+    // fn add_import(&self, name: &str) -> bool;
+    // fn add_import_as(&self, name: &str, as_name: &str) -> bool;
     fn get_object(&self, name: &str) -> Option<&Object>;
     fn get_enum(&self, name: &str) -> Option<&Enum>;
     fn get_record(&self, name: &str) -> Option<&Record>;
-    fn ffi_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
-    fn ffi_native_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
+    // fn ffi_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
+    // fn ffi_native_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
 }
 
 pub trait Renderable {
-    fn render(&self) -> dart::Tokens {
-        quote!()
-    }
+    // fn render(&self) -> dart::Tokens {
+    //     quote!()
+    // }
 
     fn render_type(&self, ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         let type_name = match ty {
@@ -96,8 +96,8 @@ impl<T: AsType> AsRenderable for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record { name, module_path } => {
-                Box::new(records::RecordCodeType::new(name, module_path))
+            Type::Record { name, module_path: _ } => {
+                Box::new(records::RecordCodeType::new(name ))
             }
             _ => todo!("Renderable for Type::{:?}", self.as_type()),
         }

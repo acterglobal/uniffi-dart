@@ -5,8 +5,6 @@ use uniffi_bindgen::interface::{AsType, Enum};
 use super::oracle::{AsCodeType, DartCodeOracle};
 use super::render::{AsRenderable, Renderable, TypeHelperRenderer};
 
-use super::utils::{class_name, enum_variant_name, var_name};
-
 #[derive(Debug)]
 pub struct EnumCodeType {
     id: String,
@@ -59,7 +57,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
         quote! {
             enum $cls_name {
                 $(for variant in obj.variants() =>
-                $(enum_variant_name(variant.name())),)
+                $(DartCodeOracle::enum_variant_name(variant.name())),)
                 ;
             }
 
@@ -69,7 +67,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                     switch(index) {
                         $(for (index, variant) in obj.variants().iter().enumerate() =>
                         case $(index + 1):
-                            return $cls_name.$(enum_variant_name(variant.name()));
+                            return $cls_name.$(DartCodeOracle::enum_variant_name(variant.name()));
                         )
                         default:
                             throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase, "Unable to determine enum variant");
@@ -89,21 +87,21 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                 type_helper.include_once_check(&f.as_codetype().canonical_name(), &f.as_type());
             }
             variants.push(quote!{
-                class $(class_name(obj.name()))$cls_name extends $cls_name {
-                    $(for field in obj.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(var_name(field.name()));  )
+                class $(DartCodeOracle::class_name(obj.name()))$cls_name extends $cls_name {
+                    $(for field in obj.fields() => final $(&field.as_type().as_renderable().render_type(&field.as_type(), type_helper)) $(DartCodeOracle::var_name(field.name()));  )
 
-                    $(class_name(obj.name()))$cls_name._($(for field in obj.fields() => this.$(var_name(field.name())), ));
+                    $(DartCodeOracle::class_name(obj.name()))$cls_name._($(for field in obj.fields() => this.$(DartCodeOracle::var_name(field.name())), ));
 
-                    static LiftRetVal<$(class_name(obj.name()))$cls_name> read( Uint8List buf) {
+                    static LiftRetVal<$(DartCodeOracle::class_name(obj.name()))$cls_name> read( Uint8List buf) {
                         int new_offset = buf.offsetInBytes;
 
                         $(for f in obj.fields() =>
-                            final $(var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(Uint8List.view(buf.buffer, new_offset));
-                            final $(var_name(f.name())) = $(var_name(f.name()))_lifted.value;
-                            new_offset += $(var_name(f.name()))_lifted.bytesRead;
+                            final $(DartCodeOracle::var_name(f.name()))_lifted = $(f.as_type().as_codetype().ffi_converter_name()).read(Uint8List.view(buf.buffer, new_offset));
+                            final $(DartCodeOracle::var_name(f.name())) = $(DartCodeOracle::var_name(f.name()))_lifted.value;
+                            new_offset += $(DartCodeOracle::var_name(f.name()))_lifted.bytesRead;
                         )
-                        return LiftRetVal($(class_name(obj.name()))$cls_name._(
-                            $(for f in obj.fields() => $(var_name(f.name())),)
+                        return LiftRetVal($(DartCodeOracle::class_name(obj.name()))$cls_name._(
+                            $(for f in obj.fields() => $(DartCodeOracle::var_name(f.name())),)
                         ), new_offset);
                     }
 
@@ -116,7 +114,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
 
                     @override
                     int allocationSize() {
-                        return $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize($(var_name(f.name()))) + ) 4;
+                        return $(for f in obj.fields() => $(f.as_type().as_codetype().ffi_converter_name()).allocationSize($(DartCodeOracle::var_name(f.name()))) + ) 4;
                     }
 
                     @override
@@ -125,7 +123,7 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
                         int new_offset = buf.offsetInBytes + 4;
 
                         $(for f in obj.fields() =>
-                        new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write($(var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
+                        new_offset += $(f.as_type().as_codetype().ffi_converter_name()).write($(DartCodeOracle::var_name(f.name())), Uint8List.view(buf.buffer, new_offset));
                         )
 
                         return new_offset;

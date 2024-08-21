@@ -37,9 +37,9 @@ impl CodeType for ObjectCodeType {
 
 impl Renderable for ObjectCodeType {
     // Semantically, it may make sense to render object here, but we don't have enough information. So we render it with help from type_helper
-    fn render(&self) -> dart::Tokens {
-        quote!()
-    }
+    // fn render(&self) -> dart::Tokens {
+    //     quote!()
+    // }
 
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
@@ -85,13 +85,13 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
     // let api = "_api";
     // let ffi = fun.ffi_func();
     // let fn_name = fn_name(fun.name());
-    // let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+    // let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
     // let ff_name = ffi.name();
     // let inner = quote! {
     // rustCall((status) =>
     //     _$(&fn_name)(
     //         uniffiClonePointer(),
-    //         $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+    //         $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
     //         status)
     // )
     // };
@@ -127,7 +127,7 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
     //     }
     // }
 
-    if func.takes_self_by_arc() {} // TODO: Do something about this condition
+    // if func.takes_self_by_arc() {} // TODO: Do something about this condition
     let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {

@@ -1,6 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::Type;
-use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, Function};
+use uniffi_bindgen::interface::{AsType, Function};
 
 use crate::gen::oracle::DartCodeOracle;
 use crate::gen::render::AsRenderable;
@@ -16,12 +15,12 @@ use super::render::TypeHelperRenderer;
 // ) -> dart::Tokens {
 //     let ffi = fun.ffi_func();
 //     let fn_name = fn_name(fun.name());
-//     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+//     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 //     let ff_name = ffi.name();
 //     let inner = quote! {
 //     rustCall((res) =>
 //         _$(&fn_name)(
-//             $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+//             $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
 //         res)
 //     )
 //     };
@@ -66,12 +65,12 @@ use super::render::TypeHelperRenderer;
 // ) -> dart::Tokens {
 //     let ffi = fun.ffi_func();
 //     let fn_name = fn_name(fun.name());
-//     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(var_name(arg.name())),));
+//     let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 //     let ff_name = ffi.name();
 //     let inner = quote! {
 //     rustCall((res) =>
 //         _$(&fn_name)(
-//             $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(var_name(arg.name()))))),)
+//             $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
 //         res)
 //     )
 //     };
@@ -109,8 +108,7 @@ use super::render::TypeHelperRenderer;
 // }
 
 pub fn generate_function(func: &Function, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    if func.takes_self() {} // TODO: Do something about this condition
-    let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
+    // if func.takes_self() {} // TODO: Do something about this condition
     let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 
     let (ret, lifter) = if let Some(ret) = func.return_type() {
