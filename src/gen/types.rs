@@ -10,11 +10,11 @@ use uniffi_bindgen::{
 };
 
 use super::{enums, functions, objects, oracle::AsCodeType, primitives, records};
-use crate::gen::DartCodeOracle;
 use super::{
     render::{AsRenderable, Renderer, TypeHelperRenderer},
     Config,
 };
+use crate::gen::DartCodeOracle;
 
 type FunctionDefinition = dart::Tokens;
 
@@ -42,13 +42,17 @@ impl<'a> TypeHelpersRenderer<'a> {
     }
 
     pub fn external_type_package_name(&self, crate_name: &str) -> String {
-        self.config.external_packages.get(crate_name).cloned()
+        self.config
+            .external_packages
+            .get(crate_name)
+            .cloned()
             .unwrap_or_else(|| crate_name.to_string())
     }
 
     pub fn get_include_names(&self) -> HashMap<String, Type> {
         self.include_once_names.clone().into_inner()
-    }}
+    }
+}
 
 impl TypeHelperRenderer for TypeHelpersRenderer<'_> {
     // Checks if the type imports for each type have already been added
@@ -695,14 +699,14 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     await completer.future;
                     callback.close();
 
-                  
+
                     final status = calloc<RustCallStatus>();
                     try {
-                       
+
                         final result = completeFunc(rustFuture, status);
-                      
+
                         // checkCallStatus(errorHandler ?? NullRustCallStatusErrorHandler(), status.ref);
-                       
+
                         return liftFunc(result);
                     } finally {
                         calloc.free(status);

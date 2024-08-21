@@ -48,4 +48,3 @@ impl Renderable for StringCodeType {
         }
     }
 }
-

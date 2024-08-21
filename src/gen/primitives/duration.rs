@@ -44,4 +44,3 @@ impl Renderable for DurationCodeType {
         }
     }
 }
-

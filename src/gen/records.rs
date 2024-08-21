@@ -97,4 +97,3 @@ pub fn generate_record(obj: &Record, type_helper: &dyn TypeHelperRenderer) -> da
         }
     }
 }
-

@@ -82,4 +82,3 @@ pub fn run_test(fixture: &str, udl_path: &str, config_path: Option<&str>) -> Res
 pub fn get_compile_sources() -> Result<Vec<CompileSource>> {
     todo!("Not implemented")
 }
-

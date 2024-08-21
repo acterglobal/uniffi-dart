@@ -1,9 +1,8 @@
-
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
 use uniffi_bindgen::interface::{AsType, Method, Object};
 
-use crate::gen::oracle::{DartCodeOracle, AsCodeType};
+use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
@@ -82,7 +81,7 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
 }
 
 #[allow(unused_variables)]
-pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {  
+pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     // let api = "_api";
     // let ffi = fun.ffi_func();
     // let fn_name = fn_name(fun.name());

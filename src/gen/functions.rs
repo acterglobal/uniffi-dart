@@ -1,4 +1,3 @@
-
 use genco::prelude::*;
 use uniffi_bindgen::backend::Type;
 use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, Function};

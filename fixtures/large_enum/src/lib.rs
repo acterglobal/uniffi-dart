@@ -105,7 +105,7 @@ pub fn new_public_key_value(value: Vec<i32>) -> Value {
 
 // #[uniffi::export]
 // pub fn new_map(value: HashMap<String, Value>) -> MapEntry {
-//      todo!("Not done") 
+//      todo!("Not done")
 // }
 
 #[uniffi::export]

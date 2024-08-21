@@ -28,15 +28,28 @@ pub trait Renderable {
 
     fn render_type(&self, ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         let type_name = match ty {
-            Type::UInt8 | Type::Int8 | Type::UInt16 | Type::Int16 |
-            Type::UInt32 | Type::Int32 | Type::UInt64 | Type::Int64 => quote!(int),
+            Type::UInt8
+            | Type::Int8
+            | Type::UInt16
+            | Type::Int16
+            | Type::UInt32
+            | Type::Int32
+            | Type::UInt64
+            | Type::Int64 => quote!(int),
             Type::Float32 | Type::Float64 => quote!(double),
             Type::String => quote!(String),
             Type::Boolean => quote!(bool),
             Type::Object { name, .. } => quote!($name),
             Type::Optional { inner_type } => quote!($(&self.render_type(inner_type, type_helper))?),
-            Type::Sequence { inner_type } => quote!(List<$(&self.render_type(inner_type, type_helper))>),
-            Type::Map { key_type, value_type } => quote!(Map<$(&self.render_type(key_type, type_helper)), $(&self.render_type(value_type, type_helper))>),
+            Type::Sequence { inner_type } => {
+                quote!(List<$(&self.render_type(inner_type, type_helper))>)
+            }
+            Type::Map {
+                key_type,
+                value_type,
+            } => {
+                quote!(Map<$(&self.render_type(key_type, type_helper)), $(&self.render_type(value_type, type_helper))>)
+            }
             Type::Enum { name, .. } => quote!($name),
             Type::Record { name, .. } => quote!($name),
             Type::Duration => quote!(Duration),
@@ -90,4 +103,3 @@ impl<T: AsType> AsRenderable for T {
         }
     }
 }
-

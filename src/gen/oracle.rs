@@ -26,7 +26,6 @@ impl DartCodeOracle {
         panic!("unsupported type for error: {type_:?}")
     }
 
-  
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
     pub fn sanitize_identifier(id: &str) -> String {
         if Self::is_reserved_identifier(id) {
@@ -63,7 +62,10 @@ impl DartCodeOracle {
 
     /// Get the idiomatic Dart rendering of an FFI callback function name
     fn ffi_callback_name(nm: &str) -> String {
-        format!("Pointer<NativeFunction<Uniffi{}>>", nm.to_upper_camel_case())
+        format!(
+            "Pointer<NativeFunction<Uniffi{}>>",
+            nm.to_upper_camel_case()
+        )
     }
 
     /// Get the idiomatic Dart rendering of an exception name
@@ -85,15 +87,15 @@ impl DartCodeOracle {
             return quote!(void);
         };
         match ret_type {
-            FfiType::UInt8 |
-            FfiType::UInt16 |
-            FfiType::UInt32 |
-            FfiType::UInt64 |
-            FfiType::Int8 |
-            FfiType::Int16 |
-            FfiType::Int32 |
-            FfiType::Handle |
-            FfiType::Int64 => quote!(int),
+            FfiType::UInt8
+            | FfiType::UInt16
+            | FfiType::UInt32
+            | FfiType::UInt64
+            | FfiType::Int8
+            | FfiType::Int16
+            | FfiType::Int32
+            | FfiType::Handle
+            | FfiType::Int64 => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
                 Some(i) => quote!($i),
@@ -101,14 +103,14 @@ impl DartCodeOracle {
             },
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
-    
+
     pub fn ffi_native_type_label(ffi_ret_type: Option<&FfiType>) -> dart::Tokens {
         let Some(ret_type) = ffi_ret_type else {
-            return quote!(Void)
+            return quote!(Void);
         };
         match ret_type {
             FfiType::UInt8 => quote!(Uint8),
@@ -128,7 +130,7 @@ impl DartCodeOracle {
             },
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
-            FfiType::Callback (name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -169,7 +171,9 @@ impl DartCodeOracle {
             | Type::Object { .. }
             | Type::Enum { .. }
             | Type::Record { .. }
-            | Type::Optional { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lift($inner)),
+            | Type::Optional { .. } => {
+                quote!($(ty.as_codetype().ffi_converter_name()).lift($inner))
+            }
             _ => todo!("lift Type::{:?}", ty),
         }
     }
@@ -193,7 +197,9 @@ impl DartCodeOracle {
             | Type::Enum { .. }
             | Type::Optional { .. }
             | Type::Record { .. }
-            | Type::Sequence { .. } => quote!($(ty.as_codetype().ffi_converter_name()).lower($inner)),
+            | Type::Sequence { .. } => {
+                quote!($(ty.as_codetype().ffi_converter_name()).lower($inner))
+            }
             _ => todo!("lower Type::{:?}", ty),
         }
     }
@@ -225,16 +231,71 @@ impl DartCodeOracle {
     }
 }
 
-
 // https://dart.dev/guides/language/language-tour#keywords
 pub static RESERVED_IDENTIFIERS: [&str; 63] = [
-    "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const",
-    "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export",
-    "extends", "extension", "external", "factory", "false", "final", "finally", "for", "Function",
-    "get", "hide", "if", "implements", "import", "in", "interface", "is", "late", "library",
-    "mixin", "new", "null", "on", "operator", "part", "required", "rethrow", "return", "set",
-    "show", "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef",
-    "var", "void", "while", "with", "yield",
+    "abstract",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "covariant",
+    "default",
+    "deferred",
+    "do",
+    "dynamic",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "extension",
+    "external",
+    "factory",
+    "false",
+    "final",
+    "finally",
+    "for",
+    "Function",
+    "get",
+    "hide",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "interface",
+    "is",
+    "late",
+    "library",
+    "mixin",
+    "new",
+    "null",
+    "on",
+    "operator",
+    "part",
+    "required",
+    "rethrow",
+    "return",
+    "set",
+    "show",
+    "static",
+    "super",
+    "switch",
+    "sync",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typedef",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
 ];
 
 pub trait AsCodeType {
@@ -290,4 +351,3 @@ impl<T: AsType> AsCodeType for T {
         }
     }
 }
-

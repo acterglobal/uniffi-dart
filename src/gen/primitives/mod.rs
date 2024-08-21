@@ -1,8 +1,8 @@
 #[macro_use]
 mod macros;
 mod boolean;
-mod string;
 mod duration;
+mod string;
 
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 use genco::prelude::*;
@@ -11,8 +11,8 @@ use uniffi_bindgen::backend::Literal;
 use uniffi_bindgen::interface::{Radix, Type};
 
 pub use boolean::BooleanCodeType;
-pub use string::StringCodeType;
 pub use duration::DurationCodeType;
+pub use string::StringCodeType;
 
 fn render_literal(literal: &Literal) -> String {
     fn typed_number(type_: &Type, num_str: String) -> String {
@@ -33,7 +33,7 @@ fn render_literal(literal: &Literal) -> String {
 
     match literal {
         Literal::Boolean(v) => format!("{}", v),
-       Literal::String(s) => format!("'{}'", s),
+        Literal::String(s) => format!("'{}'", s),
         Literal::Int(i, radix, type_) => typed_number(
             type_,
             match radix {

@@ -175,4 +175,3 @@ pub fn generate_enum(obj: &Enum, type_helper: &dyn TypeHelperRenderer) -> dart::
         }
     }
 }
-

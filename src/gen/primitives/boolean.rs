@@ -42,4 +42,3 @@ impl Renderable for BooleanCodeType {
         }
     }
 }
-

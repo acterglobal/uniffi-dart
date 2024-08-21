@@ -7,10 +7,10 @@ use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
 // use uniffi_bindgen::MergeWith;
-use crate::gen::oracle::DartCodeOracle;
-use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
+use crate::gen::oracle::DartCodeOracle;
+use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
 mod compounds;
 mod enums;
@@ -135,8 +135,9 @@ impl<'a> DartWrapper<'a> {
                     native_args.append(
                         quote!($(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),),
                     );
-                    dart_args
-                        .append(quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),));
+                    dart_args.append(
+                        quote!($(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),),
+                    );
                 }
 
                 if fun.has_rust_call_status_arg() {

@@ -6,4 +6,3 @@ pub mod testing;
 pub use build::generate_scaffolding;
 
 pub mod gen;
-

@@ -16,4 +16,3 @@ pub fn generate_scaffolding(udl_file: &Utf8Path) -> Result<()> {
     )?;
     Ok(())
 }
-
