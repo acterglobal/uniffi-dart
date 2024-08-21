@@ -327,9 +327,10 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record { name, module_path: _ } => {
-                Box::new(records::RecordCodeType::new(name))
-            }
+            Type::Record {
+                name,
+                module_path: _,
+            } => Box::new(records::RecordCodeType::new(name)),
             _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
 
                                                                   // Type::Timestamp => Box::new(miscellany::TimestampCodeType),

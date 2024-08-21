@@ -96,9 +96,10 @@ impl<T: AsType> AsRenderable for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record { name, module_path: _ } => {
-                Box::new(records::RecordCodeType::new(name ))
-            }
+            Type::Record {
+                name,
+                module_path: _,
+            } => Box::new(records::RecordCodeType::new(name)),
             _ => todo!("Renderable for Type::{:?}", self.as_type()),
         }
     }
