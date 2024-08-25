@@ -1,14 +1,15 @@
+#[macro_use]
+mod macros;
+mod boolean;
+mod duration;
+mod string;
+
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 use genco::prelude::*;
 use paste::paste;
 use uniffi_bindgen::backend::Literal;
 use uniffi_bindgen::interface::{Radix, Type};
 
-#[macro_use]
-mod macros;
-mod boolean;
-mod duration;
-mod string;
 pub use boolean::BooleanCodeType;
 pub use duration::DurationCodeType;
 pub use string::StringCodeType;
@@ -32,7 +33,7 @@ fn render_literal(literal: &Literal) -> String {
 
     match literal {
         Literal::Boolean(v) => format!("{}", v),
-        Literal::String(s) => format!("\"{}\"", s),
+        Literal::String(s) => format!("'{}'", s),
         Literal::Int(i, radix, type_) => typed_number(
             type_,
             match radix {
@@ -67,7 +68,7 @@ impl_code_type_for_primitive!(Float32CodeType, "double", "Double32");
 impl_code_type_for_primitive!(Float64CodeType, "double", "Double64");
 
 // TODO: implement BytesCodeType
-// impl_renderable_for_primitive!(BytesCodeType, "Uint8List", "Uint8List", 1);
+impl_renderable_for_primitive!(BytesCodeType, "Uint8List", "Uint8List", 1);
 impl_renderable_for_primitive!(Int8CodeType, "int", "Int8", 1);
 impl_renderable_for_primitive!(Int16CodeType, "int", "Int16", 2);
 impl_renderable_for_primitive!(Int32CodeType, "int", "Int32", 4);

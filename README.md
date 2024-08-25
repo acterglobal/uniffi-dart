@@ -8,7 +8,7 @@ Dart frontend for UniFFI bindings
 
 Reference: [TODOs](./TODO.md)
 
-## MSRV: 1.74
+## MSRV: 1.75
 
 This project must always work on latest stable rust + version before. We are also testing it against 1.1.70.0 , which we consider the Minimum Support Rust Version (MSRV) at this point. Rust lower than that will probably not compile the project.
 

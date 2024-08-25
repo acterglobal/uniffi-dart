@@ -103,6 +103,11 @@ pub fn new_public_key_value(value: Vec<i32>) -> Value {
     Value::PublicKey { value }
 }
 
+// #[uniffi::export]
+// pub fn new_map(value: HashMap<String, Value>) -> MapEntry {
+//      todo!("Not done")
+// }
+
 #[uniffi::export]
 pub fn take_value(value: Value) -> String {
     match value {

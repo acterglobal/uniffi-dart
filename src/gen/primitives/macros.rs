@@ -16,6 +16,27 @@ macro_rules! impl_code_type_for_primitive {
                 fn canonical_name(&self,) -> String {
                     $canonical_name.into()
                 }
+
+                fn ffi_converter_name(&self) -> String {
+                    format!("FfiConverter{}", self.canonical_name())
+                }
+
+                // The following must create an instance of the converter object
+                fn lower(&self) -> String {
+                    format!("{}.lower", self.ffi_converter_name())
+                }
+
+                fn write(&self) -> String {
+                    format!("{}.write", self.ffi_converter_name())
+                }
+
+                fn lift(&self) -> String {
+                    format!("{}.lift", self.ffi_converter_name())
+                }
+
+                fn read(&self) -> String {
+                    format!("{}.read", self.ffi_converter_name())
+                }
             }
         }
     };
@@ -40,25 +61,22 @@ macro_rules! impl_renderable_for_primitive {
 
                 quote! {
                     class $cl_name {
-                        static $type_signature lift(Api api, RustBuffer buf) {
-                            return $cl_name.read(api, buf.asUint8List()).value;
-                        }
-                        static LiftRetVal<$type_signature> read(Api api, Uint8List buf) {
+                        // According to generated funtion signatures, we won't need to convert number types
+                        static $type_signature lift($type_signature value) => value;
+
+
+                        static LiftRetVal<$type_signature> read(Uint8List buf) {
                             return LiftRetVal(buf.buffer.asByteData(buf.offsetInBytes).get$conversion_name(0), $allocation_size);
                         }
 
-                        static RustBuffer lower(Api api, $type_signature value) {
-                            final buf = Uint8List($cl_name.allocationSize(value));
-                            final byteData = ByteData.sublistView(buf);
-                            byteData.set$conversion_name(0, value$endian);
-                            return toRustBuffer(api, Uint8List.fromList(buf.toList()));
-                        }
+                        static $type_signature lower($type_signature value) => value;
+
 
                         static int allocationSize([$type_signature value = 0]) {
                           return $allocation_size;
                         }
 
-                        static int write(Api api, $type_signature value, Uint8List buf) {
+                        static int write($type_signature value, Uint8List buf) {
                             buf.buffer.asByteData(buf.offsetInBytes).set$conversion_name(0, value$endian);
                             return $cl_name.allocationSize();
                         }
@@ -79,13 +97,13 @@ macro_rules! impl_renderable_for_primitive {
                 quote! {
                     class BytesFfiConverter extends FfiConverter<$canonical_name, RustBuffer> {
                         @override
-                        LiftRetVal<int> read(Api api, Uint8List buf) {
+                        LiftRetVal<int> read(Uint8List buf) {
                             // final uint_list = buf.toIntList();
                             // return uint_list.buffer.asByteData().get$canonical_name(1);
                         }
 
                         @override
-                        RustBuffer lower(Api api, int value) {
+                        RustBuffer lower(int value) {
                             // final uint_list = Uint8List.fromList([value ? 1 : 0]);
                             // final byteData = ByteData.sublistView(buf);
                             // byteData.setInt16(0, value, Endian.little);
