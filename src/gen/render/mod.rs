@@ -12,20 +12,14 @@ pub trait TypeHelperRenderer {
     fn get_ci(&self) -> &ComponentInterface;
     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
     fn check(&self, name: &str) -> bool;
-    // fn add_import(&self, name: &str) -> bool;
-    // fn add_import_as(&self, name: &str, as_name: &str) -> bool;
+  
     fn get_object(&self, name: &str) -> Option<&Object>;
     fn get_enum(&self, name: &str) -> Option<&Enum>;
     fn get_record(&self, name: &str) -> Option<&Record>;
-    // fn ffi_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
-    // fn ffi_native_type_label(&self, ffi_type: &uniffi_bindgen::interface::FfiType) -> dart::Tokens;
+  
 }
 
 pub trait Renderable {
-    // fn render(&self) -> dart::Tokens {
-    //     quote!()
-    // }
-
     fn render_type(&self, ty: &Type, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         let type_name = match ty {
             Type::UInt8

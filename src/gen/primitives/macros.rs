@@ -61,9 +61,6 @@ macro_rules! impl_renderable_for_primitive {
 
                 quote! {
                     class $cl_name {
-                        // static $type_signature lift($type_signature value) {
-                        //     return $cl_name.read(buf.asUint8List()).value;
-                        // }
                         // According to generated funtion signatures, we won't need to convert number types
                         static $type_signature lift($type_signature value) => value;
 
@@ -71,13 +68,6 @@ macro_rules! impl_renderable_for_primitive {
                         static LiftRetVal<$type_signature> read(Uint8List buf) {
                             return LiftRetVal(buf.buffer.asByteData(buf.offsetInBytes).get$conversion_name(0), $allocation_size);
                         }
-
-                        // static RustBuffer lower($type_signature value) {
-                        //     final buf = Uint8List($cl_name.allocationSize(value));
-                        //     final byteData = ByteData.sublistView(buf);
-                        //     byteData.set$conversion_name(0, value$endian);
-                        //     return toRustBuffer(Uint8List.fromList(buf.toList()));
-                        // }
 
                         static $type_signature lower($type_signature value) => value;
 

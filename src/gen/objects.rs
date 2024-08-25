@@ -36,11 +36,6 @@ impl CodeType for ObjectCodeType {
 }
 
 impl Renderable for ObjectCodeType {
-    // Semantically, it may make sense to render object here, but we don't have enough information. So we render it with help from type_helper
-    // fn render(&self) -> dart::Tokens {
-    //     quote!()
-    // }
-
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         if type_helper.check(&self.id) {
             quote!()
@@ -82,51 +77,6 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
 
 #[allow(unused_variables)]
 pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    // let api = "_api";
-    // let ffi = fun.ffi_func();
-    // let fn_name = fn_name(fun.name());
-    // let args = quote!($(for arg in &fun.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
-    // let ff_name = ffi.name();
-    // let inner = quote! {
-    // rustCall((status) =>
-    //     _$(&fn_name)(
-    //         uniffiClonePointer(),
-    //         $(for arg in &fun.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),)
-    //         status)
-    // )
-    // };
-
-    // let (ret, body) = if let Some(ret) = fun.return_type() {
-    //     (
-    //         ret.as_renderable().render_type(ret, type_helper),
-    //         quote! {
-    //             return $(DartCodeOracle::type_lift_fn(ret, inner));
-    //         },
-    //     )
-    // } else {
-    //     (quote!(void), quote!($inner;))
-    // };
-
-    // quote! {
-    //     late final _$(&fn_name)Ptr = _api._lookup<
-    //     NativeFunction<
-    //         $(DartCodeOracle::ffi_native_type_label(ffi.return_type())) Function(
-    //             $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_native_type_label(Some(&arg.type_()))),)
-    //             Pointer<RustCallStatus>
-    //     )>>($(format!("\"{ff_name}\"")));
-
-    //     late final _$(&fn_name) = _$(&fn_name)Ptr.asFunction<
-    //     $(DartCodeOracle::ffi_dart_type_label(ffi.return_type())) Function(
-    //         $(for arg in &ffi.arguments() => $(DartCodeOracle::ffi_dart_type_label(Some(&arg.type_()))),)
-    //         Pointer<RustCallStatus>
-    //     )>();
-
-    //     $ret $fn_name ($args) {
-    //         final api = _api;
-    //         $body
-    //     }
-    // }
-
     // if func.takes_self_by_arc() {} // TODO: Do something about this condition
     let args = quote!($(for arg in &func.arguments() => $(&arg.as_renderable().render_type(&arg.as_type(), type_helper)) $(DartCodeOracle::var_name(arg.name())),));
 

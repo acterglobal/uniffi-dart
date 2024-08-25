@@ -18,14 +18,6 @@ impl DartCodeOracle {
         type_.clone().as_type().as_codetype()
     }
 
-    // pub fn find_renderable(type_: &Type) -> Box<dyn Renderable> {
-    //     type_.clone().as_type().as_renderable()
-    // }
-
-    // pub fn find_as_error(type_: &Type) -> Box<dyn CodeType> {
-    //     panic!("unsupported type for error: {type_:?}")
-    // }
-
     /// Sanitize a Dart identifier, appending an underscore if it's a reserved keyword.
     pub fn sanitize_identifier(id: &str) -> String {
         if Self::is_reserved_identifier(id) {
@@ -331,23 +323,7 @@ impl<T: AsType> AsCodeType for T {
                 name,
                 module_path: _,
             } => Box::new(records::RecordCodeType::new(name)),
-            _ => todo!("As Type for Type::{:?}", self.as_type()), // Type::Bytes => Box::new(primitives::BytesCodeType),
-
-                                                                  // Type::Timestamp => Box::new(miscellany::TimestampCodeType),
-                                                                  // Type::Duration => Box::new(miscellany::DurationCodeType),
-
-                                                                  // ,
-                                                                  // Type::Object { name, .. } => Box::new(object::ObjectCodeType::new(name)),
-                                                                  // Type::Record(id) => Box::new(record::RecordCodeType::new(id)),
-                                                                  // Type::CallbackInterface(id) => {
-                                                                  //     Box::new(callback_interface::CallbackInterfaceCodeType::new(id))
-                                                                  // }
-                                                                  // Type::ForeignExecutor => Box::new(executor::ForeignExecutorCodeType),
-                                                                  // Type::Optional(inner) => Box::new(compounds::OptionalCodeType::new(*inner)),
-                                                                  // ,
-                                                                  // Type::Map(key, value) => Box::new(compounds::MapCodeType::new(*key, *value)),
-                                                                  // Type::External { name, .. } => Box::new(external::ExternalCodeType::new(name)),
-                                                                  // Type::Custom { name, .. } => Box::new(custom::CustomCodeType::new(name)),
+            _ => todo!("As Type for Type::{:?}", self.as_type()), 
         }
     }
 }

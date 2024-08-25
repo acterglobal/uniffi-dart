@@ -21,7 +21,6 @@ mod primitives;
 mod records;
 mod render;
 mod types;
-mod utils;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -30,25 +29,6 @@ pub struct Config {
     #[serde(default)]
     external_packages: HashMap<String, String>,
 }
-
-// impl MergeWith for Config {
-//     fn merge_with(&self, other: &Self) -> Self {
-//         let package_name = if other.package_name.is_some() {
-//             other.package_name.clone()
-//         } else {
-//             self.package_name.clone()
-//         };
-//         let cdylib_name = if other.cdylib_name.is_some() {
-//             other.cdylib_name.clone()
-//         } else {
-//             self.cdylib_name.clone()
-//         };
-//         Self {
-//             package_name,
-//             cdylib_name,
-//         }
-//     }
-// }
 
 impl From<&ComponentInterface> for Config {
     fn from(ci: &ComponentInterface) -> Self {
