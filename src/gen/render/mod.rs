@@ -12,11 +12,10 @@ pub trait TypeHelperRenderer {
     fn get_ci(&self) -> &ComponentInterface;
     fn include_once_check(&self, name: &str, ty: &Type) -> bool;
     fn check(&self, name: &str) -> bool;
-  
+
     fn get_object(&self, name: &str) -> Option<&Object>;
     fn get_enum(&self, name: &str) -> Option<&Enum>;
     fn get_record(&self, name: &str) -> Option<&Record>;
-  
 }
 
 pub trait Renderable {

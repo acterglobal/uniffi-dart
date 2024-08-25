@@ -323,7 +323,7 @@ impl<T: AsType> AsCodeType for T {
                 name,
                 module_path: _,
             } => Box::new(records::RecordCodeType::new(name)),
-            _ => todo!("As Type for Type::{:?}", self.as_type()), 
+            _ => todo!("As Type for Type::{:?}", self.as_type()),
         }
     }
 }

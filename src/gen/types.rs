@@ -15,9 +15,7 @@ pub struct TypeHelpersRenderer<'a> {
 }
 
 impl<'a> TypeHelpersRenderer<'a> {
-    pub fn new(
-        ci: &'a ComponentInterface,
-    ) -> Self {
+    pub fn new(ci: &'a ComponentInterface) -> Self {
         Self {
             ci,
             include_once_names: RefCell::new(HashMap::new()),
