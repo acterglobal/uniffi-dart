@@ -21,6 +21,7 @@ mod primitives;
 mod records;
 mod render;
 mod types;
+pub mod stream;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {
