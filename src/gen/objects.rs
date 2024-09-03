@@ -6,6 +6,8 @@ use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
+use super::stream::stream::generate_stream;
+
 #[derive(Debug)]
 pub struct ObjectCodeType {
     id: String,
@@ -49,7 +51,18 @@ impl Renderable for ObjectCodeType {
 
 // Let's refactor this later
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    type_helper.include_once_check(obj.name(), &obj.as_type());
+
     let cls_name = &DartCodeOracle::class_name(obj.name());
+
+    // Stream workaround, make it more elegant later
+
+    let stream_glue = if obj.name().contains("StreamExt") {
+        generate_stream(obj, type_helper)
+    } else {
+        quote!()
+    };
+
     quote! {
         class $cls_name {
             final Pointer<Void> _ptr;
@@ -72,6 +85,8 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
 
             $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
         }
+
+        $(stream_glue)
     }
 }
 
