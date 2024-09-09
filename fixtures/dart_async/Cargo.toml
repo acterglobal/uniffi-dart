@@ -1,5 +1,5 @@
 [package]
-name = "futures"
+name = "dart_async"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,7 +7,7 @@ publish = false
 
 
 [lib]
-name = "futures"
+name = "dart_async"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]

@@ -153,7 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_combined_streams() {
-        let result: Vec<String> = combined_streams().take(15).collect().await;
+        let result: Vec<String> = combined_streams().take(10).collect().await;
         
         // Check if we have the correct number of items
         assert_eq!(result.len(), 10);

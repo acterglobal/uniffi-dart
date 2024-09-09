@@ -69,7 +69,7 @@ exclude = [
     "fixtures/custom_types",
     "fixtuers/callbacks",
     "fixtuers/dispose",
-    "fixtuers/futures",
+    "fixtuers/dart_async",
 ]
 
 [workspace.dependencies]
