@@ -56,53 +56,6 @@ pub fn combined_streams() -> Pin<Box<dyn Stream<Item = String> + Send>> {
     Box::pin(stream::select(stream1, stream3))
 }
 
-// create_stream_ext!(
-//     SimpleStreamExt,
-//     i32,
-//     create_simple_stream,
-//     simple_stream
-// );
-
-// // CountStreamExt
-// create_stream_ext!(
-//     CountStreamExt,
-//     i32,
-//     create_count_stream,
-//     count_stream
-// );
-
-// // AlphabetStreamExt
-// // create_stream_ext!(
-// //     AlphabetStreamExt,
-// //     String,
-// //     create_alphabet_stream,
-// //     alphabet_stream
-// // );
-
-// // FibonacciStreamExt
-// create_stream_ext!(
-//     FibonacciStreamExt,
-//     u64,
-//     create_fibonacci_stream,
-//     fibonacci_stream
-// );
-
-// // AsyncTimerStreamExt
-// create_stream_ext!(
-//     AsyncTimerStreamExt,
-//     u64,
-//     create_async_timer_stream,
-//     async_timer_stream
-// );
-
-// // CombinedStreamsExt
-// create_stream_ext!(
-//     CombinedStreamsExt,
-//     String,
-//     create_combined_streams,
-//     combined_streams
-// );
-
 #[cfg(test)]
 mod tests {
     use super::*;

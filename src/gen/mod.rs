@@ -20,8 +20,8 @@ mod oracle;
 mod primitives;
 mod records;
 mod render;
-mod types;
 pub mod stream;
+mod types;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {
