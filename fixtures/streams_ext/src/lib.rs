@@ -1,14 +1,13 @@
-use uniffi_dart::*;
-use futures::stream::{self, Stream, StreamExt};
 use async_stream::stream;
-use tokio::time::{interval, Duration};
+use futures::stream::{self, Stream, StreamExt};
 use std::pin::Pin;
+use tokio::time::{interval, Duration};
+use uniffi_dart::*;
 
 #[uniffi_dart::export_stream(i32)]
 pub fn simple_stream() -> impl Stream<Item = i32> {
     stream::iter(0..5)
 }
-
 
 #[uniffi_dart::export_stream(i32)]
 pub fn count_stream() -> Pin<Box<dyn Stream<Item = i32> + Send>> {
@@ -49,12 +48,13 @@ pub fn async_timer_stream() -> Pin<Box<dyn Stream<Item = u64> + Send>> {
 #[uniffi_dart::export_stream(String)]
 pub fn combined_streams() -> Pin<Box<dyn Stream<Item = String> + Send>> {
     let stream1 = count_stream().map(|n| format!("Count: {}", n));
-   // let stream2 = alphabet_stream().map(|c| format!("Letter: {}", c));
-    let stream3 = fibonacci_stream().take(5).map(|n| format!("Fibonacci: {}", n));
+    // let stream2 = alphabet_stream().map(|c| format!("Letter: {}", c));
+    let stream3 = fibonacci_stream()
+        .take(5)
+        .map(|n| format!("Fibonacci: {}", n));
 
     Box::pin(stream::select(stream1, stream3))
 }
-
 
 // create_stream_ext!(
 //     SimpleStreamExt,
@@ -107,9 +107,9 @@ pub fn combined_streams() -> Pin<Box<dyn Stream<Item = String> + Send>> {
 mod tests {
     use super::*;
     use futures::stream::StreamExt;
-    use tokio::time::timeout;
     use std::time::Duration;
     use tokio::runtime::Runtime;
+    use tokio::time::timeout;
 
     #[tokio::test]
     async fn test_simple_stream() {
@@ -146,7 +146,9 @@ mod tests {
                 }
             }
             values
-        }).await.expect("Timeout occurred");
+        })
+        .await
+        .expect("Timeout occurred");
 
         assert_eq!(result, vec![1, 2, 3]);
     }
@@ -154,7 +156,7 @@ mod tests {
     #[tokio::test]
     async fn test_combined_streams() {
         let result: Vec<String> = combined_streams().take(10).collect().await;
-        
+
         // Check if we have the correct number of items
         assert_eq!(result.len(), 10);
 
@@ -167,8 +169,8 @@ mod tests {
         assert!(result.contains(&"Fibonacci: 3".to_string()));
     }
 
-    #[test]
-    fn test_poll_next() {
+    #[tokio::test]
+    async fn test_poll_next() {
         let rt = Runtime::new().unwrap();
         let instance = create_stream_count_stream();
 
@@ -184,8 +186,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_multiple_streams() {
+    #[tokio::test]
+    async fn test_multiple_streams() {
         let rt = Runtime::new().unwrap();
         let instance1 = create_stream_count_stream();
         let instance2 = create_stream_count_stream();
@@ -207,8 +209,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_stream_exhaustion() {
+    #[tokio::test]
+    async fn test_stream_exhaustion() {
         let rt = Runtime::new().unwrap();
         let instance = create_stream_count_stream();
 
