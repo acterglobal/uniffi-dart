@@ -40,21 +40,46 @@ void main() {
     );
   }, timeout: Timeout(Duration(seconds: 6)));
 
-  test('Combined Streams emits from all source streams', () {
+  test('Combined Streams emits from all source streams, verify count',
+      () async {
+    var count = 0;
+    await for (final event in combinedStreams().take(15)) {
+      print(event);
+      count++;
+    }
+    print('Stream done');
+    expect(count, 10);
+  });
+
+  test('Combined Streams emits from all source streams, specifically', () {
     expect(
-      combinedStreams().take(10),
-      emitsInOrder([
-        // We expect at least one of each type, but the order might vary
-        predicate((String s) => s.startsWith('Count:')),
-        predicate((String s) => s.startsWith('Fibonacci:')),
-
-        // The rest can be in any order
-        emitsThrough(predicate((String s) =>
-            s.startsWith('Count:') || s.startsWith('Fibonacci:'))),
-
-        // Ensure we get exactly 15 events
+      combinedStreams(),
+      emitsInAnyOrder([
+        'Count: 0',
+        'Fibonacci: 0',
+        'Count: 1',
+        'Fibonacci: 1',
+        'Count: 2',
+        'Fibonacci: 1',
+        'Count: 3',
+        'Fibonacci: 2',
+        'Count: 4',
+        'Fibonacci: 3',
         emitsDone,
       ]),
     );
+  });
+
+  test('Combined Streams emits from all source streams', () async {
+    final events = await combinedStreams().toList();
+
+    // Check that we received exactly 10 events
+    expect(events.length, 10);
+
+    // Check that we have at least one 'Count:' and one 'Fibonacci:'
+    expect(events.any((s) => s.startsWith('Count:')), isTrue);
+    expect(events.any((s) => s.startsWith('Fibonacci:')), isTrue);
+
+    // The stream should be done
   });
 }
