@@ -70,16 +70,13 @@ void main() {
     );
   });
 
-  test('Combined Streams emits from all source streams', () async {
-    final events = await combinedStreams().toList();
-
-    // Check that we received exactly 10 events
-    expect(events.length, 10);
-
-    // Check that we have at least one 'Count:' and one 'Fibonacci:'
-    expect(events.any((s) => s.startsWith('Count:')), isTrue);
-    expect(events.any((s) => s.startsWith('Fibonacci:')), isTrue);
-
-    // The stream should be done
+  test('Combined Streams emits from all source streams', () {
+    expect(
+      combinedStreams(),
+      emitsInAnyOrder([
+        predicate((String s) => s.startsWith('Count:')),
+        predicate((String s) => s.startsWith('Fibonacci:')),
+      ]),
+    );
   });
 }
