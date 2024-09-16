@@ -169,15 +169,15 @@ mod tests {
         assert!(result.contains(&"Fibonacci: 3".to_string()));
     }
 
-    #[tokio::test]
-    async fn test_poll_next() {
+    #[test]
+    fn test_poll_next() {
         let rt = Runtime::new().unwrap();
         let instance = create_stream_count_stream();
 
         rt.block_on(async {
             let mut results = Vec::new();
             for _ in 0..5 {
-                if let Some(value) = instance.poll_next().await {
+                if let Some(value) = instance.next().await {
                     results.push(value);
                 }
             }
@@ -188,41 +188,35 @@ mod tests {
 
     #[tokio::test]
     async fn test_multiple_streams() {
-        let rt = Runtime::new().unwrap();
         let instance1 = create_stream_count_stream();
         let instance2 = create_stream_count_stream();
 
-        rt.block_on(async {
-            let result1 = instance1.poll_next().await;
-            let result2 = instance2.poll_next().await;
+        let result1 = instance1.next().await;
+        let result2 = instance2.next().await;
 
-            // Both instances should return the first item (0)
-            assert_eq!(result1, Some(0));
-            assert_eq!(result2, Some(0));
+        // Both instances should return the first item (0)
+        assert_eq!(result1, Some(0));
+        assert_eq!(result2, Some(0));
 
-            // The next call should return the second item (1) for both instances
-            let result3 = instance1.poll_next().await;
-            let result4 = instance2.poll_next().await;
+        // The next call should return the second item (1) for both instances
+        let result3 = instance1.next().await;
+        let result4 = instance2.next().await;
 
-            assert_eq!(result3, Some(1));
-            assert_eq!(result4, Some(1));
-        });
+        assert_eq!(result3, Some(1));
+        assert_eq!(result4, Some(1));
     }
 
     #[tokio::test]
     async fn test_stream_exhaustion() {
-        let rt = Runtime::new().unwrap();
         let instance = create_stream_count_stream();
 
-        rt.block_on(async {
-            // Consume all items
-            for _ in 0..5 {
-                print!("{:?}", instance.poll_next().await);
-            }
+        // Consume all items
+        for _ in 0..5 {
+            print!("{:?}", instance.next().await);
+        }
 
-            // The next call should return None
-            assert_eq!(instance.poll_next().await, None);
-        });
+        // The next call should return None
+        assert_eq!(instance.next().await, None);
     }
 }
 

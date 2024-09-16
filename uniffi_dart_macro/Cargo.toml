@@ -14,5 +14,5 @@ stringcase = "0.3.0"
 futures = "0.3"
 tokio = { version = "1.0", features = ["full"] }
 uniffi = { workspace = true, features = [
-    "build",
+    "build", "tokio"
 ] }
