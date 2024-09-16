@@ -21,7 +21,7 @@ pub fn export_stream(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_name = &input.sig.ident;
     let vis = &input.vis;
-    let struct_name = format_ident!("{}Stream", pascal_case(&fn_name.to_string()));
+    let struct_name = format_ident!("{}StreamExt", pascal_case(&fn_name.to_string()));
     let create_fn_name = format_ident!("create_stream_{}", fn_name);
     let item_type = &attr.item_type;
 
