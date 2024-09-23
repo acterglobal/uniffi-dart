@@ -97,7 +97,6 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
     }
 }
 
-
 #[allow(unused_variables)]
 pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     // if func.takes_self_by_arc() {} // TODO: Do something about this condition
