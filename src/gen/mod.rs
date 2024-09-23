@@ -20,6 +20,7 @@ mod oracle;
 mod primitives;
 mod records;
 mod render;
+pub mod stream;
 mod types;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

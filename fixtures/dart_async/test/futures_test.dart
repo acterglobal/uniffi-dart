@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import '../futures.dart';
+import '../dart_async.dart';
 
 Future<Duration> measureTime(Future<void> Function() action) async {
   final start = DateTime.now();
@@ -35,13 +35,13 @@ void main() {
     expect(time.inMilliseconds <= 10, true);
   });
 
-  // test('sleep', () async {
-  //   final time = await measureTime(() async {
-  //     await sleep(200);
-  //   });
+  test('sleep', () async {
+    final time = await measureTime(() async {
+      await sleep(200);
+    });
 
-  //   expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
-  // });
+    expect(time.inMilliseconds > 200 && time.inMilliseconds < 300, true);
+  });
 
   test('sequential_future', () async {
     final time = await measureTime(() async {
