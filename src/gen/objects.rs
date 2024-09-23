@@ -6,7 +6,7 @@ use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-use super::stream::stream::generate_stream;
+use super::stream::generate_stream;
 
 #[derive(Debug)]
 pub struct ObjectCodeType {

@@ -2,7 +2,6 @@ use async_stream::stream;
 use futures::stream::{self, Stream, StreamExt};
 use std::pin::Pin;
 use tokio::time::{interval, Duration};
-use uniffi_dart::*;
 
 #[uniffi_dart::export_stream(i32)]
 pub fn simple_stream() -> impl Stream<Item = i32> {

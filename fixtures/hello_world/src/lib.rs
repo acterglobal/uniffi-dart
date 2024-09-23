@@ -80,7 +80,3 @@ pub fn hello(input: String) -> String {
 }
 
 uniffi::include_scaffolding!("api");
-
-mod uniffi_types {
-    pub use crate::{World, WorldState};
-}
