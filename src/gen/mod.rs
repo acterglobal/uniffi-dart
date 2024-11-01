@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use anyhow::Result;
 use camino::Utf8Path;
@@ -102,9 +103,17 @@ impl<'a> DartWrapper<'a> {
 
         fn uniffi_function_definitions(ci: &ComponentInterface) -> dart::Tokens {
             let mut definitions = quote!();
+            let mut defined_functions = HashSet::new(); // Track defined function names
 
             for fun in ci.iter_ffi_function_definitions() {
-                let fun_name = fun.name();
+                let fun_name = fun.name().to_owned();
+
+                // Check for duplicate function names
+                if !defined_functions.insert(fun_name.clone()) {
+                    // Function name already exists, skip to prevent duplicate definition
+                    continue;
+                }
+
                 let (native_return_type, dart_return_type) = match fun.return_type() {
                     Some(return_type) => (
                         quote! { $(DartCodeOracle::ffi_native_type_label(Some(return_type))) },
