@@ -1,0 +1,18 @@
+[Error]
+enum StreamErrorInt {
+    "IntegerError",
+};
+
+[Error]
+enum StreamErrorString {
+    "StringError",
+};
+
+namespace streams_ext {
+    [Throws=StreamErrorInt]
+    i32? error_stream();
+
+    [Throws=StreamErrorString]
+    string? combined_error_streams();
+};
+

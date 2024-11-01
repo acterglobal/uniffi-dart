@@ -2,3 +2,5 @@
 /uniffi-rs
 /Cargo.lock
 .aider*
+rust-toolchain.toml
+internal_todo.md
