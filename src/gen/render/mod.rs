@@ -46,6 +46,10 @@ pub trait Renderable {
             Type::Enum { name, .. } => quote!($name),
             Type::Record { name, .. } => quote!($name),
             Type::Duration => quote!(Duration),
+            Type::CallbackInterface { module_path, name } => {
+                todo!("CallbackInterface: {:?}", ty);
+                quote!($name, $module_path)
+            }
             _ => todo!("Type::{:?}", ty),
         };
 
