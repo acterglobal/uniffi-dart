@@ -13,6 +13,7 @@ use self::types::TypeHelpersRenderer;
 use crate::gen::oracle::DartCodeOracle;
 use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
 
+mod callback_interface;
 mod compounds;
 mod enums;
 mod functions;
