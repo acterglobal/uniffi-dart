@@ -1,5 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
+use uniffi_bindgen::backend::{CodeType, Literal, Type};
 use uniffi_bindgen::interface::{AsType, Method, CallbackInterface, FfiCallbackFunction};
 
 use crate::gen::oracle::{AsCodeType, DartCodeOracle};
@@ -179,69 +179,106 @@ fn generate_callback_vtable_interface(callback: &CallbackInterface, type_helper:
 }
 
 fn generate_callback_functions(callback: &CallbackInterface, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-    // let cls_name = DartCodeOracle::class_name(callback.name());
+    // let cls_name = &DartCodeOracle::class_name(callback.name());
     // let methods = callback.methods();
 
-    // let functions = methods.iter().enumerate().map(|(index, m)| {
-    //     let method_name = DartCodeOracle::fn_name(m.name());
-    //     let ffi_method_type = format!("UniffiCallbackInterface{}Method{}", callback.name(), index);
-    //     let dart_method_type = format!("UniffiCallbackInterface{}Method{}Dart", callback.name(), index);
+    // let functions: Vec<dart::Tokens> = methods.iter().enumerate().map(|(index, m)| {
+    //     let method_name = &DartCodeOracle::fn_name(m.name());
+    //     let ffi_method_type = &format!("UniffiCallbackInterface{}Method{}", callback.name(), index);
+    //     let dart_method_type = &format!("UniffiCallbackInterface{}Method{}Dart", callback.name(), index);
 
-    //     let arg_lifts = m.arguments().iter().enumerate().map(|(i, arg)| {
-    //         let arg_name = DartCodeOracle::var_name(arg.name());
-    //         let lift_fn = DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($arg_name));
-    //         quote!(final ${arg_name} = $lift_fn;)
-    //     });
+    //     // Lift each argument using the appropriate converter
+    //     let arg_lifts: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
+    //         let arg_name = &DartCodeOracle::var_name(arg.name());
+    //         let lift_fn = &DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($arg_name));
+    //         quote!(final $arg_name = $lift_fn;)
+    //     }).collect();
 
+    //     // Handle return value
     //     let call_dart_method = if let Some(ret) = m.return_type() {
-    //         let lift_ret = ret.as_codetype().lift();
-    //         quote!(
-    //             final result = obj.$method_name($(&DartCodeOracle::var_name(arg.name())),*);
-    //             outReturn.ref = ${ret.as_codetype().lower()}(result);
-    //         )
+    //         if let Type::Optional { .. } = ret {
+    //             // Handle Option types
+    //             let lowered = ret.as_codetype().lower();
+    //             quote!(
+    //                 //final result = obj.$method_name($(&DartCodeOracle::var_name(arg.name())),*);
+    //                 final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
+    //                 if (result == null) {
+    //                     outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
+    //                 } else {
+    //                     final lowered = $lowered(result);
+    //                     // Prepend the optional tag
+    //                     final buffer = Uint8List(1 + lowered.length);
+    //                     buffer[0] = 1;
+    //                     buffer.setAll(1, lowered.asUint8List()); // Make Rust Buffer Iterable
+    //                     outReturn.ref = toRustBuffer(buffer);
+    //                 }
+    //             )
+    //         } else {
+    //             // Handle non-Option return types
+    //             let lowered = ret.as_codetype().lower();
+    //             quote!(
+    //                 final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
+    //                 outReturn.ref = $lowered(result);
+    //             )
+    //         }
     //     } else {
+    //         // Handle void return types
     //         quote!(
-    //             obj.$method_name($(&DartCodeOracle::var_name(arg.name())),*);
+    //             obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
+    //             // Indicate success
+    //             status.code = CALL_SUCCESS;
     //         )
     //     };
 
+    //     // Determine the outReturn type based on the return type
+    //     let out_return_type = if m.return_type().is_some() {
+    //         quote!(Pointer<RustBuffer>)
+    //     } else {
+    //         quote!(Pointer<Void>)
+    //     };
+
+    //     // Generate the function body
     //     quote! {
-    //         void $method_name(int uniffiHandle, $(for arg in &m.arguments() => $(&DartCodeOracle::arg_type(arg.as_type()))) Pointer<RustBuffer> outReturn, Pointer<RustCallStatus> callStatus) {
+    //         void $method_name(int uniffiHandle, $(for arg in &m.arguments() => $(&DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $(DartCodeOracle::var_name(arg.name())),) $out_return_type outReturn, Pointer<RustCallStatus> callStatus) {
     //             final status = callStatus.ref;
     //             try {
-    //                 final obj = FfiConverterCallbackInterface${callback.name()}._handleMap.get(uniffiHandle);
-    //                 $(for arg in &m.arguments() => $(&DartCodeOracle::lift_arg(arg, type_helper)),)
+    //                 final obj = FfiConverterCallbackInterface$cls_name._handleMap.get(uniffiHandle);
+    //                 // Lift the arguments
+    //                 $(arg_lifts)
+    //                 // Call the Dart method
     //                 $call_dart_method
-    //                 status.code = CALL_SUCCESS;
     //             } catch (e) {
     //                 status.code = CALL_UNEXPECTED_ERROR;
     //                 status.errorBuf = FfiConverterString.lower(e.toString());
     //             }
     //         }
 
-    //         final Pointer<NativeFunction<$ffi_method_type>> ${method_name}Pointer =
-    //             Pointer.fromFunction<$ffi_method_type>($method_name);
+    //         final Pointer<NativeFunction<$ffi_method_type>> $(method_name)Pointer =
+    //             Pointer.fromFunction<$ffi_method_type>($method_name, defaultReturn<$ffi_method_type>());
     //     }
-    // });
+    // }).collect();
 
     // // Free callback
-    // let free_callback = format!("{}FreeCallback", callback.name());
-    // let free_callback_fn = format!("{}FreeCallback", callback.name());
+    // let free_callback_fn = &format!("{}FreeCallback", callback.name());
+    // let free_callback_type = &format!("UniffiCallbackInterface{}Free", callback.name());
+    
     // quote! {
     //     $(functions)
 
     //     void $free_callback_fn(int handle) {
     //         try {
-    //             FfiConverterCallbackInterface${callback.name()}._handleMap.remove(handle);
+    //             FfiConverterCallbackInterface$cls_name._handleMap.remove(handle);
     //         } catch (e) {
     //             // Optionally log error, but do not return anything.
     //         }
     //     }
 
-    //     final Pointer<NativeFunction<UniffiCallbackInterfaceFree>> ${free_callback_fn}Pointer =
-    //         Pointer.fromFunction<UniffiCallbackInterfaceFree>(
-    //             $free_callback_fn);
+    //     final Pointer<NativeFunction<${format!("UniffiCallbackInterface{}Free", callback.name())}>> ${format!("{}Pointer", free_callback_fn)} =
+    //         Pointer.fromFunction<UniffiCallbackInterface${callback.name()}Free>(
+    //             $free_callback_fn, nullptr);
     // }
+
+    quote!()
 }
 
 fn generate_callback_interface_vtable_init_funtion(callback: &CallbackInterface, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
@@ -255,7 +292,7 @@ fn generate_callback_interface_vtable_init_funtion(callback: &CallbackInterface,
         void $init_fn_name() {
             $(&vtable_static_instance_name) = calloc<$vtable_name>();
             $(for m in &callback.methods() {
-                $(&vtable_static_instance_name).ref.$(DartCodeOracle::fn_name(m.name())) = $(DartCodeOracle::fn_name(m.name()))Pointer;
+                $(&vtable_static_instance_name).ref.$(DartCodeOracle::fn_name(m.name())) = $(DartCodeOracle::fn_name(callback.name()))$(DartCodeOracle::class_name(m.name()))Pointer;
             })
             $(&vtable_static_instance_name).ref.uniffiFree = $(format!("{}FreePointer", DartCodeOracle::fn_name(callback.name())));
 

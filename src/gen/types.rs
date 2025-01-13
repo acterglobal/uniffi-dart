@@ -375,6 +375,33 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 }
             }
 
+            class UniffiHandleMap<T> {
+                final Map<int, T> _map = {};
+                int _counter = 0;
+            
+                int insert(T obj) {
+                final handle = _counter++;
+                _map[handle] = obj;
+                return handle;
+                }
+            
+                T get(int handle) {
+                final obj = _map[handle];
+                if (obj == null) {
+                    throw UniffiInternalError(
+                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
+                }
+                return obj;
+                }
+            
+                void remove(int handle) {
+                if (_map.remove(handle) == null) {
+                    throw UniffiInternalError(
+                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
+                }
+                }
+            }
+
         };
 
         (types_helper_code, function_definitions)

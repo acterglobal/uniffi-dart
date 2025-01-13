@@ -163,34 +163,6 @@ impl<'a> DartWrapper<'a> {
             library $package_name;
 
             $(type_helper_code) // Imports, Types and Type Helper
-
-            // A handle map to store callback instances passed from Dart to Rust.
-            class UniffiHandleMap<T> {
-                final Map<int, T> _map = {};
-                int _counter = 0;
-            
-                int insert(T obj) {
-                final handle = _counter++;
-                _map[handle] = obj;
-                return handle;
-                }
-            
-                T get(int handle) {
-                final obj = _map[handle];
-                if (obj == null) {
-                    throw UniffiInternalError(
-                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
-                }
-                return obj;
-                }
-            
-                void remove(int handle) {
-                if (_map.remove(handle) == null) {
-                    throw UniffiInternalError(
-                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
-                }
-                }
-            }
             
             $(functions_definitions)
 
