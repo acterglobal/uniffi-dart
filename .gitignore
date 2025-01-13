@@ -1,6 +1,8 @@
 /target
 /uniffi-rs
 /Cargo.lock
+experiments/*
+.vscode/*
 .aider*
 rust-toolchain.toml
 internal_todo.md
