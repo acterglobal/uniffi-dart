@@ -1,6 +1,7 @@
 /target
 /uniffi-rs
 /Cargo.lock
+experiments/*
 .vscode/*
 .aider*
 rust-toolchain.toml
