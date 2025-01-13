@@ -305,10 +305,10 @@
       "name": "uniffi_test",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.5"
     }
   ],
-  "generated": "2024-12-08T11:21:42.251845Z",
+  "generated": "2024-12-16T17:19:18.302018Z",
   "generator": "pub",
   "generatorVersion": "3.5.4",
   "flutterRoot": "file:///usr/local/Caskroom/flutter/3.22.2/flutter",
