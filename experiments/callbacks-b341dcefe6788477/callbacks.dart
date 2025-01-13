@@ -202,12 +202,15 @@ class RustGetters {
     bool v,
     bool argumentTwo,
   ) {
+    var loweredCallback = FfiConverterCallbackInterfaceForeignGetters.lower(callback);
+    var loweredV = FfiConverterBool.lower(v);
+    var loweredArgumentTwo = FfiConverterBool.lower(argumentTwo);
     return rustCall((status) => FfiConverterBool.lift(_UniffiLib.instance
         .uniffi_callbacks_fn_method_rustgetters_get_bool(
             uniffiClonePointer(),
-            FfiConverterCallbackInterfaceForeignGetters.lower(callback),
-            FfiConverterBool.lower(v),
-            FfiConverterBool.lower(argumentTwo),
+            loweredCallback,
+            loweredV,
+            loweredArgumentTwo,
             status)));
   }
 
@@ -216,12 +219,17 @@ class RustGetters {
     List<int> v,
     bool arg2,
   ) {
+    var self = uniffiClonePointer();
+    var call = FfiConverterCallbackInterfaceForeignGetters.lower(callback);
+    var sequence = FfiConverterSequenceInt32.lower(v);
+    var arguemtn2 = FfiConverterBool.lower(arg2);
+
     return rustCall((status) => FfiConverterSequenceInt32.lift(
         _UniffiLib.instance.uniffi_callbacks_fn_method_rustgetters_get_list(
-            uniffiClonePointer(),
-            FfiConverterCallbackInterfaceForeignGetters.lower(callback),
-            FfiConverterSequenceInt32.lower(v),
-            FfiConverterBool.lower(arg2),
+            self,
+            call,
+            sequence,
+            arguemtn2,
             status)));
   }
 
@@ -380,7 +388,7 @@ const int CALL_SUCCESS = 0;
 const int CALL_ERROR = 1;
 const int CALL_UNEXPECTED_ERROR = 2;
 
-class RustCallStatus extends Struct {
+final class RustCallStatus extends Struct {
   @Int8()
   external int code;
 
@@ -427,7 +435,7 @@ abstract class UniffiRustCallStatusErrorHandler {
   Exception lift(RustBuffer errorBuf);
 }
 
-class RustBuffer extends Struct {
+final class RustBuffer extends Struct {
   @Uint64()
   external int capacity;
 
@@ -481,7 +489,7 @@ RustBuffer toRustBuffer(Uint8List data) {
   return RustBuffer.fromBytes(bytes.ref);
 }
 
-class ForeignBytes extends Struct {
+final class ForeignBytes extends Struct {
   @Int32()
   external int len;
   external Pointer<Uint8> data;
@@ -896,7 +904,7 @@ typedef UniffiCallbackInterfaceForeignGettersMethod4Dart = void Function(
 typedef UniffiCallbackInterfaceForeignGettersFree = Void Function(Uint64);
 typedef UniffiCallbackInterfaceForeignGettersFreeDart = void Function(int);
 
-class UniffiVTableCallbackInterfaceForeignGetters extends Struct {
+final class UniffiVTableCallbackInterfaceForeignGetters extends Struct {
   external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod0>>
       getBool;
   external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod1>>
@@ -931,6 +939,7 @@ void foreignGettersGetString(
     int arg2,
     Pointer<RustBuffer> outReturn,
     Pointer<RustCallStatus> callStatus) {
+  print('foreignGettersGetString');
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
@@ -987,6 +996,7 @@ void foreignGettersGetList(
     int arg2,
     Pointer<RustBuffer> outReturn,
     Pointer<RustCallStatus> callStatus) {
+  print('foreignGettersGetList');
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
@@ -1061,17 +1071,18 @@ final foreignGettersFreePointer =
         foreignGettersFreeCallback);
 
 // Once implemented, create a static vtable instance and register it:
-late final UniffiVTableCallbackInterfaceForeignGetters foreignGettersVTable;
+late final Pointer<UniffiVTableCallbackInterfaceForeignGetters> foreignGettersVTable;
 
 void initForeignGettersVTable() {
+
   foreignGettersVTable =
-      calloc<UniffiVTableCallbackInterfaceForeignGetters>().ref
-        ..getBool = foreignGettersGetBoolPointer
-        ..getString = foreignGettersGetStringPointer
-        ..getOption = foreignGettersGetOptionPointer
-        ..getList = foreignGettersGetListPointer
-        ..getNothing = foreignGettersGetNothingPointer
-        ..uniffiFree = foreignGettersFreePointer;
+      calloc<UniffiVTableCallbackInterfaceForeignGetters>();
+  foreignGettersVTable.ref.getBool = foreignGettersGetBoolPointer;
+  foreignGettersVTable.ref.getString = foreignGettersGetStringPointer;
+  foreignGettersVTable.ref.getOption = foreignGettersGetOptionPointer;
+  foreignGettersVTable.ref.getList = foreignGettersGetListPointer;
+  foreignGettersVTable.ref.getNothing = foreignGettersGetNothingPointer;
+  foreignGettersVTable.ref.uniffiFree = foreignGettersFreePointer;
 
   rustCall((status) {
     _UniffiLib.instance.uniffi_callbacks_fn_init_callback_vtable_foreigngetters(
@@ -1095,7 +1106,7 @@ typedef UniffiCallbackInterfaceStoredForeignStringifierMethod1Dart = void
 typedef UniffiCallbackInterfaceFree = Void Function(Uint64);
 typedef UniffiCallbackInterfaceFreeDart = void Function(int);
 
-class UniffiVTableCallbackInterfaceStoredForeignStringifier extends Struct {
+final class UniffiVTableCallbackInterfaceStoredForeignStringifier extends Struct {
   external Pointer<
           NativeFunction<
               UniffiCallbackInterfaceStoredForeignStringifierMethod0>>
@@ -1180,15 +1191,16 @@ final storedForeignStringifierFreePointer =
   // Provide a default value in case of error
 );
 
-late final UniffiVTableCallbackInterfaceStoredForeignStringifier
+late final Pointer<UniffiVTableCallbackInterfaceStoredForeignStringifier>
     storedForeignStringifierVTable;
 
 void initStoredForeignStringifierVTable() {
   storedForeignStringifierVTable =
-      calloc<UniffiVTableCallbackInterfaceStoredForeignStringifier>().ref
-        ..fromSimpleType = storedForeignStringifierFromSimpleTypePointer
-        ..fromComplexType = storedForeignStringifierFromComplexTypePointer
-        ..uniffiFree = storedForeignStringifierFreePointer;
+      calloc<UniffiVTableCallbackInterfaceStoredForeignStringifier>();
+
+  storedForeignStringifierVTable.ref.fromSimpleType = storedForeignStringifierFromSimpleTypePointer;
+  storedForeignStringifierVTable.ref.fromComplexType = storedForeignStringifierFromComplexTypePointer;
+  storedForeignStringifierVTable.ref.uniffiFree = storedForeignStringifierFreePointer;
 
   rustCall((status) {
     _UniffiLib.instance
@@ -1456,24 +1468,24 @@ class _UniffiLib {
                       Pointer<Void>, int, Pointer<RustCallStatus>)>(
               "uniffi_callbacks_fn_method_ruststringifier_from_simple_type");
   late final void Function(
-    UniffiVTableCallbackInterfaceForeignGetters,
+    Pointer<UniffiVTableCallbackInterfaceForeignGetters>,
   ) uniffi_callbacks_fn_init_callback_vtable_foreigngetters =
       _dylib.lookupFunction<
           Void Function(
-            UniffiVTableCallbackInterfaceForeignGetters,
+            Pointer<UniffiVTableCallbackInterfaceForeignGetters>,
           ),
           void Function(
-            UniffiVTableCallbackInterfaceForeignGetters,
+            Pointer<UniffiVTableCallbackInterfaceForeignGetters>,
           )>("uniffi_callbacks_fn_init_callback_vtable_foreigngetters");
   late final void Function(
-    UniffiVTableCallbackInterfaceStoredForeignStringifier,
+    Pointer<UniffiVTableCallbackInterfaceStoredForeignStringifier>,
   ) uniffi_callbacks_fn_init_callback_vtable_storedforeignstringifier =
       _dylib.lookupFunction<
               Void Function(
-                UniffiVTableCallbackInterfaceStoredForeignStringifier,
+                Pointer<UniffiVTableCallbackInterfaceStoredForeignStringifier>,
               ),
               void Function(
-                UniffiVTableCallbackInterfaceStoredForeignStringifier,
+                Pointer<UniffiVTableCallbackInterfaceStoredForeignStringifier>,
               )>(
           "uniffi_callbacks_fn_init_callback_vtable_storedforeignstringifier");
   late final RustBuffer Function(int, Pointer<RustCallStatus>)

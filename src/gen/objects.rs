@@ -128,13 +128,26 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
 
         )
     } else {
-        quote!(
-            $ret $(DartCodeOracle::fn_name(func.name()))($args) {
-                return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
-                    uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
-                )));
-            }
-        )
+        if ret == quote!(void) {
+            quote!(
+                $ret $(DartCodeOracle::fn_name(func.name()))($args) {
+                    return rustCall((status) {
+                        $(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
+                            uniffiClonePointer(),
+                            $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
+                        );
+                    });
+                }
+            )
+        } else {
+            quote!(
+                $ret $(DartCodeOracle::fn_name(func.name()))($args) {
+                    return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
+                        uniffiClonePointer(),
+                        $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
+                    )));
+                }
+            )
+      }
     }
 }

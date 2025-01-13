@@ -1,6 +1,6 @@
 use genco::prelude::*;
 use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{AsType, Method, Object};
+use uniffi_bindgen::interface::{AsType, Method, CallbackInterface, FfiCallbackFunction};
 
 use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
@@ -34,6 +34,237 @@ impl CodeType for CallbackInterfaceCodeType {
 
 impl Renderable for CallbackInterfaceCodeType {
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-        quote!("Plese start here")
+        
+        generate_callback_interface(&self, type_helper)
+        // For each, we generate the abstract class, type helper converters and 
+    }
+}
+
+fn generate_callback_interface(
+    callback_codetype: &CallbackInterfaceCodeType,
+    type_helper: &dyn TypeHelperRenderer,
+) -> dart::Tokens {
+    let callback = type_helper.get_ci().get_callback_interface_definition(&callback_codetype.name).unwrap(); // The context here gurantees it always exists, could refactor. 
+    let cls_name = &DartCodeOracle::class_name(callback.name());
+    let ffi_conv_name = &DartCodeOracle::class_name(&callback.as_codetype().ffi_converter_name());
+    let methods = callback.methods();
+    let vtable_methods = callback.vtable_methods();
+
+
+    let tokens = quote! {
+        // This is the abstract class to be implemented
+        abstract class $cls_name {
+            $(for m in &methods {
+                $(generate_callback_methods_definitions(m, type_helper))
+            })
+        }
+
+        // This is the type helper to convert from FFI to Dart
+        class $ffi_conv_name {
+            static final _handleMap = UniffiHandleMap<$cls_name>();
+
+            static $cls_name lift(int handle) {
+                return _handleMap.get(handle);
+            }
+            
+            static int lower($cls_name value) {
+                return _handleMap.insert(value);
+            }
+        
+            static LiftRetVal<$cls_name> read(Uint8List buf) {
+                final handle = buf.buffer.asByteData(buf.offsetInBytes).getInt64(0);
+                return LiftRetVal(lift(handle), 8);
+            }
+        
+            static int write($cls_name value, Uint8List buf) {
+                final handle = lower(value);
+                buf.buffer.asByteData(buf.offsetInBytes).setInt64(0, handle);
+                return 8;
+            }
+        
+            static int allocationSize($cls_name value) {
+                return 8; // Just a handle (int64).
+            }
+        }
+
+        // We must define callback signatures
+        $(generate_callback_methods_signatures(cls_name, &methods, type_helper))
+
+        $(generate_callback_vtable_interface(callback, type_helper))
+
+        $(generate_callback_functions(callback, type_helper))
+
+        $(generate_callback_interface_vtable_init_funtion(callback, type_helper))
+    };
+
+
+        tokens
+}
+
+fn generate_callback_methods_definitions(method: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    let method_name = DartCodeOracle::fn_name(&method.name());
+    let dart_args = &method.arguments().iter().map(|arg| {
+        let arg_type = arg.as_renderable().render_type(&arg.as_type(), type_helper);
+        let arg_name = DartCodeOracle::var_name(arg.name());
+
+
+        quote!($arg_type $arg_name)
+    }).into_iter().collect::<Vec<_>>();
+
+    let ret_type = if let Some(ret) = method.return_type() {
+        ret.as_renderable().render_type(ret, type_helper)
+    } else {
+        quote!(void)
+    };
+
+    quote!(
+        $ret_type $method_name($(for a in dart_args => $a,));
+    )
+}
+
+fn generate_callback_methods_signatures(callback_name: &str, methods: &Vec<&Method>, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    let mut tokens = dart::Tokens::new();
+    for (method_index, method) in methods.iter().enumerate() {
+        //let method_name = DartCodeOracle::fn_name(method.name());
+
+        let ffi_method_type = format!(
+            "UniffiCallbackInterface{}Method{}",
+            callback_name,
+            method_index
+        );
+
+        let dart_method_type = format!(
+            "UniffiCallbackInterface{}Method{}Dart",
+            callback_name,
+            method_index
+        );
+        
+        let method_return_type = if let Some(ret) = method.return_type() {
+            DartCodeOracle::native_type_label(Some(ret))
+        } else {
+            quote!(void)
+        };
+
+        tokens.append(quote! {
+            typedef $ffi_method_type = Void Function(
+                Uint64, $(for arg in &method.arguments() => $(DartCodeOracle::native_type_label(Some(&arg.as_type()))),)
+                Pointer<$(&method_return_type)>, Pointer<RustCallStatus>);
+            typedef $dart_method_type = void Function(
+                int, $(for arg in &method.arguments() => $(DartCodeOracle::dart_type_label(Some(&arg.as_type()))),)
+                Pointer<$(&method_return_type)>, Pointer<RustCallStatus>);
+        });
+    }
+
+    tokens.append(quote! {
+        typedef UniffiCallbackInterface$(callback_name)Free = void Function(Uint64);
+        typedef UniffiCallbackInterface$(callback_name)FreeDart = void Function(int);
+    });
+
+    tokens
+}
+
+fn generate_callback_vtable_interface(callback: &CallbackInterface, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    let vtable_name = format!("UniffiVTableCallbackInterface{}", callback.name());
+    let methods = callback.methods();
+    let methods_vec: Vec<_> = methods.into_iter().enumerate().collect();
+
+    quote! {
+        final class $vtable_name extends Struct {
+            $(for (index, m) in &methods_vec =>
+                external Pointer<NativeFunction<UniffiCallbackInterface$(callback.name())Method$(format!("{}",index))>> $(DartCodeOracle::fn_name(m.name()));
+            )
+            external Pointer<NativeFunction<UniffiCallbackInterface$(callback.name())Free>> uniffiFree;
+        }
+    }
+}
+
+fn generate_callback_functions(callback: &CallbackInterface, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    // let cls_name = DartCodeOracle::class_name(callback.name());
+    // let methods = callback.methods();
+
+    // let functions = methods.iter().enumerate().map(|(index, m)| {
+    //     let method_name = DartCodeOracle::fn_name(m.name());
+    //     let ffi_method_type = format!("UniffiCallbackInterface{}Method{}", callback.name(), index);
+    //     let dart_method_type = format!("UniffiCallbackInterface{}Method{}Dart", callback.name(), index);
+
+    //     let arg_lifts = m.arguments().iter().enumerate().map(|(i, arg)| {
+    //         let arg_name = DartCodeOracle::var_name(arg.name());
+    //         let lift_fn = DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($arg_name));
+    //         quote!(final ${arg_name} = $lift_fn;)
+    //     });
+
+    //     let call_dart_method = if let Some(ret) = m.return_type() {
+    //         let lift_ret = ret.as_codetype().lift();
+    //         quote!(
+    //             final result = obj.$method_name($(&DartCodeOracle::var_name(arg.name())),*);
+    //             outReturn.ref = ${ret.as_codetype().lower()}(result);
+    //         )
+    //     } else {
+    //         quote!(
+    //             obj.$method_name($(&DartCodeOracle::var_name(arg.name())),*);
+    //         )
+    //     };
+
+    //     quote! {
+    //         void $method_name(int uniffiHandle, $(for arg in &m.arguments() => $(&DartCodeOracle::arg_type(arg.as_type()))) Pointer<RustBuffer> outReturn, Pointer<RustCallStatus> callStatus) {
+    //             final status = callStatus.ref;
+    //             try {
+    //                 final obj = FfiConverterCallbackInterface${callback.name()}._handleMap.get(uniffiHandle);
+    //                 $(for arg in &m.arguments() => $(&DartCodeOracle::lift_arg(arg, type_helper)),)
+    //                 $call_dart_method
+    //                 status.code = CALL_SUCCESS;
+    //             } catch (e) {
+    //                 status.code = CALL_UNEXPECTED_ERROR;
+    //                 status.errorBuf = FfiConverterString.lower(e.toString());
+    //             }
+    //         }
+
+    //         final Pointer<NativeFunction<$ffi_method_type>> ${method_name}Pointer =
+    //             Pointer.fromFunction<$ffi_method_type>($method_name);
+    //     }
+    // });
+
+    // // Free callback
+    // let free_callback = format!("{}FreeCallback", callback.name());
+    // let free_callback_fn = format!("{}FreeCallback", callback.name());
+    // quote! {
+    //     $(functions)
+
+    //     void $free_callback_fn(int handle) {
+    //         try {
+    //             FfiConverterCallbackInterface${callback.name()}._handleMap.remove(handle);
+    //         } catch (e) {
+    //             // Optionally log error, but do not return anything.
+    //         }
+    //     }
+
+    //     final Pointer<NativeFunction<UniffiCallbackInterfaceFree>> ${free_callback_fn}Pointer =
+    //         Pointer.fromFunction<UniffiCallbackInterfaceFree>(
+    //             $free_callback_fn);
+    // }
+}
+
+fn generate_callback_interface_vtable_init_funtion(callback: &CallbackInterface, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    let vtable_name = &format!("UniffiVTableCallbackInterface{}", callback.name());
+    let vtable_static_instance_name = format!("{}{}", DartCodeOracle::fn_name(callback.name()), "VTable");
+    let init_fn_name = &format!("init{}VTable", callback.name());
+
+    quote! {
+        late final Pointer<$vtable_name> $(&vtable_static_instance_name);
+
+        void $init_fn_name() {
+            $(&vtable_static_instance_name) = calloc<$vtable_name>();
+            $(for m in &callback.methods() {
+                $(&vtable_static_instance_name).ref.$(DartCodeOracle::fn_name(m.name())) = $(DartCodeOracle::fn_name(m.name()))Pointer;
+            })
+            $(&vtable_static_instance_name).ref.uniffiFree = $(format!("{}FreePointer", DartCodeOracle::fn_name(callback.name())));
+
+            rustCall((status) {
+                _UniffiLib.instance.uniffi_callbacks_fn_init_callback_vtable_$(callback.name().to_lowercase())(
+                    $(vtable_static_instance_name),
+                );
+                checkCallStatus(NullRustCallStatusErrorHandler(), status);
+            });
+        }
     }
 }

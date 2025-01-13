@@ -67,12 +67,12 @@ void main() {
     final flag = true;
     for (final v in [true, false]) {
       final expected = callback.getBool(v, flag);
-      final observed =  rustGetters.getBool(callback, v, flag);
-      print(observed);  
+      final observed =  rustGetters.getBool(callback, v, flag);  
       expect(observed, equals(expected));
     }
   });
 
+  // // TODO: Bring back after we've fully implemented sequences
   // test('roundtrip getList through callback', () {
   //   final flag = true;
   //   for (final v in [

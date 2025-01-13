@@ -12,7 +12,6 @@ interface ComplexError {
    UnexpectedErrorWithReason(string reason);
 };
 
-
 /// These objects are implemented by the foreign language and passed
 /// to Rust. Rust then calls methods on it when it needs to.
 ///
