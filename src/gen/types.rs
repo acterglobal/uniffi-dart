@@ -152,7 +152,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             const int CALL_ERROR = 1;
             const int CALL_UNEXPECTED_ERROR = 2;
 
-            class RustCallStatus extends Struct {
+            final class RustCallStatus extends Struct {
                 @Int8()
                 external int code;
 
@@ -161,20 +161,20 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 //Pointer<RustCallStatus> asPointer() => Pointer<RustCallStatus>.fromAddress(address);
             }
 
-            void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, RustCallStatus status) {
+            void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, Pointer<RustCallStatus> status) {
 
-                if (status.code == CALL_SUCCESS) {
+                if (status.ref.code == CALL_SUCCESS) {
                 return;
-                } else if (status.code == CALL_ERROR) {
-                throw errorHandler.lift(status.errorBuf);
-                } else if (status.code == CALL_UNEXPECTED_ERROR) {
-                if (status.errorBuf.len > 0) {
-                    throw UniffiInternalError.panicked(FfiConverterString.lift(status.errorBuf));
+                } else if (status.ref.code == CALL_ERROR) {
+                throw errorHandler.lift(status.ref.errorBuf);
+                } else if (status.ref.code == CALL_UNEXPECTED_ERROR) {
+                if (status.ref.errorBuf.len > 0) {
+                    throw UniffiInternalError.panicked(FfiConverterString.lift(status.ref.errorBuf));
                 } else {
                     throw UniffiInternalError.panicked("Rust panic");
                 }
                 } else {
-                throw UniffiInternalError.panicked("Unexpected RustCallStatus code: ${status.code}");
+                throw UniffiInternalError.panicked("Unexpected RustCallStatus code: ${status.ref.code}");
                 }
             }
 
@@ -199,7 +199,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 Exception lift(RustBuffer errorBuf);
             }
 
-            class RustBuffer extends Struct {
+            final class RustBuffer extends Struct {
                 @Uint64()
                 external int capacity;
 
@@ -254,7 +254,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(bytes.ref);
             }
 
-            class ForeignBytes extends Struct {
+            final class ForeignBytes extends Struct {
                 @Int32()
                 external int len;
                 external Pointer<Uint8> data;
