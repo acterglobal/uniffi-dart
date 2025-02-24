@@ -290,11 +290,11 @@ impl DartCodeOracle {
             | Type::Int32
             | Type::Int64 => quote!(int),
             Type::Float32 | Type::Float64 => quote!(double),
-            Type::Boolean => quote!(bool),
-            Type::String => quote!(String),
-            Type::Bytes => quote!(Uint8List),
-            Type::Timestamp => quote!(DateTime),
-            Type::Duration => quote!(Duration),
+            Type::Boolean => quote!(int),
+            Type::String => quote!(RustBuffer),
+            Type::Bytes => quote!(RustBuffer),
+            Type::Timestamp => quote!(RustBuffer),
+            Type::Duration => quote!(RustBuffer),
             Type::Object { name, .. } => {
                 let class_name = Self::class_name(name);
                 quote!($class_name)
@@ -342,21 +342,21 @@ impl DartCodeOracle {
             return quote!(Pointer<Void>);
         };
         match ret_type {
-            Type::UInt8
-            | Type::UInt16
-            | Type::UInt32
-            | Type::UInt64
-            | Type::Int8
-            | Type::Int16
-            | Type::Int32
-            | Type::Int64 => quote!(Int32), // Adjust based on actual FFI size
+            Type::UInt8 => quote!(Uint8),
+            Type::UInt16 => quote!(Uint16),
+            Type::UInt32 => quote!(Uint32),
+            Type::UInt64 => quote!(Uint64),
+            Type::Int8 => quote!(Int8),
+            Type::Int16 => quote!(Int16),
+            Type::Int32 => quote!(Int32),
+            Type::Int64 => quote!(Int64),
             Type::Float32 => quote!(Float),
             Type::Float64 => quote!(Double),
             Type::Boolean => quote!(Int8),
-            Type::String => quote!(Pointer<RustBuffer>),
-            Type::Bytes => quote!(Pointer<RustBuffer>),
-            Type::Timestamp => quote!(Pointer<Void>), // Assuming custom handling
-            Type::Duration => quote!(Pointer<Void>),  // Assuming custom handling
+            Type::String => quote!(RustBuffer),
+            Type::Bytes => quote!(RustBuffer),
+            Type::Timestamp => quote!(RustBuffer),
+            Type::Duration => quote!(RustBuffer),
             Type::Object { name, .. } => {
                 let class_name = Self::struct_name(name);
                 quote!(Pointer<$class_name>)
@@ -394,6 +394,67 @@ impl DartCodeOracle {
                 quote!(Pointer<$custom_name>)
             }
             _ => todo!("Native Type::{:?} not implemented", ret_type),
+        }
+    }
+
+    /// Get the native Dart FFI type rendering based on `Type`.
+    pub fn native_dart_type_label(native_ret_type: Option<&Type>) -> dart::Tokens {
+        let Some(ret_type) = native_ret_type else {
+            return quote!(Pointer<Void>);
+        };
+        match ret_type {
+            Type::UInt8
+            | Type::UInt16
+            | Type::UInt32
+            | Type::UInt64
+            | Type::Int8
+            | Type::Int16
+            | Type::Int32
+            | Type::Int64 => quote!(int), // Adjust based on actual FFI size
+            Type::Float32 => quote!(double),
+            Type::Float64 => quote!(double),
+            Type::Boolean => quote!(int),
+            Type::String => quote!(RustBuffer),
+            Type::Bytes => quote!(RustBuffer),
+            Type::Timestamp => quote!(RustBuffer),
+            Type::Duration => quote!(RustBuffer),
+            Type::Object { name, .. } => {
+                let class_name = Self::struct_name(name);
+                quote!(Pointer<$class_name>)
+            }
+            Type::Record { name, .. } => {
+                let record_name = Self::struct_name(name);
+                quote!(Pointer<$record_name>)
+            }
+            Type::Enum { name, .. } => {
+                // Enums can often be represented as integers
+                quote!(Int32)
+            }
+            Type::CallbackInterface { name, .. } => {
+                let callback_name = Self::callback_name(name);
+                quote!(Pointer<$callback_name>)
+            }
+            Type::Optional{inner_type, ..} => {
+                let inner_label = Self::native_type_label(Some(inner_type.as_ref()));
+                quote!(Pointer<$inner_label>)
+            }
+            Type::Sequence{inner_type, ..} => {
+                let inner_label = Self::native_type_label(Some(inner_type.as_ref()));
+                quote!(Pointer<$inner_label>)
+            }
+            Type::Map { key_type , value_type, .. } => {
+                // Maps can be represented as Pointer<Void> or custom structs
+                quote!(Pointer<Void>)
+            }
+            Type::External { name, .. } => {
+                let external_label = Self::external_native_type_label(name);
+                quote!($external_label)
+            }
+            Type::Custom { name, .. } => {
+                let custom_name = Self::struct_name(name);
+                quote!(Pointer<$custom_name>)
+            }
+            _ => todo!("Native DartType::{:?} not implemented", ret_type),
         }
     }
 
