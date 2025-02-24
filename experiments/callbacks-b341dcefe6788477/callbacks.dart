@@ -253,6 +253,13 @@ class RustGetters {
     String? v,
     bool arg2,
   ) {
+    print('Rust Getters getOption');
+    var self = uniffiClonePointer();
+    var call = FfiConverterCallbackInterfaceForeignGetters.lower(callback);
+    var arguemtn2 = FfiConverterBool.lower(arg2);
+    var tempv = FfiConverterOptionalString.lower(v);
+
+    print("Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
     return rustCall((status) => FfiConverterOptionalString.lift(
         _UniffiLib.instance.uniffi_callbacks_fn_method_rustgetters_get_option(
             uniffiClonePointer(),
@@ -281,6 +288,7 @@ class RustGetters {
     String v,
     bool arg2,
   ) {
+    print("Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
     return rustCall((status) => FfiConverterOptionalString.lift(_UniffiLib
         .instance
         .uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback(
@@ -472,7 +480,7 @@ final class RustBuffer extends Struct {
 
   @override
   String toString() {
-    return "RustBuffer{capacity: \$capacity, len: \$len, data: \$data}";
+    return "RustBuffer{capacity: $capacity, len: $len, data: $data}";
   }
 }
 
@@ -604,13 +612,16 @@ class FfiConverterOptionalCallbackInterfaceForeignGetters {
 
 class FfiConverterOptionalString {
   static String? lift(RustBuffer buf) {
+    print("Buffer Read when lifting: $buf");
     return FfiConverterOptionalString.read(buf.asUint8List()).value;
   }
 
   static LiftRetVal<String?> read(Uint8List buf) {
+    var tempbuf = buf;
     if (ByteData.view(buf.buffer, buf.offsetInBytes).getInt8(0) == 0) {
       return LiftRetVal(null, 1);
     }
+    print("Uint8List.view(buf.buffer, buf.offsetInBytes + 1): ${Uint8List.view(buf.buffer, buf.offsetInBytes + 1)}");
     return FfiConverterString.read(
             Uint8List.view(buf.buffer, buf.offsetInBytes + 1))
         .copyWithOffset(1);
@@ -889,12 +900,18 @@ typedef UniffiCallbackInterfaceForeignGettersMethod0Dart = void Function(
     int, int, int, Pointer<Int8>, Pointer<RustCallStatus>);
 
 typedef UniffiCallbackInterfaceForeignGettersMethod1 = Void Function(Uint64,
-    Pointer<RustBuffer>, Int8, Pointer<RustBuffer>, Pointer<RustCallStatus>);
+    RustBuffer, Int8, Pointer<RustBuffer>, Pointer<RustCallStatus>);
 typedef UniffiCallbackInterfaceForeignGettersMethod1Dart = void Function(
     int, RustBuffer, int, Pointer<RustBuffer>, Pointer<RustCallStatus>);
 
+typedef UniffiCallbackInterfaceForeignGettersMethod2 = Void Function(Uint64,
+    RustBuffer, Bool, Pointer<RustBuffer>, Pointer<RustCallStatus>);
+typedef UniffiCallbackInterfaceForeignGettersMethod2Dart = void Function(
+    int, RustBuffer, bool, Pointer<RustBuffer>, Pointer<RustCallStatus>);
+
+
 typedef UniffiCallbackInterfaceForeignGettersMethod4 = Void Function(
-    Uint64, Pointer<RustBuffer>, Pointer<Void>, Pointer<RustCallStatus>);
+    Uint64, RustBuffer, Pointer<Void>, Pointer<RustCallStatus>);
 typedef UniffiCallbackInterfaceForeignGettersMethod4Dart = void Function(
     int, RustBuffer, Pointer<Void>, Pointer<RustCallStatus>);
 // Similarly define other methods...
@@ -907,11 +924,11 @@ typedef UniffiCallbackInterfaceForeignGettersFreeDart = void Function(int);
 final class UniffiVTableCallbackInterfaceForeignGetters extends Struct {
   external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod0>>
       getBool;
-  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod1>>
+  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod2>>
       getString;
-  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod1>>
+  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod2>>
       getOption; // same signature as getString but returns RustBuffer
-  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod1>>
+  external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod2>>
       getList;
   external Pointer<NativeFunction<UniffiCallbackInterfaceForeignGettersMethod4>>
       getNothing;
@@ -935,22 +952,24 @@ void foreignGettersGetBool(int uniffiHandle, int v, int argumentTwo,
 
 void foreignGettersGetString(
     int uniffiHandle,
-    Pointer<RustBuffer> vBuffer,
-    int arg2,
+    RustBuffer vBuffer,
+    bool arg2,
     Pointer<RustBuffer> outReturn,
     Pointer<RustCallStatus> callStatus) {
-  print('foreignGettersGetString');
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
         .get(uniffiHandle);
     // Lift the arguments
-    final v = FfiConverterString.lift(vBuffer.ref);
-    final argumentTwo = arg2 == 1;
+    final v = FfiConverterString.lift(vBuffer);
+    print(v);
     // Call the Dart method
-    final result = obj.getString(v, argumentTwo);
+    final result = obj.getString(v, arg2);
     // Lower the result into RustBuffer
     outReturn.ref = FfiConverterString.lower(result);
+    status.code = CALL_SUCCESS;
+    print("result: $result");
+    print("outreturn: $outReturn");
   } catch (e) {
     status.code = CALL_UNEXPECTED_ERROR;
     status.errorBuf = FfiConverterString.lower(e.toString());
@@ -959,30 +978,24 @@ void foreignGettersGetString(
 
 void foreignGettersGetOption(
     int uniffiHandle,
-    Pointer<RustBuffer> vBuffer,
-    int arg2,
+    RustBuffer vBuffer,
+    bool arg2,
     Pointer<RustBuffer> outReturn,
     Pointer<RustCallStatus> callStatus) {
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
         .get(uniffiHandle);
-    // Lift the arguments
-    final v = FfiConverterString.lift(vBuffer.ref);
-    final argumentTwo = arg2 == 1;
+    final v = FfiConverterOptionalString.lift(vBuffer);
+    final argumentTwo = arg2;
     // Call the Dart method
     final result = obj.getOption(v, argumentTwo);
     // Lower the result into RustBuffer
     if (result == null) {
-      // Assuming Rust represents `null` as an optional tag
       outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
     } else {
-      final lowered = FfiConverterString.lower(result);
-      // Prepend the optional tag
-      final buffer = Uint8List(1 + lowered.len);
-      buffer[0] = 1;
-      buffer.setAll(1, lowered.asUint8List()); // Make Rust Buffer Interable
-      outReturn.ref = toRustBuffer(buffer);
+      final lowered = FfiConverterOptionalString.lower(result);
+      outReturn.ref = toRustBuffer(lowered.asUint8List());
     }
   } catch (e) {
     status.code = CALL_UNEXPECTED_ERROR;
@@ -992,8 +1005,8 @@ void foreignGettersGetOption(
 
 void foreignGettersGetList(
     int uniffiHandle,
-    Pointer<RustBuffer> vBuffer,
-    int arg2,
+    RustBuffer vBuffer,
+    bool arg2,
     Pointer<RustBuffer> outReturn,
     Pointer<RustCallStatus> callStatus) {
   print('foreignGettersGetList');
@@ -1002,8 +1015,8 @@ void foreignGettersGetList(
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
         .get(uniffiHandle);
     // Lift the arguments
-    final v = FfiConverterSequenceInt32.lift(vBuffer.ref);
-    final argumentTwo = arg2 == 1;
+    final v = FfiConverterSequenceInt32.lift(vBuffer);
+    final argumentTwo = arg2;
     // Call the Dart method
     final result = obj.getList(v, argumentTwo);
     // Lower the result into RustBuffer
@@ -1014,14 +1027,14 @@ void foreignGettersGetList(
   }
 }
 
-void foreignGettersGetNothing(int uniffiHandle, Pointer<RustBuffer> vBuffer,
+void foreignGettersGetNothing(int uniffiHandle, RustBuffer vBuffer,
     Pointer<Void> unused, Pointer<RustCallStatus> callStatus) {
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
         .get(uniffiHandle);
     // Lift the argument
-    final v = FfiConverterString.lift(vBuffer.ref);
+    final v = FfiConverterString.lift(vBuffer);
     // Call the Dart method
     obj.getNothing(v);
     // Indicate success
@@ -1045,15 +1058,15 @@ final foreignGettersGetBoolPointer =
         foreignGettersGetBool);
 
 final foreignGettersGetOptionPointer =
-    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod1>(
+    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod2>(
         foreignGettersGetOption);
 
 final foreignGettersGetStringPointer =
-    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod1>(
+    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod2>(
         foreignGettersGetString);
 
 final foreignGettersGetListPointer =
-    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod1>(
+    Pointer.fromFunction<UniffiCallbackInterfaceForeignGettersMethod2>(
         foreignGettersGetList);
 
 final foreignGettersGetNothingPointer =
