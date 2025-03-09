@@ -458,6 +458,166 @@ impl DartCodeOracle {
         }
     }
 
+    // Method to get the appropriate lift expression for callback arguments
+    pub fn callback_arg_lift(arg_type: &Type, arg_name: &str) -> dart::Tokens {
+        match arg_type {
+            Type::Boolean => {
+                // For booleans, we use direct comparison with 1
+                quote!(final $arg_name = $arg_name == 1;)
+            },
+            Type::String => {
+                // For strings, we use the string converter
+                quote!(final $arg_name = FfiConverterString.lift($(arg_name)Buffer);)
+            },
+            Type::Optional { inner_type } => {
+                if let Type::String = **inner_type {
+                    // For optional strings
+                    quote!(final $arg_name = FfiConverterOptionalString.lift($(arg_name)Buffer);)
+                } else {
+                    // For other optional types
+                    let converter = arg_type.as_codetype().ffi_converter_name();
+                    quote!(final $arg_name = $converter.lift($arg_name);)
+                }
+            },
+            Type::Sequence { inner_type } => {
+                if let Type::Int32 = **inner_type {
+                    // For int32 sequences
+                    quote!(final $arg_name = FfiConverterSequenceInt32.lift($(arg_name)Buffer);)
+                } else {
+                    // For other sequence types
+                    let converter = arg_type.as_codetype().ffi_converter_name();
+                    quote!(final $arg_name = $converter.lift($arg_name);)
+                }
+            },
+            _ => {
+                // For other types, use the standard lift function
+                let converter = arg_type.as_codetype().ffi_converter_name();
+                quote!(final $arg_name = $converter.lift($arg_name);)
+            }
+        }
+    }
+
+    // Method to get the appropriate callback parameter type
+    pub fn callback_param_type(arg_type: &Type, arg_name: &str) -> dart::Tokens {
+        match arg_type {
+            Type::Boolean => quote!(int $arg_name),
+            Type::String => quote!(RustBuffer $(arg_name)Buffer),
+            Type::Optional { inner_type } => {
+                if let Type::String = **inner_type {
+                    quote!(RustBuffer $(arg_name)Buffer)
+                } else {
+                    let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
+                    quote!($type_label $arg_name)
+                }
+            },
+            Type::Sequence { inner_type } => {
+                if let Type::Int32 = **inner_type {
+                    quote!(RustBuffer $(arg_name)Buffer)
+                } else {
+                    let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
+                    quote!($type_label $arg_name)
+                }
+            },
+            _ => {
+                let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
+                quote!($type_label $arg_name)
+            }
+        }
+    }
+
+    // Method to generate code for handling callback return values
+    pub fn callback_return_handling(ret_type: &Type, method_name: &str, args: Vec<dart::Tokens>) -> dart::Tokens {
+        match ret_type {
+            Type::Boolean => {
+                // For boolean return values
+                quote!(
+                    final result = obj.$method_name($(for arg in &args => $arg,));
+                    outReturn.value = result ? 1 : 0;
+                )
+            },
+            Type::Optional { inner_type } => {
+                // For optional return values
+                if let Type::String = **inner_type {
+                    quote!(
+                        final result = obj.$method_name($(for arg in &args => $arg,));
+                        if (result == null) {
+                            outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
+                        } else {
+                            final lowered = FfiConverterOptionalString.lower(result);
+                            outReturn.ref = toRustBuffer(lowered.asUint8List());
+                        }
+                    )
+                } else {
+                    let lowered = ret_type.as_codetype().ffi_converter_name();
+                    quote!(
+                        final result = obj.$method_name($(for arg in &args => $arg,));
+                        if (result == null) {
+                            outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
+                        } else {
+                            final lowered = $lowered.lower(result);
+                            final buffer = Uint8List(1 + lowered.length);
+                            buffer[0] = 1;
+                            buffer.setAll(1, lowered.asUint8List());
+                            outReturn.ref = toRustBuffer(buffer);
+                        }
+                    )
+                }
+            },
+            Type::String => {
+                // For string return values
+                quote!(
+                    final result = obj.$method_name($(for arg in &args => $arg,));
+                    outReturn.ref = FfiConverterString.lower(result);
+                    status.code = CALL_SUCCESS;
+                )
+            },
+            Type::Sequence { inner_type } => {
+                if let Type::Int32 = **inner_type {
+                    // For int32 sequence return values
+                    quote!(
+                        final result = obj.$method_name($(for arg in &args => $arg,));
+                        outReturn.ref = FfiConverterSequenceInt32.lower(result);
+                    )
+                } else {
+                    // For other sequence types
+                    let lowered = ret_type.as_codetype().ffi_converter_name();
+                    quote!(
+                        final result = obj.$method_name($(for arg in &args => $arg,));
+                        outReturn.ref = $lowered.lower(result);
+                    )
+                }
+            },
+            _ => {
+                // For other return types
+                let lowered = ret_type.as_codetype().ffi_converter_name();
+                quote!(
+                    final result = obj.$method_name($(for arg in &args => $arg,));
+                    outReturn.ref = $lowered.lower(result);
+                )
+            }
+        }
+    }
+
+    // Method to get the appropriate return type for callback functions
+    pub fn callback_out_return_type(ret_type: Option<&Type>) -> dart::Tokens {
+        if let Some(ret) = ret_type {
+            match ret {
+                Type::Boolean => quote!(Pointer<Int8>),
+                _ => quote!(Pointer<RustBuffer>)
+            }
+        } else {
+            quote!(Pointer<Void>)
+        }
+    }
+
+    // Method to handle void return values in callbacks
+    pub fn callback_void_handling(method_name: &str, args: Vec<dart::Tokens>) -> dart::Tokens {
+        quote!(
+            obj.$method_name($(for arg in &args => $arg,));
+            status.code = CALL_SUCCESS;
+        )
+    }
+
 }
 
 // https://dart.dev/guides/language/language-tour#keywords

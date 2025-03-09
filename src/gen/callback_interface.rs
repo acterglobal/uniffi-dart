@@ -178,172 +178,46 @@ fn generate_callback_vtable_interface(callback: &CallbackInterface, type_helper:
     }
 }
 
-fn generate_callback_functions(callback: &CallbackInterface, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+fn generate_callback_functions(callback: &CallbackInterface, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
     let cls_name = &DartCodeOracle::class_name(callback.name());
     let methods = callback.methods();
 
     let functions: Vec<dart::Tokens> = methods.iter().enumerate().map(|(index, m)| {
         let method_name = &format!("{}", &DartCodeOracle::fn_name(m.name()));
         let ffi_method_type = &format!("UniffiCallbackInterface{}Method{}", callback.name(), index);
-        let dart_method_type = &format!("UniffiCallbackInterface{}Method{}Dart", callback.name(), index);
+        let _dart_method_type = &format!("UniffiCallbackInterface{}Method{}Dart", callback.name(), index);
 
-        // Determine parameter handling based on type
-        let arg_lifts: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
-            let arg_name = &DartCodeOracle::var_name(arg.name());
-            
-            match &arg.as_type() {
-                Type::Boolean => {
-                    // For booleans, we use direct comparison with 1
-                    quote!(final $arg_name = $arg_name == 1;)
-                },
-                Type::String => {
-                    // For strings, we use the string converter
-                    quote!(final $arg_name = FfiConverterString.lift($(arg_name)Buffer);)
-                },
-                Type::Optional { inner_type } => {
-                    if let Type::String = **inner_type {
-                        // For optional strings
-                        quote!(final $arg_name = FfiConverterOptionalString.lift($(arg_name)Buffer);)
-                    } else {
-                        // For other optional types
-                        let lift_fn = &DartCodeOracle::type_lift_fn(&arg.as_type(), quote!($arg_name));
-                        quote!(final $arg_name = $lift_fn;)
-                    }
-                },
-                Type::Sequence { inner_type } => {
-                    if let Type::Int32 = **inner_type {
-                        // For int32 sequences
-                        quote!(final $arg_name = FfiConverterSequenceInt32.lift($(arg_name)Buffer);)
-                    } else {
-                        // For other sequence types
-                        let lift_fn = &DartCodeOracle::type_lift_fn(&arg.as_type(), quote!($arg_name));
-                        quote!(final $arg_name = $lift_fn;)
-                    }
-                },
-                _ => {
-                    // For other types, use the standard lift function
-                    let lift_fn = &DartCodeOracle::type_lift_fn(&arg.as_type(), quote!($arg_name));
-                    quote!(final $arg_name = $lift_fn;)
-                }
-            }
+        // Get parameter types using the oracle
+        let param_types: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
+            let arg_name = DartCodeOracle::var_name(arg.name());
+            DartCodeOracle::callback_param_type(&arg.as_type(), &arg_name)
         }).collect();
 
-        // Handle return value
+        // Get argument lifts using the oracle
+        let arg_lifts: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
+            let arg_name = DartCodeOracle::var_name(arg.name());
+            DartCodeOracle::callback_arg_lift(&arg.as_type(), &arg_name)
+        }).collect();
+
+        // Prepare arg names for the method call
+        let arg_names: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
+            quote!($(DartCodeOracle::var_name(arg.name())))
+        }).collect();
+
+        // Handle return value using the oracle
         let call_dart_method = if let Some(ret) = m.return_type() {
-            match ret {
-                Type::Boolean => {
-                    // For boolean return values
-                    quote!(
-                        final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                        outReturn.value = result ? 1 : 0;
-                    )
-                },
-                Type::Optional { inner_type } => {
-                    // For optional return values
-                    if let Type::String = **inner_type {
-                        quote!(
-                            final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                            if (result == null) {
-                                outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
-                            } else {
-                                final lowered = FfiConverterOptionalString.lower(result);
-                                outReturn.ref = toRustBuffer(lowered.asUint8List());
-                            }
-                        )
-                    } else {
-                        let lowered = ret.as_codetype().lower();
-                        quote!(
-                            final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                            if (result == null) {
-                                outReturn.ref = toRustBuffer(Uint8List.fromList([0]));
-                            } else {
-                                final lowered = $lowered(result);
-                                final buffer = Uint8List(1 + lowered.length);
-                                buffer[0] = 1;
-                                buffer.setAll(1, lowered.asUint8List());
-                                outReturn.ref = toRustBuffer(buffer);
-                            }
-                        )
-                    }
-                },
-                Type::String => {
-                    // For string return values
-                    quote!(
-                        final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                        outReturn.ref = FfiConverterString.lower(result);
-                        status.code = CALL_SUCCESS;
-                    )
-                },
-                Type::Sequence { inner_type } => {
-                    if let Type::Int32 = **inner_type {
-                        // For int32 sequence return values
-                        quote!(
-                            final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                            outReturn.ref = FfiConverterSequenceInt32.lower(result);
-                        )
-                    } else {
-                        // For other sequence types
-                        let lowered = ret.as_codetype().lower();
-                        quote!(
-                            final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                            outReturn.ref = $lowered(result);
-                        )
-                    }
-                },
-                _ => {
-                    // For other return types
-                    let lowered = ret.as_codetype().lower();
-                    quote!(
-                        final result = obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                        outReturn.ref = $lowered(result);
-                    )
-                }
-            }
+            DartCodeOracle::callback_return_handling(ret, method_name, arg_names)
         } else {
             // Handle void return types
-            quote!(
-                obj.$method_name($(for arg in &m.arguments() => $(DartCodeOracle::var_name(arg.name())),));
-                status.code = CALL_SUCCESS;
-            )
+            DartCodeOracle::callback_void_handling(method_name, arg_names)
         };
 
-        // Determine the outReturn type based on the return type
-        let out_return_type = if let Some(ret) = m.return_type() {
-            match ret {
-                Type::Boolean => quote!(Pointer<Int8>),
-                _ => quote!(Pointer<RustBuffer>)
-            }
-        } else {
-            quote!(Pointer<Void>)
-        };
+        // Get the appropriate out return type
+        let out_return_type = DartCodeOracle::callback_out_return_type(m.return_type());
 
         // Generate the function body
-        let callback_method_name = &format!("{}{}", &DartCodeOracle::fn_name(callback.name()) , &DartCodeOracle::class_name(m.name()));
+        let callback_method_name = &format!("{}{}", &DartCodeOracle::fn_name(callback.name()), &DartCodeOracle::class_name(m.name()));
         
-        // Adjust parameter types based on the method
-        let param_types: Vec<dart::Tokens> = m.arguments().iter().map(|arg| {
-            let arg_name = &DartCodeOracle::var_name(arg.name());
-            match &arg.as_type() {
-                Type::Boolean => quote!(int $arg_name),
-                Type::String => quote!(RustBuffer $(arg_name)Buffer),
-                Type::Optional { inner_type } => {
-                    if let Type::String = **inner_type {
-                        quote!(RustBuffer $(arg_name)Buffer)
-                    } else {
-                        quote!($(&DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $arg_name)
-                    }
-                },
-                Type::Sequence { inner_type } => {
-                    if let Type::Int32 = **inner_type {
-                        quote!(RustBuffer $(arg_name)Buffer)
-                    } else {
-                        quote!($(&DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $arg_name)
-                    }
-                },
-                _ => quote!($(&DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $arg_name)
-            }
-        }).collect();
-
         quote! {
             void $callback_method_name(int uniffiHandle, $(for param in &param_types => $param,) $out_return_type outReturn, Pointer<RustCallStatus> callStatus) {
                 final status = callStatus.ref;
