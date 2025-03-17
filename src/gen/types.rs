@@ -1,9 +1,11 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use genco::prelude::*;
+use uniffi_bindgen::interface::AsType;
 use uniffi_bindgen::{interface::Type, ComponentInterface};
+use uniffi_bindgen::backend::CodeType;
 
-use super::render::{AsRenderable, Renderer, TypeHelperRenderer};
+use super::render::{AsRenderable, Renderer, TypeHelperRenderer, Renderable};
 use super::{enums, functions, objects, oracle::AsCodeType, records};
 use crate::gen::DartCodeOracle;
 
@@ -81,6 +83,16 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
         let function_definitions = quote!(
             $(for fun in self.ci.function_definitions() => $(functions::generate_function(fun, self)))
         );
+
+        let mut callback_code = quote!();
+        // Process all callback interfaces to ensure they're included
+        for callback in self.ci.callback_interface_definitions() {
+            let callback_name = callback.name().to_string();
+            let callback_codetype = super::callback_interface::CallbackInterfaceCodeType::new(callback_name, callback.as_type());
+            // Force the callback interface to be processed, due to the way the code is generated we need to ensure it's processed, when a callback is used in a function signature
+            // TODO: This is a hack to ensure the callback interface is processed, we need to test to ensure there's no chance of duplicates
+            callback_code.append(callback_codetype.render_type_helper(self));
+        }
 
         // Let's include the string converter
         self.include_once_check(&Type::String.as_codetype().canonical_name(), &Type::String);

@@ -1,5 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::CodeType;
+use uniffi_bindgen::backend::{CodeType, Type};
 use uniffi_bindgen::interface::{AsType, Method, CallbackInterface};
 
 use crate::gen::oracle::{AsCodeType, DartCodeOracle};
@@ -10,11 +10,12 @@ use crate::gen::render::{Renderable, TypeHelperRenderer};
 #[derive(Debug)]
 pub struct CallbackInterfaceCodeType {
     name: String,
+    self_type: Type,
 }
 
 impl CallbackInterfaceCodeType {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, self_type: Type) -> Self {
+        Self { name, self_type }
     }
 }
 
@@ -34,6 +35,7 @@ impl CodeType for CallbackInterfaceCodeType {
 
 impl Renderable for CallbackInterfaceCodeType {
     fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+        type_helper.include_once_check(&self.canonical_name(), &self.self_type);
         let callback = type_helper.get_ci().get_callback_interface_definition(&self.name).unwrap();
         
         // Generate all necessary components for the callback interface
@@ -100,16 +102,9 @@ fn generate_callback_interface(
 
         // We must define callback signatures
         $(generate_callback_methods_signatures(cls_name, &methods, type_helper))
-
-        $(generate_callback_vtable_interface(callback, type_helper))
-
-        $(generate_callback_functions(callback, type_helper))
-
-        $(generate_callback_interface_vtable_init_funtion(callback, type_helper))
     };
 
-
-        tokens
+    tokens
 }
 
 fn generate_callback_methods_definitions(method: &Method, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
@@ -153,7 +148,7 @@ fn generate_callback_methods_signatures(callback_name: &str, methods: &Vec<&Meth
         let method_return_type = if let Some(ret) = method.return_type() {
             DartCodeOracle::native_type_label(Some(ret))
         } else {
-            quote!(void)
+            quote!(Void)
         };
 
         tokens.append(quote! {
@@ -167,7 +162,7 @@ fn generate_callback_methods_signatures(callback_name: &str, methods: &Vec<&Meth
     }
 
     tokens.append(quote! {
-        typedef UniffiCallbackInterface$(callback_name)Free = void Function(Uint64);
+        typedef UniffiCallbackInterface$(callback_name)Free = Void Function(Uint64);
         typedef UniffiCallbackInterface$(callback_name)FreeDart = void Function(int);
     });
 

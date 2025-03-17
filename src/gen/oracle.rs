@@ -663,7 +663,7 @@ impl<T: AsType> AsCodeType for T {
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
             Type::Record {name, .. } => Box::new(records::RecordCodeType::new(name)),
-            Type::CallbackInterface { name, .. } => Box::new(callback_interface::CallbackInterfaceCodeType::new(name)),
+            Type::CallbackInterface { name, .. } => Box::new(callback_interface::CallbackInterfaceCodeType::new(name, self.as_type())),
             _ => todo!("As Type for Type::{:?}", self.as_type()),
         }
     }
