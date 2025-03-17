@@ -419,16 +419,16 @@ impl DartCodeOracle {
                 if let Type::String = **inner_type {
                     quote!(RustBuffer $(arg_name)Buffer)
                 } else {
-                    let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
-                    quote!($type_label $arg_name)
+                    //let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
+                    quote!(RustBuffer $arg_name)
                 }
             },
             Type::Sequence { inner_type } => {
                 if let Type::Int32 = **inner_type {
                     quote!(RustBuffer $(arg_name)Buffer)
                 } else {
-                    let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
-                    quote!($type_label $arg_name)
+                    //let type_label = DartCodeOracle::dart_type_label(Some(arg_type));
+                    quote!(RustBuffer $arg_name)
                 }
             },
             _ => {
