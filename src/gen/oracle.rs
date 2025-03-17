@@ -112,9 +112,11 @@ impl DartCodeOracle {
                 FfiType::Float64 => quote!(double),
                 FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
                 FfiType::RustBuffer(_t) => quote!(RustBuffer),
+                FfiType::ForeignBytes => quote!(ForeignBytes),
+                FfiType::Handle => quote!(Pointer<Void>),
                 FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
                 FfiType::Reference(inner) => quote!($(Self::ffi_type_label_by_reference(inner))),
-                _ => quote!(dynamic), // Fallback implementation
+                _ => panic!("Unimplemented FfiType: {:?}", ret_type), // Fallback implementation
             }
         } else {
             quote!(void)
@@ -136,9 +138,11 @@ impl DartCodeOracle {
                 FfiType::Float64 => quote!(Double),
                 FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
                 FfiType::RustBuffer(_t) => quote!(RustBuffer),
+                FfiType::ForeignBytes => quote!(ForeignBytes),
+                FfiType::Handle => quote!(Pointer<Void>),
                 FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
                 FfiType::Reference(inner) => quote!($(Self::ffi_type_label_by_reference(inner))),
-                _ => quote!(Pointer<Void>), // Fallback implementation
+                _ => panic!("Unimplemented FfiType: {:?}", ret_type), // Fallback implementation
             }
         } else {
             quote!(void)
