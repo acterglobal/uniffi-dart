@@ -64,15 +64,6 @@ impl DartCodeOracle {
         )
     }
 
-    /// Get the idiomatic Dart rendering of an exception name
-    // pub fn error_name(nm: &str) -> String {
-    //     let name = Self::class_name(nm);
-    //     match name.strip_suffix("Error") {
-    //         None => name,
-    //         Some(stripped) => format!("{stripped}Exception"),
-    //     }
-    // }
-
     pub fn find_lib_instance() -> dart::Tokens {
         quote!(_UniffiLib.instance)
     }

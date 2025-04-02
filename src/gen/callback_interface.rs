@@ -1,9 +1,5 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
-use uniffi_bindgen::interface::{AsType, Method, Object};
-
-use crate::gen::oracle::{AsCodeType, DartCodeOracle};
-use crate::gen::render::AsRenderable;
+use uniffi_bindgen::backend::CodeType;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
 #[derive(Debug)]
@@ -32,7 +28,7 @@ impl CodeType for CallbackInterfaceCodeType {
 }
 
 impl Renderable for CallbackInterfaceCodeType {
-    fn render_type_helper(&self, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
         quote!("Plese start here")
     }
 }
