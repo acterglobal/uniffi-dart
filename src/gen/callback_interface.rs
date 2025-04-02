@@ -1,6 +1,6 @@
+use crate::gen::render::{Renderable, TypeHelperRenderer};
 use genco::prelude::*;
 use uniffi_bindgen::backend::CodeType;
-use crate::gen::render::{Renderable, TypeHelperRenderer};
 
 #[derive(Debug)]
 pub struct CallbackInterfaceCodeType {
