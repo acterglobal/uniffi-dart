@@ -1,7 +1,8 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
+use uniffi_bindgen::backend::{Literal};
 use uniffi_bindgen::interface::{AsType, Method, Object};
 
+use crate::gen::CodeType;
 use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};

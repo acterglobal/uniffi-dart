@@ -1,5 +1,6 @@
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
+use uniffi_bindgen::backend::{Literal};
+use crate::gen::CodeType;
 use uniffi_bindgen::interface::{AsType, Enum};
 
 use super::oracle::{AsCodeType, DartCodeOracle};

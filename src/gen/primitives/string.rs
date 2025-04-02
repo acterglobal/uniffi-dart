@@ -1,10 +1,11 @@
+use crate::r#gen::CodeType;
 use crate::gen::{
     quote,
     render::{Renderable, TypeHelperRenderer},
 };
 
 use genco::lang::dart;
-use uniffi_bindgen::backend::CodeType;
+// use uniffi_bindgen::backend::CodeType;
 
 #[derive(Debug)]
 pub struct StringCodeType;

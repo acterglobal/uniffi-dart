@@ -7,11 +7,12 @@ use camino::Utf8Path;
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
+use uniffi_bindgen::Component;
 // use uniffi_bindgen::MergeWith;
 use self::render::Renderer;
 use self::types::TypeHelpersRenderer;
 use crate::gen::oracle::DartCodeOracle;
-use uniffi_bindgen::{BindingGenerator, BindingsConfig, ComponentInterface};
+use uniffi_bindgen::{BindingGenerator, ComponentInterface};
 
 mod callback_interface;
 mod compounds;
@@ -24,6 +25,9 @@ mod records;
 mod render;
 pub mod stream;
 mod types;
+mod code_type;
+
+pub use code_type::CodeType;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -61,24 +65,24 @@ impl Config {
     }
 }
 
-impl BindingsConfig for Config {
-    fn update_from_ci(&mut self, ci: &ComponentInterface) {
-        self.package_name = Some(ci.namespace().to_owned());
-    }
+// impl BindingsConfig for Config {
+//     fn update_from_ci(&mut self, ci: &ComponentInterface) {
+//         self.package_name = Some(ci.namespace().to_owned());
+//     }
 
-    fn update_from_cdylib_name(&mut self, cdylib_name: &str) {
-        self.cdylib_name = Some(cdylib_name.to_string());
-    }
+//     fn update_from_cdylib_name(&mut self, cdylib_name: &str) {
+//         self.cdylib_name = Some(cdylib_name.to_string());
+//     }
 
-    fn update_from_dependency_configs(&mut self, config_map: HashMap<&str, &Self>) {
-        for (crate_name, config) in config_map {
-            if !self.external_packages.contains_key(crate_name) {
-                self.external_packages
-                    .insert(crate_name.to_string(), config.package_name());
-            }
-        }
-    }
-}
+//     fn update_from_dependency_configs(&mut self, config_map: HashMap<&str, &Self>) {
+//         for (crate_name, config) in config_map {
+//             if !self.external_packages.contains_key(crate_name) {
+//                 self.external_packages
+//                     .insert(crate_name.to_string(), config.package_name());
+//             }
+//         }
+//     }
+// }
 
 pub struct DartWrapper<'a> {
     config: &'a Config,
@@ -220,29 +224,52 @@ impl BindingGenerator for DartBindingGenerator {
 
     fn write_bindings(
         &self,
-        ci: &ComponentInterface,
-        config: &Self::Config,
-        out_dir: &Utf8Path,
-        _try_format_code: bool,
+        settings: &uniffi_bindgen::GenerationSettings,
+        components: &[uniffi_bindgen::Component<Self::Config>],
     ) -> Result<()> {
-        let filename = out_dir.join(format!("{}.dart", config.cdylib_name()));
-        let tokens = DartWrapper::new(ci, config).generate();
-        let file = std::fs::File::create(filename)?;
 
-        let mut w = fmt::IoWriter::new(file);
+        for Component { ci, config, .. } in components {
 
-        let fmt = fmt::Config::from_lang::<Dart>().with_indentation(fmt::Indentation::Space(4));
-        let config = dart::Config::default();
+            let filename = settings.out_dir.join(format!("{}.dart", config.cdylib_name()));
+            let tokens = DartWrapper::new(ci, config).generate();
+            let file = std::fs::File::create(filename)?;
 
-        tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
+            let mut w = fmt::IoWriter::new(file);
+
+            let mut fmt = fmt::Config::from_lang::<Dart>();
+            if settings.try_format_code {
+                fmt = fmt.with_indentation(fmt::Indentation::Space(2));
+            }
+            let config = dart::Config::default();
+
+            tokens.format_file(&mut w.as_formatter(&fmt), &config)?;
+        }
         Ok(())
     }
-    fn check_library_path(
+    
+    fn new_config(&self, root_toml: &toml::value::Value) -> Result<Self::Config> {
+        Ok(
+            match root_toml.get("bindings").and_then(|b| b.get("dart")) {
+                Some(v) => v.clone().try_into()?,
+                None => Default::default(),
+            },
+        )
+    }
+    
+    fn update_component_configs(
         &self,
-        _library_path: &Utf8Path,
-        _cdylib_name: Option<&str>,
+        settings: &uniffi_bindgen::GenerationSettings,
+        components: &mut Vec<uniffi_bindgen::Component<Self::Config>>,
     ) -> Result<()> {
-        // FIXME: not sure what to check for here...?
+        
+        for c in &mut *components {
+            c.config.cdylib_name.get_or_insert_with(|| {
+                settings
+                    .cdylib
+                    .clone()
+                    .unwrap_or_else(|| format!("uniffi_{}", c.ci.namespace()))
+            });
+        }
         Ok(())
     }
 }
