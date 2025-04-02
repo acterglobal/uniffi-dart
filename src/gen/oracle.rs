@@ -156,7 +156,7 @@ impl DartCodeOracle {
     }
 
     pub fn ffi_struct_name(name: &str) -> dart::Tokens {
-       quote!($(format!("Uniffi{}", name.to_upper_camel_case())))
+        quote!($(format!("Uniffi{}", name.to_upper_camel_case())))
     }
     // pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     //     match ty {
@@ -351,8 +351,10 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record {name, .. } => Box::new(records::RecordCodeType::new(name)),
-            Type::CallbackInterface { name, .. } => Box::new(callback_interface::CallbackInterfaceCodeType::new(name)),
+            Type::Record { name, .. } => Box::new(records::RecordCodeType::new(name)),
+            Type::CallbackInterface { name, .. } => {
+                Box::new(callback_interface::CallbackInterfaceCodeType::new(name))
+            }
             _ => todo!("As Type for Type::{:?}", self.as_type()),
         }
     }

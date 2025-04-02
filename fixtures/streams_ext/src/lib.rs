@@ -27,7 +27,6 @@ pub fn fibonacci_stream() -> Pin<Box<dyn Stream<Item = u64> + Send>> {
     })
 }
 
-
 #[uniffi_dart::export_stream(u64)]
 pub fn async_timer_stream() -> Pin<Box<dyn Stream<Item = u64> + Send>> {
     Box::pin(stream! {
@@ -69,7 +68,6 @@ mod tests {
         let result: Vec<i32> = count_stream().collect().await;
         assert_eq!(result, vec![0, 1, 2, 3, 4]);
     }
-
 
     #[tokio::test]
     async fn test_fibonacci_stream() {
@@ -160,7 +158,6 @@ mod tests {
         // The next call should return None
         assert_eq!(instance.next().await, None);
     }
-
 }
 
 uniffi::include_scaffolding!("api");

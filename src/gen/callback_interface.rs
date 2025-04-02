@@ -6,7 +6,6 @@ use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
-
 #[derive(Debug)]
 pub struct CallbackInterfaceCodeType {
     name: String,
