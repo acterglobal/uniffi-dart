@@ -65,25 +65,6 @@ impl Config {
     }
 }
 
-// impl BindingsConfig for Config {
-//     fn update_from_ci(&mut self, ci: &ComponentInterface) {
-//         self.package_name = Some(ci.namespace().to_owned());
-//     }
-
-//     fn update_from_cdylib_name(&mut self, cdylib_name: &str) {
-//         self.cdylib_name = Some(cdylib_name.to_string());
-//     }
-
-//     fn update_from_dependency_configs(&mut self, config_map: HashMap<&str, &Self>) {
-//         for (crate_name, config) in config_map {
-//             if !self.external_packages.contains_key(crate_name) {
-//                 self.external_packages
-//                     .insert(crate_name.to_string(), config.package_name());
-//             }
-//         }
-//     }
-// }
-
 pub struct DartWrapper<'a> {
     config: &'a Config,
     ci: &'a ComponentInterface,
