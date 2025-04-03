@@ -84,6 +84,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
 
         // Let's include the string converter
         self.include_once_check(&Type::String.as_codetype().canonical_name(), &Type::String);
+        self.include_once_check(&Type::Boolean.as_codetype().canonical_name(), &Type::Boolean);
         let helpers_definitions = quote! {
             $(for (_, ty) in self.get_include_names().iter() => $(ty.as_renderable().render_type_helper(self)) )
         };
