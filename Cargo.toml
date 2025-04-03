@@ -73,7 +73,7 @@ exclude = [
 ]
 
 [workspace.dependencies]
-uniffi = { version = "0.29.1" }
-uniffi_bindgen = { version = "0.29.1" }
-uniffi_build = { version = "0.29.1" }
-uniffi_testing = { version = "0.29.1" }
+uniffi = { version = "0.28.0" }
+uniffi_bindgen = { version = "0.28.0" }
+uniffi_build = { version = "0.28.0" }
+uniffi_testing = { version = "0.28.0" }
