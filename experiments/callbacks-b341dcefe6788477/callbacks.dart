@@ -141,8 +141,8 @@ class UnexpectedExceptionWithReasonComplexException extends ComplexException {
 }
 
 enum SimpleException {
-  BadArgument,
-  UnexpectedException,
+  badArgument,
+  unexpectedException,
 }
 
 class FfiConverterSimpleException {
@@ -150,9 +150,9 @@ class FfiConverterSimpleException {
     final index = buffer.asUint8List().buffer.asByteData().getInt32(0);
     switch (index) {
       case 1:
-        return SimpleException.BadArgument;
+        return SimpleException.badArgument;
       case 2:
-        return SimpleException.UnexpectedException;
+        return SimpleException.unexpectedException;
       default:
         throw UniffiInternalError(UniffiInternalError.unexpectedEnumCase,
             "Unable to determine enum variant");
@@ -202,16 +202,13 @@ class RustGetters {
     bool v,
     bool argumentTwo,
   ) {
-    var loweredCallback = FfiConverterCallbackInterfaceForeignGetters.lower(callback);
+    var loweredCallback =
+        FfiConverterCallbackInterfaceForeignGetters.lower(callback);
     var loweredV = FfiConverterBool.lower(v);
     var loweredArgumentTwo = FfiConverterBool.lower(argumentTwo);
     return rustCall((status) => FfiConverterBool.lift(_UniffiLib.instance
-        .uniffi_callbacks_fn_method_rustgetters_get_bool(
-            uniffiClonePointer(),
-            loweredCallback,
-            loweredV,
-            loweredArgumentTwo,
-            status)));
+        .uniffi_callbacks_fn_method_rustgetters_get_bool(uniffiClonePointer(),
+            loweredCallback, loweredV, loweredArgumentTwo, status)));
   }
 
   List<int> getList(
@@ -226,11 +223,7 @@ class RustGetters {
 
     return rustCall((status) => FfiConverterSequenceInt32.lift(
         _UniffiLib.instance.uniffi_callbacks_fn_method_rustgetters_get_list(
-            self,
-            call,
-            sequence,
-            arguemtn2,
-            status)));
+            self, call, sequence, arguemtn2, status)));
   }
 
   void getNothing(
@@ -259,7 +252,8 @@ class RustGetters {
     var arguemtn2 = FfiConverterBool.lower(arg2);
     var tempv = FfiConverterOptionalString.lower(v);
 
-    print("Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
+    print(
+        "Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
     return rustCall((status) => FfiConverterOptionalString.lift(
         _UniffiLib.instance.uniffi_callbacks_fn_method_rustgetters_get_option(
             uniffiClonePointer(),
@@ -288,7 +282,8 @@ class RustGetters {
     String v,
     bool arg2,
   ) {
-    print("Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
+    print(
+        "Passing uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback");
     return rustCall((status) => FfiConverterOptionalString.lift(_UniffiLib
         .instance
         .uniffi_callbacks_fn_method_rustgetters_get_string_optional_callback(
@@ -621,7 +616,8 @@ class FfiConverterOptionalString {
     if (ByteData.view(buf.buffer, buf.offsetInBytes).getInt8(0) == 0) {
       return LiftRetVal(null, 1);
     }
-    print("Uint8List.view(buf.buffer, buf.offsetInBytes + 1): ${Uint8List.view(buf.buffer, buf.offsetInBytes + 1)}");
+    print(
+        "Uint8List.view(buf.buffer, buf.offsetInBytes + 1): ${Uint8List.view(buf.buffer, buf.offsetInBytes + 1)}");
     return FfiConverterString.read(
             Uint8List.view(buf.buffer, buf.offsetInBytes + 1))
         .copyWithOffset(1);
@@ -899,16 +895,15 @@ typedef UniffiCallbackInterfaceForeignGettersMethod0 = Void Function(
 typedef UniffiCallbackInterfaceForeignGettersMethod0Dart = void Function(
     int, int, int, Pointer<Int8>, Pointer<RustCallStatus>);
 
-typedef UniffiCallbackInterfaceForeignGettersMethod1 = Void Function(Uint64,
-    RustBuffer, Int8, Pointer<RustBuffer>, Pointer<RustCallStatus>);
+typedef UniffiCallbackInterfaceForeignGettersMethod1 = Void Function(
+    Uint64, RustBuffer, Int8, Pointer<RustBuffer>, Pointer<RustCallStatus>);
 typedef UniffiCallbackInterfaceForeignGettersMethod1Dart = void Function(
     int, RustBuffer, int, Pointer<RustBuffer>, Pointer<RustCallStatus>);
 
-typedef UniffiCallbackInterfaceForeignGettersMethod2 = Void Function(Uint64,
-    RustBuffer, Bool, Pointer<RustBuffer>, Pointer<RustCallStatus>);
+typedef UniffiCallbackInterfaceForeignGettersMethod2 = Void Function(
+    Uint64, RustBuffer, Bool, Pointer<RustBuffer>, Pointer<RustCallStatus>);
 typedef UniffiCallbackInterfaceForeignGettersMethod2Dart = void Function(
     int, RustBuffer, bool, Pointer<RustBuffer>, Pointer<RustCallStatus>);
-
 
 typedef UniffiCallbackInterfaceForeignGettersMethod4 = Void Function(
     Uint64, RustBuffer, Pointer<Void>, Pointer<RustCallStatus>);
@@ -950,12 +945,8 @@ void foreignGettersGetBool(int uniffiHandle, int v, int argumentTwo,
   }
 }
 
-void foreignGettersGetString(
-    int uniffiHandle,
-    RustBuffer vBuffer,
-    bool arg2,
-    Pointer<RustBuffer> outReturn,
-    Pointer<RustCallStatus> callStatus) {
+void foreignGettersGetString(int uniffiHandle, RustBuffer vBuffer, bool arg2,
+    Pointer<RustBuffer> outReturn, Pointer<RustCallStatus> callStatus) {
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
@@ -976,12 +967,8 @@ void foreignGettersGetString(
   }
 }
 
-void foreignGettersGetOption(
-    int uniffiHandle,
-    RustBuffer vBuffer,
-    bool arg2,
-    Pointer<RustBuffer> outReturn,
-    Pointer<RustCallStatus> callStatus) {
+void foreignGettersGetOption(int uniffiHandle, RustBuffer vBuffer, bool arg2,
+    Pointer<RustBuffer> outReturn, Pointer<RustCallStatus> callStatus) {
   final status = callStatus.ref;
   try {
     final obj = FfiConverterCallbackInterfaceForeignGetters._handleMap
@@ -1003,12 +990,8 @@ void foreignGettersGetOption(
   }
 }
 
-void foreignGettersGetList(
-    int uniffiHandle,
-    RustBuffer vBuffer,
-    bool arg2,
-    Pointer<RustBuffer> outReturn,
-    Pointer<RustCallStatus> callStatus) {
+void foreignGettersGetList(int uniffiHandle, RustBuffer vBuffer, bool arg2,
+    Pointer<RustBuffer> outReturn, Pointer<RustCallStatus> callStatus) {
   print('foreignGettersGetList');
   final status = callStatus.ref;
   try {
@@ -1084,12 +1067,11 @@ final foreignGettersFreePointer =
         foreignGettersFreeCallback);
 
 // Once implemented, create a static vtable instance and register it:
-late final Pointer<UniffiVTableCallbackInterfaceForeignGetters> foreignGettersVTable;
+late final Pointer<UniffiVTableCallbackInterfaceForeignGetters>
+    foreignGettersVTable;
 
 void initForeignGettersVTable() {
-
-  foreignGettersVTable =
-      calloc<UniffiVTableCallbackInterfaceForeignGetters>();
+  foreignGettersVTable = calloc<UniffiVTableCallbackInterfaceForeignGetters>();
   foreignGettersVTable.ref.getBool = foreignGettersGetBoolPointer;
   foreignGettersVTable.ref.getString = foreignGettersGetStringPointer;
   foreignGettersVTable.ref.getOption = foreignGettersGetOptionPointer;
@@ -1119,7 +1101,8 @@ typedef UniffiCallbackInterfaceStoredForeignStringifierMethod1Dart = void
 typedef UniffiCallbackInterfaceFree = Void Function(Uint64);
 typedef UniffiCallbackInterfaceFreeDart = void Function(int);
 
-final class UniffiVTableCallbackInterfaceStoredForeignStringifier extends Struct {
+final class UniffiVTableCallbackInterfaceStoredForeignStringifier
+    extends Struct {
   external Pointer<
           NativeFunction<
               UniffiCallbackInterfaceStoredForeignStringifierMethod0>>
@@ -1211,9 +1194,12 @@ void initStoredForeignStringifierVTable() {
   storedForeignStringifierVTable =
       calloc<UniffiVTableCallbackInterfaceStoredForeignStringifier>();
 
-  storedForeignStringifierVTable.ref.fromSimpleType = storedForeignStringifierFromSimpleTypePointer;
-  storedForeignStringifierVTable.ref.fromComplexType = storedForeignStringifierFromComplexTypePointer;
-  storedForeignStringifierVTable.ref.uniffiFree = storedForeignStringifierFreePointer;
+  storedForeignStringifierVTable.ref.fromSimpleType =
+      storedForeignStringifierFromSimpleTypePointer;
+  storedForeignStringifierVTable.ref.fromComplexType =
+      storedForeignStringifierFromComplexTypePointer;
+  storedForeignStringifierVTable.ref.uniffiFree =
+      storedForeignStringifierFreePointer;
 
   rustCall((status) {
     _UniffiLib.instance

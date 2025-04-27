@@ -9,11 +9,11 @@ class DartGetters extends ForeignGetters {
   String getString(String v, bool arg2) {
     if (v == 'BadArgument') {
       // Throw a UniFFI-generated exception type corresponding to BadArgument
-      throw SimpleException.BadArgument;
+      throw SimpleException.badArgument;
     }
     if (v == 'UnexpectedError') {
       // Throw a UniFFI-generated exception type corresponding to UnexpectedError
-      throw SimpleException.UnexpectedException;
+      throw SimpleException.unexpectedException;
     }
     return arg2 ?  v : '1234567890123';
   }

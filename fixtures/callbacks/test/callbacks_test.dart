@@ -9,24 +9,22 @@ class DartGetters extends ForeignGetters {
   String getString(String v, bool arg2) {
     if (v == 'BadArgument') {
       // Throw a UniFFI-generated exception type corresponding to BadArgument
-      throw SimpleException.BadArgument;
+      throw SimpleException.badArgument;
     }
-    if (v == 'UnexpectedError') {
+    if (v == 'UnexpectedException') {
       // Throw a UniFFI-generated exception type corresponding to UnexpectedError
-      throw SimpleException.UnexpectedException;
+      throw SimpleException.unexpectedError;
     }
-    return arg2 ?  v : '1234567890123';
+    return arg2 ? v : '1234567890123';
   }
 
   @override
   String? getOption(String? v, bool arg2) {
     if (v == 'BadArgument') {
-      throw ReallyBadArgumentComplexException(
-          code: 20); // Example of a complex error
+      throw ReallyBadArgumentComplexException(20); // Example of a complex error
     }
     if (v == 'UnexpectedError') {
-      throw UnexpectedExceptionWithReasonComplexException(
-          reason: "something failed");
+      throw UnexpectedExceptionWithReasonComplexException("something failed");
     }
     return arg2 ? v?.toUpperCase() : v;
   }
@@ -37,10 +35,10 @@ class DartGetters extends ForeignGetters {
   @override
   void getNothing(String v) {
     if (v == 'BadArgument') {
-      throw SimpleException.BadArgument;
+      throw SimpleException.badArgument;
     }
     if (v == 'UnexpectedError') {
-      throw SimpleException.UnexpectedException;
+      throw SimpleException.unexpectedError;
     }
   }
 }
@@ -67,7 +65,7 @@ void main() {
     final flag = true;
     for (final v in [true, false]) {
       final expected = callback.getBool(v, flag);
-      final observed =  rustGetters.getBool(callback, v, flag);  
+      final observed = rustGetters.getBool(callback, v, flag);
       expect(observed, equals(expected));
     }
   });
@@ -104,7 +102,8 @@ void main() {
   });
 
   test('getStringOptionalCallback works', () {
-    expect(rustGetters.getStringOptionalCallback(callback, "1234567890123", false),
+    expect(
+        rustGetters.getStringOptionalCallback(callback, "1234567890123", false),
         equals("1234567890123"));
     // Passing null as the callback
     expect(rustGetters.getStringOptionalCallback(null, "1234567890123", false),

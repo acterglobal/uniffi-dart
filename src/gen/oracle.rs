@@ -34,10 +34,9 @@ impl DartCodeOracle {
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
     pub fn class_name(nm: &str) -> String {
         let name = Self::sanitize_identifier(&nm.to_upper_camel_case());
-        match name.strip_suffix("Error") {
-            None => name,
-            Some(stripped) => format!("{stripped}Exception"),
-        }
+        // Replace "Error" with "Exception" in the name
+        let name = name.replace("Error", "Exception");
+        name
     }
 
     /// Get the idiomatic Dart rendering of a function name.
