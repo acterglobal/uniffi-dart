@@ -1,4 +1,4 @@
-use super::{compounds, enums, primitives, records};
+use super::{callback_interface, compounds, enums, primitives, records};
 use super::{objects, oracle::AsCodeType};
 use genco::{lang::dart, quote};
 use uniffi_bindgen::interface::{AsType, Enum, Object, Record, Type};
@@ -46,10 +46,11 @@ pub trait Renderable {
             Type::Enum { name, .. } => quote!($name),
             Type::Record { name, .. } => quote!($name),
             Type::Duration => quote!(Duration),
+            Type::CallbackInterface { name, .. } => quote!($name),
             _ => todo!("Type::{:?}", ty),
         };
 
-        if type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
+        if !type_helper.include_once_check(&ty.as_codetype().canonical_name(), ty) {
             println!("{} Added", &ty.as_codetype().canonical_name());
         }
 
@@ -89,10 +90,10 @@ impl<T: AsType> AsRenderable for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record {
-                name,
-                module_path: _,
-            } => Box::new(records::RecordCodeType::new(name)),
+            Type::Record { name, .. } => Box::new(records::RecordCodeType::new(name)),
+            Type::CallbackInterface { name, .. } => {
+                Box::new(callback_interface::CallbackInterfaceCodeType::new(name))
+            }
             _ => todo!("Renderable for Type::{:?}", self.as_type()),
         }
     }

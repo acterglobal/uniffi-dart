@@ -13,17 +13,12 @@ pub fn generate_stream(obj: &Object, _type_helper: &dyn TypeHelperRenderer) -> d
     quote! {
         $fn_name() async* {
             final $obj_var_name = $create_obj_fn_name();
-            try {
-                while (true) {
-                    final value = await $obj_var_name.next();
-                    if (value == null) {
-                        break;
-                    }
-                    yield value;
+            while (true) {
+                final value = await $obj_var_name.next();
+                if (value == null) {
+                    break;
                 }
-            } catch (e) {
-                // Handle exceptions if necessary
-                rethrow;
+                yield value;
             }
             // No need to call drop(), Finalizer will handle it
         }

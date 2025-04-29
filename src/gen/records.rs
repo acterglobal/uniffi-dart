@@ -1,8 +1,9 @@
 use super::oracle::{AsCodeType, DartCodeOracle};
 use super::render::{Renderable, TypeHelperRenderer};
 use super::types::generate_type;
+use super::CodeType;
 use genco::prelude::*;
-use uniffi_bindgen::backend::{CodeType, Literal};
+// use uniffi_bindgen::backend::Literal;
 use uniffi_bindgen::interface::{AsType, Record};
 
 #[derive(Debug)]
@@ -26,10 +27,6 @@ impl CodeType for RecordCodeType {
 
     fn canonical_name(&self) -> String {
         self.id.to_string()
-    }
-
-    fn literal(&self, _literal: &Literal) -> String {
-        todo!("literal not implemented for RecordCodeType");
     }
 }
 

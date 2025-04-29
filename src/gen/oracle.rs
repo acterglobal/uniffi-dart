@@ -1,15 +1,16 @@
 use genco::lang::dart;
 use genco::quote;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
+use uniffi_bindgen::interface::ffi::ExternalFfiMetadata;
 
-use uniffi_bindgen::backend::CodeType;
-use uniffi_bindgen::interface::{AsType, Callable, ExternalKind, FfiType, Type};
+use crate::gen::CodeType;
+use uniffi_bindgen::interface::{AsType, Callable, FfiType, Type};
 use uniffi_bindgen::ComponentInterface;
 
 use crate::gen::primitives;
 
 // use super::render::{AsRenderable, Renderable};
-use super::{compounds, enums, objects, records};
+use super::{callback_interface, compounds, enums, objects, records};
 
 pub struct DartCodeOracle;
 
@@ -34,7 +35,11 @@ impl DartCodeOracle {
 
     /// Get the idiomatic Dart rendering of a class name (for enums, records, errors, etc).
     pub fn class_name(nm: &str) -> String {
-        Self::sanitize_identifier(&nm.to_upper_camel_case())
+        let name = Self::sanitize_identifier(&nm.to_upper_camel_case());
+        match name.strip_suffix("Error") {
+            None => name,
+            Some(stripped) => format!("{stripped}Exception"),
+        }
     }
 
     /// Get the idiomatic Dart rendering of a function name.
@@ -60,15 +65,6 @@ impl DartCodeOracle {
         )
     }
 
-    /// Get the idiomatic Dart rendering of an exception name
-    // pub fn error_name(nm: &str) -> String {
-    //     let name = Self::class_name(nm);
-    //     match name.strip_suffix("Error") {
-    //         None => name,
-    //         Some(stripped) => format!("{stripped}Exception"),
-    //     }
-    // }
-
     pub fn find_lib_instance() -> dart::Tokens {
         quote!(_UniffiLib.instance)
     }
@@ -90,12 +86,13 @@ impl DartCodeOracle {
             | FfiType::Int64 => quote!(int),
             FfiType::Float32 | FfiType::Float64 => quote!(double),
             FfiType::RustBuffer(ref inner) => match inner {
-                Some(i) => quote!($i),
+                Some(ExternalFfiMetadata { name, .. }) => quote!($(Self::ffi_struct_name(name)) ),
                 _ => quote!(RustBuffer),
             },
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
             FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Reference(inner) => quote!($(Self::ffi_type_label_by_reference(inner))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
@@ -117,16 +114,42 @@ impl DartCodeOracle {
             FfiType::Float64 => quote!(Double),
             FfiType::Handle => quote!(Uint64),
             FfiType::RustBuffer(ref inner) => match inner {
-                Some(i) => quote!($i),
+                Some(ExternalFfiMetadata { name, .. }) => quote!($(Self::ffi_struct_name(name)) ),
                 _ => quote!(RustBuffer),
             },
             FfiType::ForeignBytes => quote!(ForeignBytes),
             FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
             FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Reference(inner) => quote!($(Self::ffi_type_label_by_reference(inner))),
             _ => todo!("FfiType::{:?}", ret_type),
         }
     }
 
+    fn ffi_type_label_by_reference(ffi_type: &FfiType) -> dart::Tokens {
+        match ffi_type {
+            FfiType::UInt8 => quote!(Uint8),
+            FfiType::UInt16 => quote!(Uint16),
+            FfiType::UInt32 => quote!(Uint32),
+            FfiType::UInt64 => quote!(Uint64),
+            FfiType::Int8 => quote!(Int8),
+            FfiType::Int16 => quote!(Int16),
+            FfiType::Int32 => quote!(Int32),
+            FfiType::Int64 => quote!(Int64),
+            FfiType::Float32 => quote!(Float),
+            FfiType::Float64 => quote!(Double),
+            FfiType::Handle => quote!(Uint64),
+            FfiType::RustBuffer(_) => quote!(RustBuffer),
+            FfiType::ForeignBytes => quote!(ForeignBytes),
+            FfiType::RustArcPtr(_) => quote!(Pointer<Void>),
+            FfiType::Callback(name) => quote!($(Self::ffi_callback_name(name))),
+            FfiType::Struct(name) => quote!($(Self::ffi_struct_name(name))),
+            _ => todo!("FfiType::{:?}", ffi_type),
+        }
+    }
+
+    pub fn ffi_struct_name(name: &str) -> dart::Tokens {
+        quote!($(format!("Uniffi{}", name.to_upper_camel_case())))
+    }
     // pub fn convert_from_rust_buffer(ty: &Type, inner: dart::Tokens) -> dart::Tokens {
     //     match ty {
     //         Type::Object { .. } => inner,
@@ -189,7 +212,8 @@ impl DartCodeOracle {
             | Type::Enum { .. }
             | Type::Optional { .. }
             | Type::Record { .. }
-            | Type::Sequence { .. } => {
+            | Type::Sequence { .. }
+            | Type::CallbackInterface { .. } => {
                 quote!($(ty.as_codetype().ffi_converter_name()).lower($inner))
             }
             _ => todo!("lower Type::{:?}", ty),
@@ -205,13 +229,16 @@ impl DartCodeOracle {
         let ffi_func = callable.ffi_rust_future_complete(ci);
         let call = quote!($(Self::find_lib_instance()).$ffi_func);
         match callable.return_type() {
-            Some(Type::External {
-                kind: ExternalKind::DataClass,
-                name: _,
-                ..
-            }) => {
+            Some(Type::External { .. }) => {
+                // Some(return_type) if ci.is_external(&return_type) => {
+                //     let ffi_type = FfiType::from(return_type);
+                //     match ffi_type {
+                // FfiType::RustBuffer(Some(ExternalFfiMetadata { .. })) => {
                 todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
             }
+            // _ => call,
+            // }
+            // }
             _ => call,
         }
     }
@@ -319,10 +346,10 @@ impl<T: AsType> AsCodeType for T {
                 *inner_type,
             )),
             Type::Enum { name, .. } => Box::new(enums::EnumCodeType::new(name)),
-            Type::Record {
-                name,
-                module_path: _,
-            } => Box::new(records::RecordCodeType::new(name)),
+            Type::Record { name, .. } => Box::new(records::RecordCodeType::new(name)),
+            Type::CallbackInterface { name, .. } => {
+                Box::new(callback_interface::CallbackInterfaceCodeType::new(name))
+            }
             _ => todo!("As Type for Type::{:?}", self.as_type()),
         }
     }

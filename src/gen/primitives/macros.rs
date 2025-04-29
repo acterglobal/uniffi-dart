@@ -4,7 +4,7 @@ macro_rules! impl_code_type_for_primitive {
             #[derive(Debug)]
             pub struct $T;
 
-            impl uniffi_bindgen::backend::CodeType for $T  {
+            impl crate::gen::CodeType for $T  {
                 fn type_label(&self,) -> String {
                     $class_name.into()
                 }
@@ -20,23 +20,6 @@ macro_rules! impl_code_type_for_primitive {
                 fn ffi_converter_name(&self) -> String {
                     format!("FfiConverter{}", self.canonical_name())
                 }
-
-                // The following must create an instance of the converter object
-                fn lower(&self) -> String {
-                    format!("{}.lower", self.ffi_converter_name())
-                }
-
-                fn write(&self) -> String {
-                    format!("{}.write", self.ffi_converter_name())
-                }
-
-                fn lift(&self) -> String {
-                    format!("{}.lift", self.ffi_converter_name())
-                }
-
-                fn read(&self) -> String {
-                    format!("{}.read", self.ffi_converter_name())
-                }
             }
         }
     };
@@ -46,7 +29,7 @@ macro_rules! impl_renderable_for_primitive {
     ($T:ty, $class_name:literal, $canonical_name:literal, $allocation_size:literal) => {
         impl Renderable for $T {
             fn render_type_helper(&self, _type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
-                use uniffi_bindgen::backend::CodeType;
+                use crate::gen::code_type::CodeType;
                 let endian = (if $canonical_name.contains("Float") {
                     ", Endian.little"
                 } else {
