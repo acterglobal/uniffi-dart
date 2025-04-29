@@ -1,0 +1,26 @@
+[package]
+name = "dart_async"
+version = "0.1.0"
+edition = "2021"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[lib]
+name = "dart_async"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+uniffi = { workspace = true, features = ["tokio"]}
+tokio = { version = "1.24.1", features = ["time"] }
+thiserror = "1.0"
+
+[build-dependencies]
+uniffi-dart = { path = "../../", features = ["build"] }
+
+[dev-dependencies]
+uniffi-dart = { path = "../../", features = ["bindgen-tests"] }
+uniffi = { workspace = true, features = [
+  "bindgen-tests",
+] }
+anyhow = "1"

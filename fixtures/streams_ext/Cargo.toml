@@ -1,5 +1,5 @@
 [package]
-name = "futures"
+name = "streams_ext"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,13 +7,18 @@ publish = false
 
 
 [lib]
-name = "futures"
+name = "streams_ext"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-uniffi = { workspace = true, features = ["tokio"]}
-tokio = { version = "1.24.1", features = ["time"] }
-thiserror = "1.0"
+uniffi = { workspace = true }
+uniffi-dart = { path = "../../" }
+uniffi_dart_macro = { path = "../../uniffi_dart_macro" }
+lazy_static = "1.4.0"
+futures = "0.3"
+async-stream = "0.3"
+tokio = { version = "1.0", features = ["full"] }
+thiserror = "1.0.66"
 
 [build-dependencies]
 uniffi-dart = { path = "../../", features = ["build"] }

@@ -6,6 +6,8 @@ use crate::gen::oracle::{AsCodeType, DartCodeOracle};
 use crate::gen::render::AsRenderable;
 use crate::gen::render::{Renderable, TypeHelperRenderer};
 
+use super::stream::generate_stream;
+
 #[derive(Debug)]
 pub struct ObjectCodeType {
     id: String,
@@ -46,32 +48,52 @@ impl Renderable for ObjectCodeType {
         }
     }
 }
-
-// Let's refactor this later
 pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> dart::Tokens {
+    type_helper.include_once_check(obj.name(), &obj.as_type());
+
     let cls_name = &DartCodeOracle::class_name(obj.name());
+    let finalizer_cls_name = &format!("{}Finalizer", cls_name);
+    let lib_instance = &DartCodeOracle::find_lib_instance();
+    let ffi_object_free_name = obj.ffi_object_free().name();
+    let ffi_object_clone_name = obj.ffi_object_clone().name();
+
+    // Stream workaround, make it more elegant later
+
+    let stream_glue = if obj.name().contains("StreamExt") {
+        generate_stream(obj, type_helper)
+    } else {
+        quote!()
+    };
+
     quote! {
+        final _$finalizer_cls_name = Finalizer<Pointer<Void>>((ptr) {
+          rustCall((status) => $lib_instance.$ffi_object_free_name(ptr, status));
+        });
+
         class $cls_name {
             final Pointer<Void> _ptr;
 
-            $(cls_name)._(this._ptr);
+            $(cls_name)._(this._ptr) {
+                _$finalizer_cls_name.attach(this, _ptr, detach: this);
+            }
 
             factory $(cls_name).lift(Pointer<Void> ptr) {
                 return $(cls_name)._(ptr);
             }
 
-            // TODO: Bring back object lowering from main
-
             Pointer<Void> uniffiClonePointer() {
-                return rustCall((status) => $(DartCodeOracle::find_lib_instance()).$(obj.ffi_object_clone().name())(_ptr, status));
+                return rustCall((status) => $lib_instance.$ffi_object_clone_name(_ptr, status));
             }
 
-            void drop() {
-                rustCall((status) => $(DartCodeOracle::find_lib_instance())..$(obj.ffi_object_free().name())(_ptr, status));
+            void dispose() {
+                _$finalizer_cls_name.detach(this);
+                rustCall((status) => $lib_instance.$ffi_object_free_name(_ptr, status));
             }
 
             $(for mt in &obj.methods() => $(generate_method(mt, type_helper)))
         }
+
+        $(stream_glue)
     }
 }
 
