@@ -339,10 +339,10 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
 
             Future<T> uniffiRustCallAsync<T, F>(
-                int Function() rustFutureFunc,
-                void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
-                F Function(int, Pointer<RustCallStatus>) completeFunc,
-                void Function(int) freeFunc,
+                Pointer<Void> Function() rustFutureFunc,
+                void Function(Pointer<Void>, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, Pointer<Void>) pollFunc,
+                F Function(Pointer<Void>, Pointer<RustCallStatus>) completeFunc,
+                void Function(Pointer<Void>) freeFunc,
                 T Function(F) liftFunc, [
                 UniffiRustCallStatusErrorHandler? errorHandler,
             ]) async {
@@ -355,7 +355,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     pollFunc(
                         rustFuture,
                         callback.nativeFunction,
-                        0,
+                        Pointer<Void>.fromAddress(0),
                     );
                 }
                 void onResponse(int _idx, int pollResult) {
