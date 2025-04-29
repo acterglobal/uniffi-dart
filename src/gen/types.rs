@@ -1,9 +1,11 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use genco::prelude::*;
+use uniffi_bindgen::interface::AsType;
 use uniffi_bindgen::{interface::Type, ComponentInterface};
+use uniffi_bindgen::backend::CodeType;
 
-use super::render::{AsRenderable, Renderer, TypeHelperRenderer};
+use super::render::{AsRenderable, Renderer, TypeHelperRenderer, Renderable};
 use super::{enums, functions, objects, oracle::AsCodeType, records};
 use crate::gen::DartCodeOracle;
 
@@ -82,6 +84,16 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             $(for fun in self.ci.function_definitions() => $(functions::generate_function(fun, self)))
         );
 
+        let mut callback_code = quote!();
+        // Process all callback interfaces to ensure they're included
+        for callback in self.ci.callback_interface_definitions() {
+            let callback_name = callback.name().to_string();
+            let callback_codetype = super::callback_interface::CallbackInterfaceCodeType::new(callback_name, callback.as_type());
+            // Force the callback interface to be processed, due to the way the code is generated we need to ensure it's processed, when a callback is used in a function signature
+            // TODO: This is a hack to ensure the callback interface is processed, we need to test to ensure there's no chance of duplicates
+            callback_code.append(callback_codetype.render_type_helper(self));
+        }
+
         // Let's include the string converter
         self.include_once_check(&Type::String.as_codetype().canonical_name(), &Type::String);
         let helpers_definitions = quote! {
@@ -152,7 +164,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             const int CALL_ERROR = 1;
             const int CALL_UNEXPECTED_ERROR = 2;
 
-            class RustCallStatus extends Struct {
+            final class RustCallStatus extends Struct {
                 @Int8()
                 external int code;
 
@@ -161,20 +173,20 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 //Pointer<RustCallStatus> asPointer() => Pointer<RustCallStatus>.fromAddress(address);
             }
 
-            void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, RustCallStatus status) {
+            void checkCallStatus(UniffiRustCallStatusErrorHandler errorHandler, Pointer<RustCallStatus> status) {
 
-                if (status.code == CALL_SUCCESS) {
+                if (status.ref.code == CALL_SUCCESS) {
                 return;
-                } else if (status.code == CALL_ERROR) {
-                throw errorHandler.lift(status.errorBuf);
-                } else if (status.code == CALL_UNEXPECTED_ERROR) {
-                if (status.errorBuf.len > 0) {
-                    throw UniffiInternalError.panicked(FfiConverterString.lift(status.errorBuf));
+                } else if (status.ref.code == CALL_ERROR) {
+                throw errorHandler.lift(status.ref.errorBuf);
+                } else if (status.ref.code == CALL_UNEXPECTED_ERROR) {
+                if (status.ref.errorBuf.len > 0) {
+                    throw UniffiInternalError.panicked(FfiConverterString.lift(status.ref.errorBuf));
                 } else {
                     throw UniffiInternalError.panicked("Rust panic");
                 }
                 } else {
-                throw UniffiInternalError.panicked("Unexpected RustCallStatus code: ${status.code}");
+                throw UniffiInternalError.panicked("Unexpected RustCallStatus code: ${status.ref.code}");
                 }
             }
 
@@ -199,7 +211,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 Exception lift(RustBuffer errorBuf);
             }
 
-            class RustBuffer extends Struct {
+            final class RustBuffer extends Struct {
                 @Uint64()
                 external int capacity;
 
@@ -254,7 +266,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                 return RustBuffer.fromBytes(bytes.ref);
             }
 
-            class ForeignBytes extends Struct {
+            final class ForeignBytes extends Struct {
                 @Int32()
                 external int len;
                 external Pointer<Uint8> data;
@@ -327,10 +339,10 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
             typedef UniffiRustFutureContinuationCallback = Void Function(Uint64, Int8);
 
             Future<T> uniffiRustCallAsync<T, F>(
-                int Function() rustFutureFunc,
-                void Function(int, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, int) pollFunc,
-                F Function(int, Pointer<RustCallStatus>) completeFunc,
-                void Function(int) freeFunc,
+                Pointer<Void> Function() rustFutureFunc,
+                void Function(Pointer<Void>, Pointer<NativeFunction<UniffiRustFutureContinuationCallback>>, Pointer<Void>) pollFunc,
+                F Function(Pointer<Void>, Pointer<RustCallStatus>) completeFunc,
+                void Function(Pointer<Void>) freeFunc,
                 T Function(F) liftFunc, [
                 UniffiRustCallStatusErrorHandler? errorHandler,
             ]) async {
@@ -343,7 +355,7 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     pollFunc(
                         rustFuture,
                         callback.nativeFunction,
-                        0,
+                        Pointer<Void>.fromAddress(0),
                     );
                 }
                 void onResponse(int _idx, int pollResult) {
@@ -372,6 +384,33 @@ impl Renderer<(FunctionDefinition, dart::Tokens)> for TypeHelpersRenderer<'_> {
                     }
                 } finally {
                     freeFunc(rustFuture);
+                }
+            }
+
+            class UniffiHandleMap<T> {
+                final Map<int, T> _map = {};
+                int _counter = 0;
+            
+                int insert(T obj) {
+                final handle = _counter++;
+                _map[handle] = obj;
+                return handle;
+                }
+            
+                T get(int handle) {
+                final obj = _map[handle];
+                if (obj == null) {
+                    throw UniffiInternalError(
+                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
+                }
+                return obj;
+                }
+            
+                void remove(int handle) {
+                if (_map.remove(handle) == null) {
+                    throw UniffiInternalError(
+                        UniffiInternalError.unexpectedStaleHandle, "Handle not found");
+                }
                 }
             }
 

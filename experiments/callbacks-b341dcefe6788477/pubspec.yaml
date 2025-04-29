@@ -1,0 +1,12 @@
+
+    name: uniffi_test
+    description: testing module for uniffi
+    version: 1.0.0
+
+    environment:
+      sdk: '>=3.5.0'
+    dev_dependencies:
+      test: ^1.24.3
+    dependencies:
+      ffi: ^2.0.1
+    

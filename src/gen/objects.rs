@@ -64,6 +64,41 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
     } else {
         quote!()
     };
+    
+    let constructor_definitions = obj.constructors().into_iter().map(|constructor| {
+        let ffi_func_name = constructor.ffi_func().name();
+        let constructor_name = constructor.name();
+
+        let dart_constructor_decl = if constructor_name == "new" {
+            quote!($cls_name)
+        } else {
+            quote!($cls_name.$(DartCodeOracle::fn_name(constructor_name)))
+        };
+
+        let dart_params = quote!($(for arg in constructor.arguments() =>
+            $(DartCodeOracle::dart_type_label(Some(&arg.as_type()))) $(DartCodeOracle::var_name(arg.name())),
+        ));
+
+        let ffi_call_args = quote!($(for arg in constructor.arguments() =>
+            $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) 
+        );
+        
+        // Ensure argument types are included
+        for arg in constructor.arguments() {
+            type_helper.include_once_check(&arg.as_codetype().canonical_name(), &arg.as_type());
+        }
+
+        quote! {
+            // Public constructor
+            $dart_constructor_decl($dart_params) : _ptr = rustCall((status) =>
+                $lib_instance.$ffi_func_name(
+                    $ffi_call_args status
+                )
+            ) {
+                 _$finalizer_cls_name.attach(this, _ptr, detach: this);
+            }
+        }
+    });
 
     quote! {
         final _$finalizer_cls_name = Finalizer<Pointer<Void>>((ptr) {
@@ -71,14 +106,19 @@ pub fn generate_object(obj: &Object, type_helper: &dyn TypeHelperRenderer) -> da
         });
 
         class $cls_name {
-            final Pointer<Void> _ptr;
+            late final Pointer<Void> _ptr;
 
-            $(cls_name)._(this._ptr) {
+            // Private constructor for internal use / lift
+            $cls_name._(this._ptr) {
                 _$finalizer_cls_name.attach(this, _ptr, detach: this);
             }
 
-            factory $(cls_name).lift(Pointer<Void> ptr) {
-                return $(cls_name)._(ptr);
+            // Public constructors generated from UDL
+            $( for ctor_def in constructor_definitions => $ctor_def )
+
+            // Factory for lifting pointers
+            factory $cls_name.lift(Pointer<Void> ptr) {
+                return $cls_name._(ptr);
             }
 
             Pointer<Void> uniffiClonePointer() {
@@ -128,13 +168,26 @@ pub fn generate_method(func: &Method, type_helper: &dyn TypeHelperRenderer) -> d
 
         )
     } else {
-        quote!(
-            $ret $(DartCodeOracle::fn_name(func.name()))($args) {
-                return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
-                    uniffiClonePointer(),
-                    $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
-                )));
-            }
-        )
+        if ret == quote!(void) {
+            quote!(
+                $ret $(DartCodeOracle::fn_name(func.name()))($args) {
+                    return rustCall((status) {
+                        $(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
+                            uniffiClonePointer(),
+                            $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
+                        );
+                    });
+                }
+            )
+        } else {
+            quote!(
+                $ret $(DartCodeOracle::fn_name(func.name()))($args) {
+                    return rustCall((status) => $lifter($(DartCodeOracle::find_lib_instance()).$(func.ffi_func().name())(
+                        uniffiClonePointer(),
+                        $(for arg in &func.arguments() => $(DartCodeOracle::type_lower_fn(&arg.as_type(), quote!($(DartCodeOracle::var_name(arg.name()))))),) status
+                    )));
+                }
+            )
+      }
     }
 }
