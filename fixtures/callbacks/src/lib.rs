@@ -90,6 +90,9 @@ impl RustGetters {
     }
 }
 
+// TODO: Add error cases to test that the error is returned
+
+
 impl Default for RustGetters {
     fn default() -> Self {
         Self::new()

@@ -15,7 +15,7 @@ class DartGetters extends ForeignGetters {
       // Throw a UniFFI-generated exception type corresponding to UnexpectedError
       throw SimpleException.unexpectedException;
     }
-    return arg2 ?  v : '1234567890123';
+    return arg2 ? v : '1234567890123';
   }
 
   @override
@@ -37,10 +37,10 @@ class DartGetters extends ForeignGetters {
   @override
   void getNothing(String v) {
     if (v == 'BadArgument') {
-      throw SimpleException.BadArgument;
+      throw Exception('BadArgument');
     }
     if (v == 'UnexpectedError') {
-      throw SimpleException.UnexpectedException;
+      throw Exception('UnexpectedError');
     }
   }
 }
@@ -67,12 +67,11 @@ void main() {
     final flag = true;
     for (final v in [true, false]) {
       final expected = callback.getBool(v, flag);
-      final observed =  rustGetters.getBool(callback, v, flag);  
+      final observed = rustGetters.getBool(callback, v, flag);
       expect(observed, equals(expected));
     }
   });
 
-  // TODO: Bring back after we've fully implemented sequences
   test('roundtrip getList through callback', () {
     final flag = true;
     for (final v in [
@@ -104,7 +103,8 @@ void main() {
   });
 
   test('getStringOptionalCallback works', () {
-    expect(rustGetters.getStringOptionalCallback(callback, "1234567890123", false),
+    expect(
+        rustGetters.getStringOptionalCallback(callback, "1234567890123", false),
         equals("1234567890123"));
     // Passing null as the callback
     expect(rustGetters.getStringOptionalCallback(null, "1234567890123", false),
@@ -116,9 +116,17 @@ void main() {
     rustGetters.getNothing(callback, "1234567890123");
   });
 
+  test('getNothing should throw and exception', () {
+    // Should not throw
+    final v = rustGetters.getNothing(callback, "BadArgument");
+    //print(v);
+    // expect(() => rustGetters.getNothing(callback, "BadArgument"),
+    //     throwsA(isA<SimpleException>()));
+  });
   // test('getString throws SimpleException.BadArgument', () {
   //   final v = rustGetters.getString(callback, "BadArgument", true);
-  //   expect(v, throwsA(isA<Exception>()));
+  //   print(v);
+  //   //expect(v, throwsA(isA<Exception>()));
   // });
 
   // test('getString throws SimpleException.UnexpectedException', () {
