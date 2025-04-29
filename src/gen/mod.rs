@@ -15,6 +15,7 @@ use crate::gen::oracle::DartCodeOracle;
 use uniffi_bindgen::{BindingGenerator, ComponentInterface};
 
 mod callback_interface;
+mod code_type;
 mod compounds;
 mod enums;
 mod functions;
@@ -25,7 +26,6 @@ mod records;
 mod render;
 pub mod stream;
 mod types;
-mod code_type;
 
 pub use code_type::CodeType;
 
@@ -208,10 +208,10 @@ impl BindingGenerator for DartBindingGenerator {
         settings: &uniffi_bindgen::GenerationSettings,
         components: &[uniffi_bindgen::Component<Self::Config>],
     ) -> Result<()> {
-
         for Component { ci, config, .. } in components {
-
-            let filename = settings.out_dir.join(format!("{}.dart", config.cdylib_name()));
+            let filename = settings
+                .out_dir
+                .join(format!("{}.dart", config.cdylib_name()));
             let tokens = DartWrapper::new(ci, config).generate();
             let file = std::fs::File::create(filename)?;
 
@@ -227,7 +227,7 @@ impl BindingGenerator for DartBindingGenerator {
         }
         Ok(())
     }
-    
+
     fn new_config(&self, root_toml: &toml::value::Value) -> Result<Self::Config> {
         Ok(
             match root_toml.get("bindings").and_then(|b| b.get("dart")) {
@@ -236,13 +236,12 @@ impl BindingGenerator for DartBindingGenerator {
             },
         )
     }
-    
+
     fn update_component_configs(
         &self,
         settings: &uniffi_bindgen::GenerationSettings,
         components: &mut Vec<uniffi_bindgen::Component<Self::Config>>,
     ) -> Result<()> {
-        
         for c in &mut *components {
             c.config.cdylib_name.get_or_insert_with(|| {
                 settings

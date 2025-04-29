@@ -230,14 +230,14 @@ impl DartCodeOracle {
         let call = quote!($(Self::find_lib_instance()).$ffi_func);
         match callable.return_type() {
             Some(Type::External { .. }) => {
-            // Some(return_type) if ci.is_external(&return_type) => {
-            //     let ffi_type = FfiType::from(return_type);
-            //     match ffi_type {
-                    // FfiType::RustBuffer(Some(ExternalFfiMetadata { .. })) => {
-                        todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
-                    }
-                    // _ => call,
-                // }
+                // Some(return_type) if ci.is_external(&return_type) => {
+                //     let ffi_type = FfiType::from(return_type);
+                //     match ffi_type {
+                // FfiType::RustBuffer(Some(ExternalFfiMetadata { .. })) => {
+                todo!("Need to convert the RustBuffer from our package to the RustBuffer of the external package")
+            }
+            // _ => call,
+            // }
             // }
             _ => call,
         }

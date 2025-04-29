@@ -1,7 +1,7 @@
+use crate::gen::CodeType;
 use genco::lang::dart;
 use genco::prelude::*;
 use paste::paste;
-use crate::gen::CodeType;
 use uniffi_bindgen::interface::Type;
 
 use super::oracle::{AsCodeType, DartCodeOracle};

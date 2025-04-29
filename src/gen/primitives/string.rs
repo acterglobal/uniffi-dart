@@ -1,8 +1,8 @@
-use crate::r#gen::CodeType;
 use crate::gen::{
     quote,
     render::{Renderable, TypeHelperRenderer},
 };
+use crate::r#gen::CodeType;
 
 use genco::lang::dart;
 // use uniffi_bindgen::backend::CodeType;
