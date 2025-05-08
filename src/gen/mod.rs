@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::io::Read;
 
 use anyhow::Result;
 use camino::Utf8Path;
@@ -7,6 +8,7 @@ use camino::Utf8Path;
 use genco::fmt;
 use genco::prelude::*;
 use serde::{Deserialize, Serialize};
+use uniffi_bindgen::BindgenCrateConfigSupplier;
 use uniffi_bindgen::Component;
 // use uniffi_bindgen::MergeWith;
 use self::render::Renderer;
@@ -254,19 +256,46 @@ impl BindingGenerator for DartBindingGenerator {
     }
 }
 
+
+pub struct LocalConfigSupplier(String);
+impl BindgenCrateConfigSupplier for LocalConfigSupplier {
+
+    fn get_udl(&self, _crate_name: &str, _udl_name: &str) -> Result<String> {
+        let file = std::fs::File::open(self.0.clone())?;
+        let mut reader = std::io::BufReader::new(file);
+        let mut content = String::new();
+        reader.read_to_string(&mut content)?;
+        return Ok(content);
+    }
+}
+
 pub fn generate_dart_bindings(
     udl_file: &Utf8Path,
     config_file_override: Option<&Utf8Path>,
     out_dir_override: Option<&Utf8Path>,
-    library_file: Option<&Utf8Path>,
-) -> Result<()> {
-    uniffi_bindgen::generate_external_bindings(
-        &DartBindingGenerator {},
+    library_file: &Utf8Path,
+    library_mode: bool,
+) -> anyhow::Result<()> {
+    if library_mode {
+        uniffi_bindgen::library_mode::generate_bindings(
+            library_file,
+            None,
+            &DartBindingGenerator {},
+            &LocalConfigSupplier(udl_file.to_string()),
+            None,
+            out_dir_override.unwrap(),
+            false,
+        )?;
+        Ok(())
+    } else {
+        uniffi_bindgen::generate_external_bindings(
+            &DartBindingGenerator {},
         udl_file,
         config_file_override,
         out_dir_override,
-        library_file,
+        Some(library_file),
         None,
         true,
-    )
+        )
+    }
 }
