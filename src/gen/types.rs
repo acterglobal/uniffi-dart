@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::BTreeMap};
 
 use genco::prelude::*;
 use uniffi_bindgen::{interface::Type, ComponentInterface};
@@ -11,18 +11,18 @@ type FunctionDefinition = dart::Tokens;
 
 pub struct TypeHelpersRenderer<'a> {
     ci: &'a ComponentInterface,
-    include_once_names: RefCell<HashMap<String, Type>>,
+    include_once_names: RefCell<BTreeMap<String, Type>>,
 }
 
 impl<'a> TypeHelpersRenderer<'a> {
     pub fn new(ci: &'a ComponentInterface) -> Self {
         Self {
             ci,
-            include_once_names: RefCell::new(HashMap::new()),
+            include_once_names: RefCell::new(BTreeMap::new()),
         }
     }
 
-    pub fn get_include_names(&self) -> HashMap<String, Type> {
+    pub fn get_include_names(&self) -> BTreeMap<String, Type> {
         self.include_once_names.clone().into_inner()
     }
 }

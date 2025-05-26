@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::io::Read;
 
@@ -36,7 +36,7 @@ pub struct Config {
     package_name: Option<String>,
     cdylib_name: Option<String>,
     #[serde(default)]
-    external_packages: HashMap<String, String>,
+    external_packages: BTreeMap<String, String>,
 }
 
 impl From<&ComponentInterface> for Config {
@@ -44,7 +44,7 @@ impl From<&ComponentInterface> for Config {
         Config {
             package_name: Some(ci.namespace().to_owned()),
             cdylib_name: Some(ci.namespace().to_owned()),
-            external_packages: HashMap::new(),
+            external_packages: BTreeMap::new(),
         }
     }
 }
